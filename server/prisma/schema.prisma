@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum SessionStatus {
+  VOTING
+  CONFIRMED
+  BOOKED
+  COMPLETED
+  CANCELLED
+}
+
+enum VoteStatus {
+  JOIN
+  DECLINE
+  MAYBE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CONFIRMED
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name")
+  phone        String?
+  bankInfo     String?  @map("bank_info")
+  role         Role     @default(MEMBER)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  createdSessions Session[] @relation("SessionCreator")
+  paidSessions    Session[] @relation("SessionPayer")
+  votes           Vote[]
+  payments        Payment[]
+
+  @@map("users")
+}
+
+model Session {
+  id         String        @id @default(uuid())
+  title      String
+  playDate   DateTime      @map("play_date")
+  startTime  String        @map("start_time")
+  endTime    String        @map("end_time")
+  location   String
+  minPlayers Int           @map("min_players")
+  maxPlayers Int           @map("max_players")
+  totalCost  Decimal?      @map("total_cost") @db.Decimal(10, 2)
+  status     SessionStatus @default(VOTING)
+
+  voteDeadline DateTime? @map("vote_deadline")
+
+  // Foreign keys
+  createdById String @map("created_by")
+  payerId     String? @map("payer_id")
+
+  // Relations
+  createdBy User  @relation("SessionCreator", fields: [createdById], references: [id])
+  payer     User? @relation("SessionPayer", fields: [payerId], references: [id])
+  votes     Vote[]
+  payments  Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sessions")
+}
+
+model Vote {
+  id       String     @id @default(uuid())
+  status   VoteStatus @default(JOIN)
+  votedAt  DateTime   @default(now()) @map("voted_at")
+
+  // Foreign keys
+  sessionId String @map("session_id")
+  userId    String @map("user_id")
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  // Mỗi user chỉ vote 1 lần cho mỗi session
+  @@unique([sessionId, userId])
+  @@map("votes")
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  amount      Decimal       @db.Decimal(10, 2)
+  status      PaymentStatus @default(PENDING)
+  paidAt      DateTime?     @map("paid_at")
+  confirmedAt DateTime?     @map("confirmed_at")
+
+  // Foreign keys
+  sessionId String @map("session_id")
+  userId    String @map("user_id")
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@map("payments")
+}
