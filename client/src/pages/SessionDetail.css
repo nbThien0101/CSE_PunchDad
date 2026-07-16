@@ -1,0 +1,301 @@
+/* ==========================================
+   Session Detail Page
+   ========================================== */
+.session-detail {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: var(--space-6) 0 var(--space-8);
+  gap: var(--space-4);
+}
+
+.detail-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-top: var(--space-3);
+  letter-spacing: -0.02em;
+}
+
+.detail-creator {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+/* Info Grid */
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.info-block {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.info-block-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.info-block-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-block-value {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+/* Sections */
+.detail-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-5);
+  letter-spacing: -0.01em;
+}
+
+/* Vote Actions */
+.vote-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.vote-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Vote Groups */
+.vote-group {
+  margin-bottom: var(--space-5);
+}
+
+.vote-group:last-child {
+  margin-bottom: 0;
+}
+
+.vote-group-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.vote-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.vote-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+}
+
+.vote-chip-join {
+  background: var(--success-50);
+  color: var(--success-700);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.vote-chip-decline {
+  background: var(--danger-50);
+  color: var(--danger-600);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.vote-chip-maybe {
+  background: var(--warning-50);
+  color: var(--warning-600);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Book Form */
+.book-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Payer Info */
+.payer-info {
+  background: var(--primary-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  border: 1px solid rgba(59, 91, 255, 0.1);
+}
+
+.payer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.payer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-400));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.payer-name {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.payer-bank, .payer-phone {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.payer-total {
+  font-size: 0.95rem;
+  color: var(--primary-700);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(59, 91, 255, 0.1);
+}
+
+/* Payment Summary */
+.payment-summary {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+/* Payment List */
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.payment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--gray-50);
+  transition: all var(--duration-fast);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.payment-item:hover {
+  border-color: var(--border-color-hover);
+}
+
+.payment-confirmed {
+  background: var(--success-50);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.payment-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.payment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--gray-300);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.payment-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.payment-amount {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.payment-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vote-actions {
+    flex-direction: column;
+  }
+
+  .vote-actions .btn {
+    width: 100%;
+  }
+
+  .detail-header {
+    flex-direction: column;
+  }
+
+  .payment-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

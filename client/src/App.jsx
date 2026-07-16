@@ -1,58 +1,79 @@
-import { useAuth } from './context/AuthContext'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Layout from './components/Layout/Layout';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import SessionDetail from './pages/SessionDetail';
+import CreateSession from './pages/CreateSession';
+import Profile from './pages/Profile';
 
-function App() {
-  const { user, loading, logout } = useAuth();
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="app-loading">
+      <div className="loading-screen">
         <div className="spinner"></div>
-        <p>Loading...</p>
+        <p>Đang tải...</p>
       </div>
     );
   }
 
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+function GuestRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+function App() {
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-brand">
-          <h1>⚽ CSE PunchDad</h1>
-          <span className="header-subtitle">Sports Club Manager</span>
-        </div>
-        {user && (
-          <div className="header-user">
-            <span className="user-greeting">
-              Xin chào, <strong>{user.displayName}</strong>
-              {user.role === 'ADMIN' && <span className="badge-admin">Admin</span>}
-            </span>
-            <button className="btn-logout" onClick={logout}>Đăng xuất</button>
-          </div>
-        )}
-      </header>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
 
-      <main className="app-main">
-        {!user ? (
-          <div className="welcome-message">
-            <h2>Chào mừng đến với CSE PunchDad!</h2>
-            <p>Hệ thống quản lý vote đá bóng & thanh toán cho câu lạc bộ.</p>
-            <p className="text-muted">
-              Frontend đã sẵn sàng. Auth pages sẽ được xây dựng trong Phase 3.
-            </p>
-          </div>
-        ) : (
-          <div className="welcome-message">
-            <h2>Dashboard</h2>
-            <p>Xin chào {user.displayName}! Dashboard sẽ được xây dựng trong Phase 3.</p>
-          </div>
-        )}
-      </main>
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Dashboard />} />
+          <Route path="/sessions/:id" element={<SessionDetail />} />
+          <Route
+            path="/sessions/new"
+            element={<AdminRoute><CreateSession /></AdminRoute>}
+          />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
 
-      <footer className="app-footer">
-        <p>CSE PunchDad © 2025 - Sports Club Voting & Payment</p>
-      </footer>
-    </div>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
-export default App
+export default App;

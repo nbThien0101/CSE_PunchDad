@@ -1,0 +1,164 @@
+/* ==========================================
+   SessionCard Component
+   ========================================== */
+.session-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.session-card.cancelled {
+  opacity: 0.6;
+}
+
+.session-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.session-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color var(--duration-fast);
+}
+
+.session-card-title:hover {
+  color: var(--primary-500);
+}
+
+.session-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.info-icon {
+  font-size: 0.9rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Progress Bar */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-400), var(--success-500));
+  border-radius: var(--radius-full);
+  transition: width var(--duration-slow) var(--ease-spring);
+  min-width: 4px;
+}
+
+.progress-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Vote Buttons */
+.session-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.vote-btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vote-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.vote-join:hover,
+.vote-join.active {
+  border-color: var(--success-500);
+  background: var(--success-50);
+  color: var(--success-600);
+}
+
+.vote-decline:hover,
+.vote-decline.active {
+  border-color: var(--danger-500);
+  background: var(--danger-50);
+  color: var(--danger-600);
+}
+
+.vote-maybe:hover,
+.vote-maybe.active {
+  border-color: var(--warning-500);
+  background: var(--warning-50);
+  color: var(--warning-600);
+}
+
+/* Cost */
+.session-cost {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-600);
+  padding: var(--space-3) var(--space-4);
+  background: var(--primary-50);
+  border-radius: var(--radius-md);
+}
+
+.cost-per-person {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: var(--space-2);
+}
+
+/* Detail Link */
+.session-card-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-500);
+  text-decoration: none;
+  align-self: flex-start;
+  transition: all var(--duration-fast);
+}
+
+.session-card-link:hover {
+  color: var(--primary-600);
+  transform: translateX(4px);
+}
