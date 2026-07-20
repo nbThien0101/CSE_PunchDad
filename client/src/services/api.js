@@ -172,3 +172,37 @@ export const paymentsAPI = {
     return res.json();
   },
 };
+
+// ==========================================
+// Users API
+// ==========================================
+export const usersAPI = {
+  updateProfile: async (data) => {
+    const res = await fetchWithAuth('/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  uploadQRCode: async (qrCodeImage) => {
+    const res = await fetchWithAuth('/users/qr-code', {
+      method: 'PUT',
+      body: JSON.stringify({ qrCodeImage }),
+    });
+    return res.json();
+  },
+
+  getQRCode: async (userId) => {
+    const res = await fetchWithAuth(`/users/${userId}/qr-code`);
+    return res.json();
+  },
+
+  deleteQRCode: async () => {
+    const res = await fetchWithAuth('/users/qr-code', {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+};
+

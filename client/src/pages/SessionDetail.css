@@ -200,6 +200,92 @@
   border-top: 1px solid rgba(59, 91, 255, 0.1);
 }
 
+.cost-per-person {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Payer QR Code */
+.payer-qr-section {
+  margin-top: var(--space-2);
+}
+
+.payer-qr-divider {
+  border-top: 1px solid rgba(59, 91, 255, 0.1);
+  margin: var(--space-3) 0;
+}
+
+.payer-qr-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(59, 91, 255, 0.06);
+  border: 1px solid rgba(59, 91, 255, 0.12);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-600);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.payer-qr-toggle:hover {
+  background: rgba(59, 91, 255, 0.1);
+  border-color: rgba(59, 91, 255, 0.2);
+}
+
+.payer-qr-arrow {
+  font-size: 1.1rem;
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.payer-qr-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.payer-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) 0 var(--space-2);
+}
+
+.payer-qr-image {
+  max-width: 260px;
+  max-height: 260px;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-color);
+  background: white;
+  padding: var(--space-2);
+  object-fit: contain;
+  transition: all var(--duration-normal) var(--ease-out);
+  box-shadow: var(--shadow-sm);
+}
+
+.payer-qr-image:hover {
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.03);
+}
+
+.payer-qr-hint {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.payer-qr-empty {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: var(--space-2) 0 0;
+}
+
 /* Payment Summary */
 .payment-summary {
   display: flex;

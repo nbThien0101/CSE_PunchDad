@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { sessionsAPI, votesAPI, paymentsAPI } from '../services/api';
+import { sessionsAPI, votesAPI, paymentsAPI, usersAPI } from '../services/api';
 import './SessionDetail.css';
 
 const STATUS_CONFIG = {
@@ -22,6 +22,8 @@ export default function SessionDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
   const [error, setError] = useState('');
+  const [payerQR, setPayerQR] = useState(null);
+  const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
 
   // Admin booking form
@@ -43,6 +45,17 @@ export default function SessionDetail() {
         const paymentData = await paymentsAPI.getBySession(id);
         setPayments(paymentData.payments || []);
         setPaymentSummary(paymentData.summary);
+
+        // Fetch payer's QR code
+        const payerId = sessionData.session?.payer?.id;
+        if (payerId) {
+          try {
+            const qrData = await usersAPI.getQRCode(payerId);
+            setPayerQR(qrData.qrCodeImage || null);
+          } catch {
+            // No QR code available — that's ok
+          }
+        }
       }
     } catch {
       setError('Không thể tải session');
@@ -335,6 +348,38 @@ export default function SessionDetail() {
                   ({Math.round(Number(session.totalCost) / (joinedVotes.length || 1)).toLocaleString('vi-VN')}đ/người)
                 </span>
               </div>
+
+              {/* QR Code thanh toán */}
+              {payerQR ? (
+                <div className="payer-qr-section">
+                  <div className="payer-qr-divider"></div>
+                  <button
+                    className="payer-qr-toggle"
+                    onClick={() => setQrExpanded(prev => !prev)}
+                    id="btn-toggle-payer-qr"
+                  >
+                    <span>📱 Mã QR thanh toán</span>
+                    <span className={`payer-qr-arrow ${qrExpanded ? 'expanded' : ''}`}>▾</span>
+                  </button>
+                  {qrExpanded && (
+                    <div className="payer-qr-container animate-fade-in">
+                      <img
+                        src={payerQR}
+                        alt={`QR Code - ${session.payer.displayName}`}
+                        className="payer-qr-image"
+                      />
+                      <p className="payer-qr-hint">
+                        Quét mã QR để chuyển tiền cho <strong>{session.payer.displayName}</strong>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="payer-qr-section">
+                  <div className="payer-qr-divider"></div>
+                  <p className="payer-qr-empty">💡 Người nhận tiền chưa cập nhật mã QR thanh toán</p>
+                </div>
+              )}
             </div>
           )}
 

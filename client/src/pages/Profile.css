@@ -44,6 +44,11 @@
   color: var(--text-muted);
 }
 
+.profile-edit-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .profile-fields {
   display: flex;
   flex-direction: column;
@@ -68,6 +73,169 @@
   color: var(--text-primary);
 }
 
+/* ====== Edit Form ====== */
+.profile-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.profile-edit-form .form-group {
+  gap: var(--space-2);
+}
+
+.profile-edit-form .required {
+  color: var(--danger-500);
+}
+
+.profile-edit-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-2);
+}
+
+/* ====== QR Code Card ====== */
+.profile-qr-card {
+  margin-bottom: var(--space-6);
+}
+
+.profile-qr-header {
+  margin-bottom: var(--space-6);
+}
+
+.profile-qr-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: var(--space-1);
+}
+
+.profile-qr-header .text-muted {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.qr-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* QR Image */
+.qr-image-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.qr-image {
+  max-width: 280px;
+  max-height: 280px;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-color);
+  object-fit: contain;
+  background: white;
+  padding: var(--space-2);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.qr-image:hover {
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.02);
+}
+
+.qr-preview-border {
+  border-color: var(--primary-400);
+  border-style: dashed;
+  box-shadow: 0 0 0 4px rgba(59, 91, 255, 0.1);
+}
+
+.qr-preview-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(59, 91, 255, 0.3);
+}
+
+/* Upload Area */
+.qr-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-8);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  width: 100%;
+  background: var(--gray-50);
+}
+
+.qr-upload-area:hover {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+  transform: translateY(-2px);
+}
+
+.qr-upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2);
+  animation: bounceLight 2s ease-in-out infinite;
+}
+
+@keyframes bounceLight {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.qr-upload-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.qr-upload-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.qr-file-input {
+  display: none;
+}
+
+/* QR Actions */
+.qr-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ====== Danger Zone ====== */
 .profile-danger {
   border-color: rgba(239, 68, 68, 0.2);
 }
@@ -75,4 +243,38 @@
 .profile-danger h3 {
   font-size: 0.95rem;
   margin-bottom: var(--space-2);
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 480px) {
+  .profile-header {
+    flex-wrap: wrap;
+  }
+
+  .profile-edit-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .profile-edit-actions {
+    flex-direction: column;
+  }
+
+  .profile-edit-actions .btn {
+    width: 100%;
+  }
+
+  .qr-image {
+    max-width: 220px;
+    max-height: 220px;
+  }
+
+  .qr-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .qr-actions .btn {
+    width: 100%;
+  }
 }
