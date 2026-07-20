@@ -13,6 +13,8 @@ export default async function handler(req, res) {
       // Thay thế URL render của bạn bên dưới
       const renderApiUrl = process.env.RENDER_API_URL || 'https://cse-punchdad-api.onrender.com';
       
+      console.log(`[KeepAlive] Thức dậy! Đang ping Render tại: ${renderApiUrl}`);
+      
       // Ping Render server
       const response = await fetch(`${renderApiUrl}/api/health`);
       
