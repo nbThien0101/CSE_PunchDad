@@ -46,6 +46,7 @@ enum PaymentStatus {
 model User {
   id           String   @id @default(uuid())
   username     String   @unique
+  email        String?  @unique
   passwordHash String   @map("password_hash")
   displayName  String   @map("display_name")
   phone        String?
@@ -61,6 +62,17 @@ model User {
   payments        Payment[]
 
   @@map("users")
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_verifications")
 }
 
 model Session {

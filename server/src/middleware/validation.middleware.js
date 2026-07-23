@@ -17,6 +17,11 @@ const registerValidation = [
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage('Display name must be 2-50 characters'),
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Email không hợp lệ')
+    .normalizeEmail(),
   body('phone')
     .optional()
     .trim()

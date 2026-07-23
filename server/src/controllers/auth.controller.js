@@ -26,7 +26,7 @@ const generateTokens = (userId) => {
 
 /**
  * POST /api/auth/register
- * Đăng ký tài khoản mới
+ * Đăng ký tài khoản mới (yêu cầu OTP đã xác thực)
  */
 const register = async (req, res, next) => {
   try {
@@ -35,7 +35,34 @@ const register = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, password, displayName, phone } = req.body;
+    const { username, password, displayName, phone, email, verificationToken } = req.body;
+
+    // Kiểm tra verificationToken
+    if (!verificationToken || !email) {
+      return res.status(400).json({ error: 'Cần xác thực email trước khi đăng ký' });
+    }
+
+    // Verify token hợp lệ
+    const tokenRecord = await prisma.otpVerification.findFirst({
+      where: {
+        email,
+        otp: `verified_${verificationToken}`,
+        used: false,
+        expiresAt: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    if (!tokenRecord) {
+      return res.status(400).json({ error: 'Token xác thực không hợp lệ hoặc đã hết hạn. Vui lòng xác thực lại.' });
+    }
+
+    // Đánh dấu token đã sử dụng
+    await prisma.otpVerification.update({
+      where: { id: tokenRecord.id },
+      data: { used: true },
+    });
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
@@ -46,6 +73,7 @@ const register = async (req, res, next) => {
         passwordHash,
         displayName,
         phone,
+        email,
       },
       select: {
         id: true,

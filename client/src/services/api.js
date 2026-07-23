@@ -82,6 +82,24 @@ export const authAPI = {
     const res = await fetchWithAuth('/auth/me');
     return res.json();
   },
+
+  sendOTP: async (email) => {
+    const res = await fetch(`${API_BASE}/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return res.json();
+  },
+
+  verifyOTP: async (email, otp) => {
+    const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+    return res.json();
+  },
 };
 
 // ==========================================

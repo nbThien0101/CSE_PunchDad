@@ -15,7 +15,7 @@
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
   background: var(--bg-card);
   border-radius: var(--radius-xl);
   padding: var(--space-10);
@@ -25,7 +25,7 @@
 
 .auth-header {
   text-align: center;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .auth-icon {
@@ -68,25 +68,198 @@
   font-weight: 600;
 }
 
-/* Form row (side by side) */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
 .text-muted {
   color: var(--text-muted);
   font-weight: 400;
 }
 
+/* ==========================================
+   Step Indicator
+   ========================================== */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: var(--space-2);
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--gray-200);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all var(--duration-normal) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.step-dot.active {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 91, 255, 0.3);
+}
+
+.step-line {
+  width: 60px;
+  height: 3px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.step-line.active {
+  background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+}
+
+.step-labels {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-10);
+  margin-bottom: var(--space-6);
+}
+
+.step-labels span {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color var(--duration-fast);
+}
+
+.step-labels span.active {
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+/* ==========================================
+   OTP Section
+   ========================================== */
+.otp-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.otp-email-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--primary-50);
+  border: 1px solid rgba(59, 91, 255, 0.12);
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
+.otp-email-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.otp-email-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.otp-email-address {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-700);
+  margin: 2px 0 0;
+  word-break: break-all;
+}
+
+/* OTP Input Boxes */
+.otp-inputs {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out);
+  caret-color: var(--primary-500);
+}
+
+.otp-input:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 91, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.otp-input.filled {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+}
+
+/* OTP Resend */
+.otp-resend {
+  text-align: center;
+}
+
+.otp-countdown {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.otp-countdown strong {
+  color: var(--primary-600);
+  font-weight: 700;
+}
+
+/* OTP Actions */
+.otp-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
 @media (max-width: 480px) {
   .auth-card {
     padding: var(--space-6);
     border-radius: var(--radius-lg);
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
+  .otp-input {
+    width: 40px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .otp-actions {
+    flex-direction: column;
+  }
+
+  .otp-actions .btn {
+    width: 100%;
+  }
+
+  .step-line {
+    width: 40px;
+  }
+
+  .step-labels {
+    gap: var(--space-8);
   }
 }
