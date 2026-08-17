@@ -34,6 +34,10 @@ export default function Layout() {
                 <span>Tạo mới</span>
               </NavLink>
             )}
+            <NavLink to="/members" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <span className="nav-icon">👥</span>
+              <span>Thành viên</span>
+            </NavLink>
             <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="nav-icon">👤</span>
               <span>Profile</span>
@@ -69,7 +73,7 @@ export default function Layout() {
 
       <footer className="footer">
         <div className="container">
-          <p>v1.1.0 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
+          <p>v1.2.0 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
         </div>
       </footer>
     </div>

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import SessionDetail from './pages/SessionDetail';
 import CreateSession from './pages/CreateSession';
 import Profile from './pages/Profile';
+import Members from './pages/Members';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -67,6 +68,7 @@ function App() {
             element={<AdminRoute><CreateSession /></AdminRoute>}
           />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/members" element={<Members />} />
         </Route>
 
         {/* Fallback */}

@@ -53,6 +53,7 @@ model User {
   bankInfo     String?  @map("bank_info")
   qrCodeImage  String?  @map("qr_code_image") @db.Text
   role         Role     @default(MEMBER)
+  tier         String?
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations

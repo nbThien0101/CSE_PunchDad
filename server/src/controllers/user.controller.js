@@ -3,6 +3,74 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 /**
+ * GET /api/users/members
+ * Lấy danh sách tất cả thành viên CLB
+ */
+const getAllMembers = async (req, res, next) => {
+  try {
+    const members = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        tier: true,
+        phone: true,
+        createdAt: true,
+        _count: {
+          select: {
+            votes: { where: { status: 'JOIN' } },
+          },
+        },
+      },
+      orderBy: [{ role: 'asc' }, { displayName: 'asc' }],
+    });
+
+    res.json({ members });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/users/:userId/tier
+ * Admin cập nhật tier cho thành viên
+ */
+const updateUserTier = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { tier } = req.body;
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { tier: tier?.trim() || null },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        role: true,
+        tier: true,
+      },
+    });
+
+    res.json({
+      message: `Cập nhật tier thành công`,
+      user: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * PUT /api/users/profile
  * Cập nhật thông tin cá nhân
  */
@@ -133,4 +201,51 @@ const deleteQRCode = async (req, res, next) => {
   }
 };
 
-module.exports = { updateProfile, uploadQRCode, getQRCode, deleteQRCode };
+/**
+ * DELETE /api/users/:userId
+ * Admin xóa thành viên khỏi CLB
+ */
+const deleteMember = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Không cho phép admin xóa chính mình
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: 'Không thể xóa chính mình' });
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    // Không cho phép xóa admin khác
+    if (targetUser.role === 'ADMIN') {
+      return res.status(403).json({ error: 'Không thể xóa tài khoản Admin' });
+    }
+
+    // Xóa tất cả dữ liệu liên quan trong transaction
+    await prisma.$transaction(async (tx) => {
+      // Xóa payments của user
+      await tx.payment.deleteMany({ where: { userId } });
+      // Xóa votes của user
+      await tx.vote.deleteMany({ where: { userId } });
+      // Gỡ user khỏi payer của sessions (set null)
+      await tx.session.updateMany({
+        where: { payerId: userId },
+        data: { payerId: null },
+      });
+      // Xóa user
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    res.json({ message: `Đã xóa thành viên ${targetUser.displayName}` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAllMembers, updateUserTier, deleteMember, updateProfile, uploadQRCode, getQRCode, deleteQRCode };

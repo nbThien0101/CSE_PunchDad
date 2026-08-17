@@ -25,6 +25,7 @@ const authenticate = async (req, res, next) => {
         username: true,
         displayName: true,
         role: true,
+        tier: true,
         phone: true,
         bankInfo: true,
       },

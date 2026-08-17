@@ -202,6 +202,26 @@ export const paymentsAPI = {
 // Users API
 // ==========================================
 export const usersAPI = {
+  getMembers: async () => {
+    const res = await fetchWithAuth('/users/members');
+    return res.json();
+  },
+
+  updateTier: async (userId, tier) => {
+    const res = await fetchWithAuth(`/users/${userId}/tier`, {
+      method: 'PUT',
+      body: JSON.stringify({ tier }),
+    });
+    return res.json();
+  },
+
+  deleteMember: async (userId) => {
+    const res = await fetchWithAuth(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
   updateProfile: async (data) => {
     const res = await fetchWithAuth('/users/profile', {
       method: 'PUT',
