@@ -5,13 +5,38 @@ const nodemailer = require('nodemailer');
  * Sử dụng Gmail SMTP với App Password
  */
 const createTransporter = () => {
+  // Strip quotes from env values (common issue when copy-pasting to hosting)
+  const smtpEmail = (process.env.SMTP_EMAIL || '').replace(/^["']|["']$/g, '').trim();
+  const smtpPassword = (process.env.SMTP_PASSWORD || '').replace(/^["']|["']$/g, '').trim();
+
+  if (!smtpEmail || !smtpPassword) {
+    console.error('❌ SMTP config missing:', {
+      SMTP_EMAIL: smtpEmail ? '✅ set' : '❌ MISSING',
+      SMTP_PASSWORD: smtpPassword ? '✅ set' : '❌ MISSING',
+    });
+    throw new Error('SMTP_EMAIL hoặc SMTP_PASSWORD chưa được cấu hình trên server');
+  }
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD,
+      user: smtpEmail,
+      pass: smtpPassword,
     },
   });
+};
+
+/**
+ * Kiểm tra kết nối SMTP
+ */
+const verifyTransporter = async (transporter) => {
+  try {
+    await transporter.verify();
+    return true;
+  } catch (error) {
+    console.error('❌ SMTP verify failed:', error.message);
+    return false;
+  }
 };
 
 /**
@@ -79,12 +104,19 @@ const sendOTPEmail = async (email, otp) => {
     </html>
   `;
 
+  const smtpEmail = (process.env.SMTP_EMAIL || '').replace(/^["']|["']$/g, '').trim();
+
   const mailOptions = {
-    from: `"CSE PunchDad ⚽" <${process.env.SMTP_EMAIL}>`,
+    from: `"CSE PunchDad ⚽" <${smtpEmail}>`,
     to: email,
     subject: `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
     html: htmlContent,
   };
+
+  const isVerified = await verifyTransporter(transporter);
+  if (!isVerified) {
+    throw new Error('Không thể kết nối đến máy chủ gửi email. Vui lòng kiểm tra cấu hình SMTP.');
+  }
 
   await transporter.sendMail(mailOptions);
 };

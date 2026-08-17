@@ -81,7 +81,7 @@ const sendOTP = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Send OTP error:', error);
-    next(error);
+    res.status(500).json({ error: error.message || 'Lỗi hệ thống khi gửi email OTP' });
   }
 };
 
