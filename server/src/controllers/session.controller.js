@@ -222,10 +222,39 @@ const deleteSession = async (req, res, next) => {
   }
 };
 
+/**
+ * DELETE /api/sessions/:id/force
+ * Admin xóa vĩnh viễn session (hard delete) cùng tất cả votes và payments liên quan
+ */
+const adminDeleteSession = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra session có tồn tại không
+    const session = await prisma.session.findUnique({
+      where: { id },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Xóa vĩnh viễn session (votes và payments sẽ cascade delete)
+    await prisma.session.delete({
+      where: { id },
+    });
+
+    res.json({ message: 'Session permanently deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSessions,
   getSession,
   createSession,
   updateSession,
   deleteSession,
+  adminDeleteSession,
 };

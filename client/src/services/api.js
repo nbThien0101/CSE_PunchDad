@@ -139,6 +139,13 @@ export const sessionsAPI = {
     });
     return res.json();
   },
+
+  forceDelete: async (id) => {
+    const res = await fetchWithAuth(`/sessions/${id}/force`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
 };
 
 // ==========================================

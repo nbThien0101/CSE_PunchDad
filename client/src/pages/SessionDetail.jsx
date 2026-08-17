@@ -139,6 +139,20 @@ export default function SessionDetail() {
     }
   };
 
+  const handleForceDelete = async () => {
+    if (!window.confirm('⚠️ Bạn chắc chắn muốn XÓA VĨNH VIỄN session này?\n\nTất cả dữ liệu (votes, payments) sẽ bị xóa và KHÔNG THỂ khôi phục!')) return;
+    if (!window.confirm('🚨 Xác nhận lần cuối: Xóa vĩnh viễn session này?')) return;
+    setActionLoading('forceDelete');
+    try {
+      await sessionsAPI.forceDelete(id);
+      navigate('/');
+    } catch {
+      setError('Xóa thất bại');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
   if (loading) {
     return <div className="loading-screen"><div className="spinner"></div><p>Đang tải...</p></div>;
   }
@@ -173,11 +187,23 @@ export default function SessionDetail() {
           <h1 className="detail-title">{session.title}</h1>
           <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
         </div>
-        {isAdmin && !['COMPLETED', 'CANCELLED'].includes(session.status) && (
-          <button className="btn btn-danger btn-sm" onClick={handleCancel} disabled={actionLoading === 'cancel'}>
-            {actionLoading === 'cancel' ? 'Đang hủy...' : '❌ Hủy session'}
-          </button>
-        )}
+        <div className="detail-header-actions">
+          {isAdmin && !['COMPLETED', 'CANCELLED'].includes(session.status) && (
+            <button className="btn btn-danger btn-sm" onClick={handleCancel} disabled={actionLoading === 'cancel'} id="btn-cancel-session">
+              {actionLoading === 'cancel' ? 'Đang hủy...' : '❌ Hủy session'}
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className="btn btn-danger-solid btn-sm"
+              onClick={handleForceDelete}
+              disabled={actionLoading === 'forceDelete'}
+              id="btn-force-delete-session"
+            >
+              {actionLoading === 'forceDelete' ? 'Đang xóa...' : '🗑️ Xóa vĩnh viễn'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Alerts */}
