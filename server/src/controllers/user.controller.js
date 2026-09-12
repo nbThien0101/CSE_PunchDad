@@ -92,9 +92,15 @@ const updateProfile = async (req, res, next) => {
 
     const updateData = {
       displayName: displayName.trim(),
-      phone: phone?.trim() || null,
-      bankInfo: bankInfo?.trim() || null,
     };
+
+    if (phone !== undefined) {
+      updateData.phone = phone?.trim() || null;
+    }
+
+    if (bankInfo !== undefined) {
+      updateData.bankInfo = bankInfo?.trim() || null;
+    }
 
     if (isGoalkeeper !== undefined) {
       updateData.isGoalkeeper = Boolean(isGoalkeeper);

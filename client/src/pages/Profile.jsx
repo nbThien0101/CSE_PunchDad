@@ -45,8 +45,22 @@ export default function Profile() {
 
   // Load QR code on mount
   useEffect(() => {
-    loadQRCode();
-  }, []);
+    if (user?.id) {
+      loadQRCode();
+    }
+  }, [user?.id]);
+
+  // Sync form when user changes and not currently editing
+  useEffect(() => {
+    if (user && !editing) {
+      setForm({
+        displayName: user.displayName || '',
+        phone: user.phone || '',
+        bankInfo: user.bankInfo || '',
+        isGoalkeeper: user.isGoalkeeper || false,
+      });
+    }
+  }, [user, editing]);
 
   const loadQRCode = async () => {
     try {
@@ -208,6 +222,17 @@ export default function Profile() {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleStartEdit = () => {
+    setForm({
+      displayName: user?.displayName || '',
+      phone: user?.phone || '',
+      bankInfo: user?.bankInfo || '',
+      isGoalkeeper: user?.isGoalkeeper || false,
+    });
+    setEditing(true);
+    setError('');
+  };
+
   const handleCancel = () => {
     setForm({
       displayName: user?.displayName || '',
@@ -231,6 +256,12 @@ export default function Profile() {
         setError(data.error);
       } else {
         updateUser(data.user);
+        setForm({
+          displayName: data.user.displayName || '',
+          phone: data.user.phone || '',
+          bankInfo: data.user.bankInfo || '',
+          isGoalkeeper: data.user.isGoalkeeper || false,
+        });
         setSuccess('Cập nhật thông tin thành công!');
         setEditing(false);
         setTimeout(() => setSuccess(''), 3000);
@@ -407,7 +438,7 @@ export default function Profile() {
               </div>
             )}
 
-            {!avatarPreview && user?.avatar && (
+            {!avatarPreview && user?.avatar && editing && (
               <div className="avatar-delete-link">
                 <button
                   type="button"
@@ -428,7 +459,7 @@ export default function Profile() {
           {!editing && (
             <button
               className="btn btn-outline btn-sm profile-edit-btn"
-              onClick={() => setEditing(true)}
+              onClick={handleStartEdit}
               id="btn-edit-profile"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
@@ -541,10 +572,6 @@ export default function Profile() {
                   'Cầu thủ sân'
                 )}
               </span>
-            </div>
-            <div className="profile-field">
-              <span className="profile-field-label">Vai trò</span>
-              <span className="profile-field-value">{user?.role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}</span>
             </div>
           </div>
         )}
