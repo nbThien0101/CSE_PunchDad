@@ -1,7 +1,47 @@
 const nodemailer = require('nodemailer');
 
 /**
- * Cấu hình Nodemailer transporter
+ * Gửi email qua Brevo HTTP REST API (port 443 HTTPS - không bao giờ bị Render/Cloud chặn)
+ */
+const sendViaBrevo = async (email, otp, htmlContent) => {
+  const apiKey = (process.env.BREVO_API_KEY || '').replace(/^["']|["']$/g, '').trim();
+  const senderEmail = (process.env.SMTP_EMAIL || 'csepunchdad@gmail.com').replace(/^["']|["']$/g, '').trim();
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: {
+        name: 'CSE PunchDad ⚽',
+        email: senderEmail,
+      },
+      to: [
+        {
+          email: email,
+        },
+      ],
+      subject: `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
+      htmlContent,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error('❌ Brevo API error:', errorData);
+    throw new Error(errorData.message || `Lỗi khi gửi email qua Brevo (${response.status})`);
+  }
+
+  const result = await response.json();
+  console.log('✅ Email OTP sent successfully via Brevo:', result.messageId);
+  return result;
+};
+
+/**
+ * Cấu hình Nodemailer transporter (Fallback cho Gmail SMTP)
  * Sử dụng Gmail SMTP với App Password
  */
 const createTransporter = () => {
@@ -14,7 +54,7 @@ const createTransporter = () => {
       SMTP_EMAIL: smtpEmail ? '✅ set' : '❌ MISSING',
       SMTP_PASSWORD: smtpPassword ? '✅ set' : '❌ MISSING',
     });
-    throw new Error('SMTP_EMAIL hoặc SMTP_PASSWORD chưa được cấu hình trên server');
+    throw new Error('Cấu hình gửi email chưa đầy đủ (thiếu BREVO_API_KEY hoặc SMTP_EMAIL/SMTP_PASSWORD)');
   }
 
   return nodemailer.createTransport({
@@ -47,8 +87,6 @@ const verifyTransporter = async (transporter) => {
  * @param {string} otp - Mã OTP 6 số
  */
 const sendOTPEmail = async (email, otp) => {
-  const transporter = createTransporter();
-
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -106,6 +144,15 @@ const sendOTPEmail = async (email, otp) => {
     </html>
   `;
 
+  const brevoApiKey = (process.env.BREVO_API_KEY || '').replace(/^["']|["']$/g, '').trim();
+
+  // Ưu tiên 1: Gửi qua Brevo HTTPS API (an toàn, không bị Render/Cloud chặn port)
+  if (brevoApiKey) {
+    return await sendViaBrevo(email, otp, htmlContent);
+  }
+
+  // Ưu tiên 2: Fallback qua Nodemailer SMTP nếu không có BREVO_API_KEY
+  const transporter = createTransporter();
   const smtpEmail = (process.env.SMTP_EMAIL || '').replace(/^["']|["']$/g, '').trim();
 
   const mailOptions = {
@@ -117,10 +164,11 @@ const sendOTPEmail = async (email, otp) => {
 
   const isVerified = await verifyTransporter(transporter);
   if (!isVerified) {
-    throw new Error('Không thể kết nối đến máy chủ gửi email. Vui lòng kiểm tra cấu hình SMTP.');
+    throw new Error('Không thể kết nối đến máy chủ gửi email. Vui lòng kiểm tra cấu hình SMTP hoặc BREVO_API_KEY.');
   }
 
   await transporter.sendMail(mailOptions);
 };
 
 module.exports = { sendOTPEmail };
+
