@@ -23,6 +23,7 @@ const authenticate = async (req, res, next) => {
       select: {
         id: true,
         username: true,
+        email: true,
         displayName: true,
         role: true,
         tier: true,

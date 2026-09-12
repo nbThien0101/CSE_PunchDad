@@ -111,18 +111,24 @@ const login = async (req, res, next) => {
     }
 
     const { username, password } = req.body;
+    const identifier = (username || '').trim();
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: { equals: identifier, mode: 'insensitive' } },
+          { email: { equals: identifier, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Tên đăng nhập / email hoặc mật khẩu không đúng' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Tên đăng nhập / email hoặc mật khẩu không đúng' });
     }
 
     const tokens = generateTokens(user.id);
@@ -132,6 +138,7 @@ const login = async (req, res, next) => {
       user: {
         id: user.id,
         username: user.username,
+        email: user.email,
         displayName: user.displayName,
         role: user.role,
         tier: user.tier,

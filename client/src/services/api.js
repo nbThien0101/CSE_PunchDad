@@ -266,6 +266,14 @@ export const usersAPI = {
     return res.json();
   },
 
+  changePassword: async ({ currentPassword, newPassword }) => {
+    const res = await fetchWithAuth('/users/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return res.json();
+  },
+
   uploadQRCode: async (qrCodeImage) => {
     const res = await fetchWithAuth('/users/qr-code', {
       method: 'PUT',

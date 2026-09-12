@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -105,6 +106,7 @@ const updateProfile = async (req, res, next) => {
       select: {
         id: true,
         username: true,
+        email: true,
         displayName: true,
         role: true,
         phone: true,
@@ -363,6 +365,56 @@ const updateUserGoalkeeper = async (req, res, next) => {
   }
 };
 
+/**
+ * PUT /api/users/change-password
+ * Đổi mật khẩu người dùng
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại' });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải có tối thiểu 6 ký tự' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'Mật khẩu mới không được trùng với mật khẩu hiện tại' });
+    }
+
+    // Lấy thông tin user hiện tại kèm passwordHash
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, passwordHash: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    // Kiểm tra mật khẩu hiện tại
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isCurrentValid) {
+      return res.status(400).json({ error: 'Mật khẩu hiện tại không chính xác' });
+    }
+
+    // Băm mật khẩu mới
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash },
+    });
+
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllMembers,
   updateUserTier,
@@ -374,4 +426,6 @@ module.exports = {
   deleteQRCode,
   uploadAvatar,
   deleteAvatar,
+  changePassword,
 };
+
