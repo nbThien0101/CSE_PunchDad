@@ -52,8 +52,10 @@ model User {
   phone        String?
   bankInfo     String?  @map("bank_info")
   qrCodeImage  String?  @map("qr_code_image") @db.Text
+  avatar       String?  @db.Text
   role         Role     @default(MEMBER)
   tier         String?
+  isGoalkeeper Boolean  @default(false) @map("is_goalkeeper")
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -87,6 +89,7 @@ model Session {
   maxPlayers Int           @map("max_players")
   totalCost  Decimal?      @map("total_cost") @db.Decimal(10, 2)
   status     SessionStatus @default(VOTING)
+  teams      Json?         @map("teams")
 
   voteDeadline DateTime? @map("vote_deadline")
 

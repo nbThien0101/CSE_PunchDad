@@ -37,12 +37,12 @@ export default function CreateSession() {
       };
       const result = await sessionsAPI.create(data);
       if (result.error || result.errors) {
-        setError(result.error || result.errors?.[0]?.msg || 'Tạo session thất bại');
+        setError(result.error || result.errors?.[0]?.msg || 'Tạo trận đấu thất bại');
       } else {
         navigate(`/sessions/${result.session.id}`);
       }
     } catch {
-      setError('Tạo session thất bại');
+      setError('Tạo trận đấu thất bại');
     } finally {
       setLoading(false);
     }
@@ -56,29 +56,38 @@ export default function CreateSession() {
   return (
     <div className="create-session animate-fade-in">
       <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} id="btn-back-create">
-        ← Quay lại
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Quay lại
       </button>
 
       <div className="create-header">
-        <h1 className="page-title">⚽ Tạo Session Mới</h1>
-        <p className="page-subtitle">Tạo phiên đá bóng và mời thành viên vote</p>
+        <h1 className="page-title">Tạo trận đấu mới</h1>
+        <p className="page-subtitle">Khởi tạo lịch thi đấu và mở bình chọn cho các thành viên CLB</p>
       </div>
 
       {error && (
         <div className="alert alert-error">
-          <span>⚠️</span> {error}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{error}</span>
         </div>
       )}
 
       <form className="create-form card" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label" htmlFor="session-title">Tiêu đề</label>
+          <label className="form-label" htmlFor="session-title">Tiêu đề trận đấu</label>
           <input
             id="session-title"
             name="title"
             type="text"
             className="form-input"
-            placeholder="VD: Đá bóng chiều thứ 7"
+            placeholder="VD: Chiều thứ 7 (19/09/2026)"
             value={form.title}
             onChange={handleChange}
             required
@@ -88,7 +97,7 @@ export default function CreateSession() {
 
         <div className="form-row-3">
           <div className="form-group">
-            <label className="form-label" htmlFor="play-date">📅 Ngày chơi</label>
+            <label className="form-label" htmlFor="play-date">Ngày thi đấu</label>
             <input
               id="play-date"
               name="playDate"
@@ -101,7 +110,7 @@ export default function CreateSession() {
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="start-time">🕐 Bắt đầu</label>
+            <label className="form-label" htmlFor="start-time">Giờ bắt đầu</label>
             <input
               id="start-time"
               name="startTime"
@@ -113,7 +122,7 @@ export default function CreateSession() {
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="end-time">🕖 Kết thúc</label>
+            <label className="form-label" htmlFor="end-time">Giờ kết thúc</label>
             <input
               id="end-time"
               name="endTime"
@@ -127,13 +136,13 @@ export default function CreateSession() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="location">📍 Địa điểm sân</label>
+          <label className="form-label" htmlFor="location">Địa điểm sân</label>
           <input
             id="location"
             name="location"
             type="text"
             className="form-input"
-            placeholder="VD: Sân bóng ABC, Quận 1"
+            placeholder="VD: Sân bóng Chảo Lửa, Quận Tân Bình"
             value={form.location}
             onChange={handleChange}
             required
@@ -142,7 +151,7 @@ export default function CreateSession() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label" htmlFor="min-players">👥 Tối thiểu</label>
+            <label className="form-label" htmlFor="min-players">Số người tối thiểu</label>
             <input
               id="min-players"
               name="minPlayers"
@@ -154,10 +163,10 @@ export default function CreateSession() {
               onChange={handleChange}
               required
             />
-            <span className="form-hint">Đủ số này sẽ tự confirm</span>
+            <span className="form-hint">Đủ số lượng này hệ thống sẽ tự động chốt đủ người</span>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="max-players">👥 Tối đa</label>
+            <label className="form-label" htmlFor="max-players">Số người tối đa</label>
             <input
               id="max-players"
               name="maxPlayers"
@@ -173,7 +182,7 @@ export default function CreateSession() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="vote-deadline">⏰ Hạn vote <span className="text-muted">(tùy chọn)</span></label>
+          <label className="form-label" htmlFor="vote-deadline">Hạn chót bình chọn <span className="text-muted">(tùy chọn)</span></label>
           <input
             id="vote-deadline"
             name="voteDeadline"
@@ -182,12 +191,12 @@ export default function CreateSession() {
             value={form.voteDeadline}
             onChange={handleChange}
           />
-          <span className="form-hint">Sau thời gian này, thành viên không thể vote nữa</span>
+          <span className="form-hint">Sau thời gian này, thành viên không thể thay đổi bình chọn</span>
         </div>
 
         <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading} id="btn-create-session">
           {loading ? <span className="spinner spinner-sm"></span> : null}
-          {loading ? 'Đang tạo...' : '⚽ Tạo Session'}
+          {loading ? 'Đang khởi tạo...' : 'Tạo trận đấu'}
         </button>
       </form>
     </div>

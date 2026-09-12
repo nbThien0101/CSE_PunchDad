@@ -80,6 +80,9 @@ const register = async (req, res, next) => {
         username: true,
         displayName: true,
         role: true,
+        tier: true,
+        isGoalkeeper: true,
+        avatar: true,
         createdAt: true,
       },
     });
@@ -131,6 +134,9 @@ const login = async (req, res, next) => {
         username: user.username,
         displayName: user.displayName,
         role: user.role,
+        tier: user.tier,
+        isGoalkeeper: user.isGoalkeeper,
+        avatar: user.avatar,
       },
       ...tokens,
     });

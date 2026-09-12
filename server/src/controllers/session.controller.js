@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
+const { balanceTeams, getSuggestedTeamCounts } = require('../services/team-balancer.service');
 
 const prisma = new PrismaClient();
 
@@ -20,15 +21,15 @@ const getSessions = async (req, res, next) => {
       where,
       include: {
         createdBy: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
         payer: {
-          select: { id: true, displayName: true, bankInfo: true },
+          select: { id: true, displayName: true, bankInfo: true, avatar: true },
         },
         votes: {
           include: {
             user: {
-              select: { id: true, displayName: true },
+              select: { id: true, displayName: true, avatar: true },
             },
           },
         },
@@ -57,15 +58,15 @@ const getSession = async (req, res, next) => {
       where: { id: req.params.id },
       include: {
         createdBy: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
         payer: {
-          select: { id: true, displayName: true, bankInfo: true, phone: true },
+          select: { id: true, displayName: true, bankInfo: true, phone: true, avatar: true },
         },
         votes: {
           include: {
             user: {
-              select: { id: true, displayName: true },
+              select: { id: true, displayName: true, avatar: true, tier: true, isGoalkeeper: true },
             },
           },
           orderBy: { votedAt: 'asc' },
@@ -73,7 +74,7 @@ const getSession = async (req, res, next) => {
         payments: {
           include: {
             user: {
-              select: { id: true, displayName: true },
+              select: { id: true, displayName: true, avatar: true },
             },
           },
         },
@@ -149,12 +150,14 @@ const updateSession = async (req, res, next) => {
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        if (field === 'playDate' || field === 'voteDeadline') {
+        if (field === 'playDate') {
           updateData[field] = new Date(req.body[field]);
+        } else if (field === 'voteDeadline') {
+          updateData[field] = req.body[field] ? new Date(req.body[field]) : null;
         } else if (field === 'minPlayers' || field === 'maxPlayers') {
           updateData[field] = parseInt(req.body[field]);
         } else if (field === 'totalCost') {
-          updateData[field] = parseFloat(req.body[field]);
+          updateData[field] = req.body[field] !== null && req.body[field] !== '' ? parseFloat(req.body[field]) : null;
         } else {
           updateData[field] = req.body[field];
         }
@@ -166,10 +169,10 @@ const updateSession = async (req, res, next) => {
       data: updateData,
       include: {
         createdBy: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
         payer: {
-          select: { id: true, displayName: true, bankInfo: true },
+          select: { id: true, displayName: true, bankInfo: true, avatar: true },
         },
       },
     });
@@ -250,6 +253,144 @@ const adminDeleteSession = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/sessions/:id/teams/suggestions
+ * Gợi ý số lượng đội có thể chia dựa trên số người vote
+ */
+const getTeamSuggestions = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const joinCount = await prisma.vote.count({
+      where: { sessionId: id, status: 'JOIN' },
+    });
+    const suggestions = getSuggestedTeamCounts(joinCount);
+    res.json({ totalJoin: joinCount, suggestions });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/sessions/:id/teams/generate
+ * Chạy thuật toán chia team cân bằng theo Tier & Thủ môn
+ */
+const generateTeams = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { teamCount, goalkeeperOverrides } = req.body;
+
+    const session = await prisma.session.findUnique({
+      where: { id },
+      include: {
+        votes: {
+          include: {
+            user: {
+              select: { id: true, displayName: true, avatar: true, tier: true, isGoalkeeper: true },
+            },
+          },
+          orderBy: { votedAt: 'asc' },
+        },
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const result = balanceTeams(session.votes, { teamCount, goalkeeperOverrides });
+    res.json({ result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/sessions/:id/teams
+ * Lưu cấu hình chia đội chính thức vào Session
+ */
+const saveTeams = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { teams } = req.body;
+
+    const session = await prisma.session.findUnique({
+      where: { id },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const updatedSession = await prisma.session.update({
+      where: { id },
+      data: { teams },
+      include: {
+        createdBy: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+        payer: {
+          select: { id: true, displayName: true, bankInfo: true, phone: true, avatar: true },
+        },
+        votes: {
+          include: {
+            user: {
+              select: { id: true, displayName: true, avatar: true, tier: true, isGoalkeeper: true },
+            },
+          },
+          orderBy: { votedAt: 'asc' },
+        },
+      },
+    });
+
+    res.json({ message: 'Lưu danh sách đội thành công', session: updatedSession });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/sessions/:id/teams
+ * Xóa danh sách đội đã chia
+ */
+const deleteTeams = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const session = await prisma.session.findUnique({
+      where: { id },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const updatedSession = await prisma.session.update({
+      where: { id },
+      data: { teams: null },
+      include: {
+        createdBy: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+        payer: {
+          select: { id: true, displayName: true, bankInfo: true, phone: true, avatar: true },
+        },
+        votes: {
+          include: {
+            user: {
+              select: { id: true, displayName: true, avatar: true, tier: true, isGoalkeeper: true },
+            },
+          },
+          orderBy: { votedAt: 'asc' },
+        },
+      },
+    });
+
+    res.json({ message: 'Đã hủy danh sách đội', session: updatedSession });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSessions,
   getSession,
@@ -257,4 +398,8 @@ module.exports = {
   updateSession,
   deleteSession,
   adminDeleteSession,
+  getTeamSuggestions,
+  generateTeams,
+  saveTeams,
+  deleteTeams,
 };

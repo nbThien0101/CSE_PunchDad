@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const hpp = require('hpp');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth.routes');
@@ -8,12 +10,27 @@ const voteRoutes = require('./routes/vote.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
 const { errorHandler } = require('./middleware/error.middleware');
+const { globalLimiter, speedLimiter } = require('./middleware/security.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 // ==========================================
-// Middleware
+// Proxy & Security Configurations
+// ==========================================
+// Cho phép Express nhận diện đúng IP client qua Reverse Proxy/Cloudflare (CF-Connecting-IP, X-Forwarded-For)
+app.set('trust proxy', 1);
+
+// HTTP Security Headers (OWASP standards: chống XSS, MIME sniffing, Clickjacking, v.v.)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// Chống tấn công HTTP Parameter Pollution (HPP)
+app.use(hpp());
+
+// ==========================================
+// CORS & Body Parsing (Giới hạn Payload tránh DoS bộ nhớ)
 // ==========================================
 app.use(cors({
   origin: function (origin, callback) {
@@ -34,7 +51,19 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Giới hạn kích thước payload request (tối đa 3MB cho avatar/base64, ngăn chặn DoS cạn kiệt RAM)
 app.use(express.json({ limit: '3mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ==========================================
+// Rate Limiting & Speed Bump (Chống DoS / Scraper Flood)
+// ==========================================
+// Làm chậm dần response khi request dồn dập (Speed Bumps)
+app.use(speedLimiter);
+
+// Giới hạn tần suất request chung cho toàn bộ /api
+app.use('/api', globalLimiter);
 
 // ==========================================
 // Routes
@@ -55,11 +84,17 @@ app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 // ==========================================
-// Start Server
+// Start Server & Slowloris Protection
 // ==========================================
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🛡️  DoS/DDoS Protection active: Helmet, HPP, RateLimiters & SpeedBumps`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
 });
+
+// Chống tấn công Slowloris DoS (treo giữ kết nối HTTP chậm nhằm làm kiệt quệ socket server)
+server.headersTimeout = 20000;  // Tối đa 20 giây để gửi đầy đủ HTTP headers
+server.requestTimeout = 30000;  // Tối đa 30 giây cho toàn bộ vòng đời request
+server.keepAliveTimeout = 5000; // Tối đa 5 giây cho kết nối keep-alive nhàn rỗi
 
 module.exports = app;

@@ -350,13 +350,20 @@ input, select, textarea {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
+  gap: 6px;
+  padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
 }
 
 .badge-voting {
@@ -593,3 +600,34 @@ input, select, textarea {
   color: var(--primary-700);
   border: 1px solid rgba(59, 91, 255, 0.2);
 }
+
+/* ==========================================
+   Global Modal & Viewport Backdrop System
+   ========================================== */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  z-index: 99999 !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+}
+

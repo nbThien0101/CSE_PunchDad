@@ -146,6 +146,34 @@ export const sessionsAPI = {
     });
     return res.json();
   },
+
+  getTeamSuggestions: async (id) => {
+    const res = await fetchWithAuth(`/sessions/${id}/teams/suggestions`);
+    return res.json();
+  },
+
+  generateTeams: async (id, data) => {
+    const res = await fetchWithAuth(`/sessions/${id}/teams/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  saveTeams: async (id, teams) => {
+    const res = await fetchWithAuth(`/sessions/${id}/teams`, {
+      method: 'PUT',
+      body: JSON.stringify({ teams }),
+    });
+    return res.json();
+  },
+
+  deleteTeams: async (id) => {
+    const res = await fetchWithAuth(`/sessions/${id}/teams`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
 };
 
 // ==========================================
@@ -215,6 +243,14 @@ export const usersAPI = {
     return res.json();
   },
 
+  updateGoalkeeper: async (userId, isGoalkeeper) => {
+    const res = await fetchWithAuth(`/users/${userId}/goalkeeper`, {
+      method: 'PUT',
+      body: JSON.stringify({ isGoalkeeper }),
+    });
+    return res.json();
+  },
+
   deleteMember: async (userId) => {
     const res = await fetchWithAuth(`/users/${userId}`, {
       method: 'DELETE',
@@ -245,6 +281,21 @@ export const usersAPI = {
 
   deleteQRCode: async () => {
     const res = await fetchWithAuth('/users/qr-code', {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
+  uploadAvatar: async (avatar) => {
+    const res = await fetchWithAuth('/users/avatar', {
+      method: 'PUT',
+      body: JSON.stringify({ avatar }),
+    });
+    return res.json();
+  },
+
+  deleteAvatar: async () => {
+    const res = await fetchWithAuth('/users/avatar', {
       method: 'DELETE',
     });
     return res.json();

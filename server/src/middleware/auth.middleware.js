@@ -26,8 +26,10 @@ const authenticate = async (req, res, next) => {
         displayName: true,
         role: true,
         tier: true,
+        isGoalkeeper: true,
         phone: true,
         bankInfo: true,
+        avatar: true,
       },
     });
 

@@ -17,7 +17,7 @@ const getSessionPayments = async (req, res, next) => {
         totalCost: true,
         status: true,
         payer: {
-          select: { id: true, displayName: true, bankInfo: true, phone: true },
+          select: { id: true, displayName: true, bankInfo: true, phone: true, avatar: true },
         },
       },
     });
@@ -30,7 +30,7 @@ const getSessionPayments = async (req, res, next) => {
       where: { sessionId },
       include: {
         user: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
       },
       orderBy: { status: 'asc' },

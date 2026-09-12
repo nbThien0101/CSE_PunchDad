@@ -55,7 +55,7 @@ const castVote = async (req, res, next) => {
       },
       include: {
         user: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
       },
     });
@@ -134,7 +134,7 @@ const updateVote = async (req, res, next) => {
       data: { status, votedAt: new Date() },
       include: {
         user: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
       },
     });
@@ -157,7 +157,7 @@ const getSessionVotes = async (req, res, next) => {
       where: { sessionId },
       include: {
         user: {
-          select: { id: true, displayName: true },
+          select: { id: true, displayName: true, avatar: true },
         },
       },
       orderBy: { votedAt: 'asc' },
