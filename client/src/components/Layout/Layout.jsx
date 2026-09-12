@@ -16,10 +16,10 @@ export default function Layout() {
       <header className="header">
         <div className="header-inner container">
           <NavLink to="/" className="header-brand">
-            <span className="brand-icon">⚽</span>
-            <div>
+            <img src="/logo.png" alt="CSE Football Club" className="brand-logo-img" />
+            <div className="brand-info">
               <h1 className="brand-name">PunchDad</h1>
-              <span className="brand-tag">Sports Club</span>
+              <span className="brand-tag">CSE FC · HCMUT</span>
             </div>
           </NavLink>
 

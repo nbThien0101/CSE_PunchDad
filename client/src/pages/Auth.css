@@ -34,6 +34,20 @@
   margin-bottom: var(--space-4);
 }
 
+.auth-logo-img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin: 0 auto var(--space-4);
+  display: block;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.22));
+  transition: transform var(--transition-base);
+}
+
+.auth-logo-img:hover {
+  transform: scale(1.05);
+}
+
 .auth-title {
   font-size: 1.5rem;
   font-weight: 800;

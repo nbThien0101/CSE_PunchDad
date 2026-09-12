@@ -175,7 +175,7 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card animate-slide-up">
         <div className="auth-header">
-          <span className="auth-icon">⚽</span>
+          <img src="/logo.png" alt="CSE PunchDad" className="auth-logo-img" />
           <h1 className="auth-title">Tạo tài khoản</h1>
           <p className="auth-subtitle">Tham gia CLB CSE PunchDad</p>
         </div>
