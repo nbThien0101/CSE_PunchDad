@@ -21,12 +21,12 @@ const registerValidation = [
     .trim()
     .isEmail()
     .withMessage('Email không hợp lệ')
-    .normalizeEmail(),
+    .toLowerCase(),
   body('phone')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
     .isMobilePhone('vi-VN')
-    .withMessage('Invalid Vietnamese phone number'),
+    .withMessage('Số điện thoại không hợp lệ (phải là số điện thoại Việt Nam gồm 10 chữ số)'),
 ];
 
 /**

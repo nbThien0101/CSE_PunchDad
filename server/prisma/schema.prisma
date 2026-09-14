@@ -63,6 +63,7 @@ model User {
   paidSessions    Session[] @relation("SessionPayer")
   votes           Vote[]
   payments        Payment[]
+  absenceLogs     AbsenceLog[]
 
   @@map("users")
 }
@@ -92,16 +93,20 @@ model Session {
   teams      Json?         @map("teams")
 
   voteDeadline DateTime? @map("vote_deadline")
+  isVoteLocked Boolean   @default(false) @map("is_vote_locked")
+  voteLockedAt DateTime? @map("vote_locked_at")
 
   // Foreign keys
-  createdById String @map("created_by")
+  createdById String  @map("created_by")
   payerId     String? @map("payer_id")
 
   // Relations
-  createdBy User  @relation("SessionCreator", fields: [createdById], references: [id])
-  payer     User? @relation("SessionPayer", fields: [payerId], references: [id])
-  votes     Vote[]
-  payments  Payment[]
+  createdBy   User          @relation("SessionCreator", fields: [createdById], references: [id])
+  payer       User?         @relation("SessionPayer", fields: [payerId], references: [id])
+  votes       Vote[]
+  payments    Payment[]
+  absenceLogs AbsenceLog[]
+  guests      GuestPlayer[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -110,9 +115,12 @@ model Session {
 }
 
 model Vote {
-  id       String     @id @default(uuid())
-  status   VoteStatus @default(JOIN)
-  votedAt  DateTime   @default(now()) @map("voted_at")
+  id          String     @id @default(uuid())
+  status      VoteStatus @default(JOIN)
+  votedAt     DateTime   @default(now()) @map("voted_at")
+  isCheckedIn Boolean    @default(false) @map("is_checked_in")
+  checkedInAt DateTime?  @map("checked_in_at")
+  checkInNote String?    @map("check_in_note")
 
   // Foreign keys
   sessionId String @map("session_id")
@@ -127,12 +135,50 @@ model Vote {
   @@map("votes")
 }
 
+model AbsenceLog {
+  id                 String   @id @default(uuid())
+  sessionId          String   @map("session_id")
+  userId             String   @map("user_id")
+  reason             String?  @db.Text
+  reportedAt         DateTime @default(now()) @map("reported_at")
+  isLate             Boolean  @default(false) @map("is_late")
+  minutesBeforeMatch Int?     @map("minutes_before_match")
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("absence_logs")
+}
+
+model GuestPlayer {
+  id           String    @id @default(uuid())
+  sessionId    String    @map("session_id")
+  name         String
+  phone        String?
+  tier         String?   @default("C")
+  isGoalkeeper Boolean   @default(false) @map("is_goalkeeper")
+  status       String    @default("RESERVE") // "RESERVE" hoặc "PLAYING"
+  isCheckedIn  Boolean   @default(false) @map("is_checked_in")
+  checkedInAt  DateTime? @map("checked_in_at")
+  note         String?   @db.Text
+  addedAt      DateTime  @default(now()) @map("added_at")
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("guest_players")
+}
+
 model Payment {
   id          String        @id @default(uuid())
   amount      Decimal       @db.Decimal(10, 2)
-  status      PaymentStatus @default(PENDING)
-  paidAt      DateTime?     @map("paid_at")
-  confirmedAt DateTime?     @map("confirmed_at")
+  status        PaymentStatus @default(PENDING)
+  orderCode     BigInt?       @unique @map("order_code")
+  checkoutUrl   String?       @map("checkout_url")
+  paymentLinkId String?       @map("payment_link_id")
+  paidAt        DateTime?     @map("paid_at")
+  confirmedAt   DateTime?     @map("confirmed_at")
 
   // Foreign keys
   sessionId String @map("session_id")

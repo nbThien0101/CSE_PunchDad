@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { sessionsAPI, votesAPI, paymentsAPI, usersAPI } from '../services/api';
+import { sessionsAPI, votesAPI, paymentsAPI, usersAPI, attendanceAPI } from '../services/api';
 import TeamGeneratorModal from '../components/TeamGenerator/TeamGeneratorModal';
+import AttendanceDashboardModal from '../components/Attendance/AttendanceDashboardModal';
+import PayOSModal from '../components/Payment/PayOSModal';
 import Modal from '../components/Modal/Modal';
 import './SessionDetail.css';
 
@@ -28,6 +30,16 @@ export default function SessionDetail() {
   const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
 
+  // Attendance & Matchday states
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [useAttendedOnlyForGen, setUseAttendedOnlyForGen] = useState(false);
+  const [declineModal, setDeclineModal] = useState({
+    isOpen: false,
+    isLate: false,
+    minutesBefore: null,
+    reason: '',
+  });
+
   // Admin booking form
   const [bookForm, setBookForm] = useState({
     totalCost: '',
@@ -37,6 +49,7 @@ export default function SessionDetail() {
   // Admin edit session state
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTeamGenModal, setShowTeamGenModal] = useState(false);
+  const [payOSPayment, setPayOSPayment] = useState(null);
   const [autoRebalance, setAutoRebalance] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
@@ -54,6 +67,13 @@ export default function SessionDetail() {
 
   useEffect(() => {
     fetchData();
+
+    // Kiểm tra redirect từ PayOS (payment_status=success)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_status') === 'success') {
+      window.history.replaceState({}, '', window.location.pathname);
+      fetchData();
+    }
   }, [id]);
 
   const fetchData = async () => {
@@ -85,13 +105,55 @@ export default function SessionDetail() {
   };
 
   const handleVote = async (status) => {
+    if (status === 'DECLINE') {
+      const matchDate = new Date(session.playDate);
+      const [h, m] = (session.startTime || '00:00').split(':').map(Number);
+      matchDate.setHours(h || 0, m || 0, 0, 0);
+      const minutesBefore = Math.round((matchDate.getTime() - Date.now()) / 60000);
+      const isLate = minutesBefore < 120 || Boolean(session.isVoteLocked);
+
+      // Nếu báo vắng sát giờ hoặc trước đó đã vote JOIN: mở popup hỏi lý do & cảnh báo
+      if (isLate || userVote?.status === 'JOIN') {
+        setDeclineModal({
+          isOpen: true,
+          isLate,
+          minutesBefore,
+          reason: '',
+        });
+        return;
+      }
+    }
+
+    await submitVote(status);
+  };
+
+  const submitVote = async (status, reason = '') => {
     setActionLoading('vote');
     try {
-      const result = await votesAPI.cast({ sessionId: id, status });
-      setSuccess(result.message);
+      const result = await votesAPI.cast({ sessionId: id, status, reason });
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setSuccess(result.message);
+        await fetchData();
+      }
+    } catch (err) {
+      setError(err?.message || 'Vote thất bại');
+    } finally {
+      setActionLoading('');
+      setDeclineModal({ isOpen: false, isLate: false, minutesBefore: null, reason: '' });
+    }
+  };
+
+  const handleToggleLockVote = async () => {
+    setActionLoading('toggleLock');
+    try {
+      const isLocked = Boolean(session.isVoteLocked);
+      const res = await attendanceAPI.toggleLockVote(session.id, !isLocked);
+      setSuccess(res.message);
       await fetchData();
     } catch {
-      setError('Vote thất bại');
+      setError('Lỗi khi cập nhật trạng thái chốt bình chọn');
     } finally {
       setActionLoading('');
     }
@@ -262,7 +324,6 @@ export default function SessionDetail() {
   const config = STATUS_CONFIG[session.status] || STATUS_CONFIG.VOTING;
   const joinedVotes = session.votes?.filter(v => v.status === 'JOIN') || [];
   const declinedVotes = session.votes?.filter(v => v.status === 'DECLINE') || [];
-  const maybeVotes = session.votes?.filter(v => v.status === 'MAYBE') || [];
   const userVote = session.votes?.find(v => v.user?.id === user?.id);
   const isAdmin = user?.role === 'ADMIN';
   const isPayer = session.payer?.id === user?.id;
@@ -285,14 +346,46 @@ export default function SessionDetail() {
       {/* Header */}
       <div className="detail-header">
         <div>
-          <span className={`badge ${config.className}`}>
-            <span className="badge-dot"></span>
-            {config.label}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <span className={`badge ${config.className}`}>
+              <span className="badge-dot"></span>
+              {config.label}
+            </span>
+            {session.isVoteLocked && (
+              <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+                🔒 Đã chốt danh sách
+              </span>
+            )}
+          </div>
           <h1 className="detail-title">{session.title}</h1>
           <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
         </div>
         <div className="detail-header-actions">
+          {isAdmin && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setShowAttendanceModal(true)}
+              id="btn-open-attendance-modal"
+              style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669', color: '#ffffff' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              Điểm danh sân
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className={`btn btn-outline btn-sm ${session.isVoteLocked ? 'btn-danger' : ''}`}
+              onClick={handleToggleLockVote}
+              disabled={actionLoading === 'toggleLock'}
+              id="btn-header-toggle-lock"
+              title={session.isVoteLocked ? 'Mở lại bình chọn cho mọi người' : 'Chốt danh sách, không cho vote thêm'}
+            >
+              {session.isVoteLocked ? '🔓 Mở lại vote' : '🔒 Chốt danh sách'}
+            </button>
+          )}
           {isAdmin && (
             <button
               className="btn btn-outline btn-sm"
@@ -318,7 +411,7 @@ export default function SessionDetail() {
               onClick={handleOpenEdit}
               id="btn-edit-session"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
@@ -337,7 +430,7 @@ export default function SessionDetail() {
               disabled={actionLoading === 'forceDelete'}
               id="btn-force-delete-session"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -426,37 +519,66 @@ export default function SessionDetail() {
       </div>
 
       {/* Vote Section */}
-      {session.status === 'VOTING' && (
+      {['VOTING', 'CONFIRMED'].includes(session.status) && (
         <div className="detail-section">
-          <h2 className="section-title">Bình chọn tham gia</h2>
-          <div className="vote-actions">
-            {[
-              { id: 'JOIN', label: 'Tham gia', btnClass: 'btn-success' },
-              { id: 'MAYBE', label: 'Cân nhắc', btnClass: 'btn-warning' },
-              { id: 'DECLINE', label: 'Báo vắng', btnClass: 'btn-danger' },
-            ].map(item => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h2 className="section-title" style={{ margin: 0 }}>Bình chọn tham gia</h2>
+            {isAdmin && (
               <button
-                key={item.id}
-                className={`btn ${item.btnClass} ${userVote?.status === item.id ? '' : 'btn-outline'}`}
-                onClick={() => handleVote(item.id)}
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowAttendanceModal(true)}
+                style={{ color: '#059669', fontWeight: 600 }}
+              >
+                📋 Mở điểm danh trên sân
+              </button>
+            )}
+          </div>
+
+          {session.isVoteLocked ? (
+            <div className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <strong>🔒 Danh sách bình chọn đã được Admin chốt.</strong>
+                <p style={{ margin: '2px 0 0', fontSize: '0.82rem' }}>
+                  Không nhận thêm lượt tham gia mới. Nếu có việc bận đột xuất, bạn có thể gửi Báo vắng kèm lý do.
+                </p>
+              </div>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => handleVote('DECLINE')}
                 disabled={actionLoading === 'vote'}
               >
-                {item.id === 'JOIN' && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                )}
-                {item.id === 'DECLINE' && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                )}
-                {item.label}
-                {userVote?.status === item.id && ' (Đã chọn)'}
+                Báo vắng
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="vote-actions">
+              {[
+                { id: 'JOIN', label: 'Tham gia', btnClass: 'btn-success' },
+                { id: 'DECLINE', label: 'Báo vắng', btnClass: 'btn-danger' },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  className={`btn ${item.btnClass} ${userVote?.status === item.id ? '' : 'btn-outline'}`}
+                  onClick={() => handleVote(item.id)}
+                  disabled={actionLoading === 'vote'}
+                >
+                  {item.id === 'JOIN' && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  )}
+                  {item.id === 'DECLINE' && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  )}
+                  {item.label}
+                  {userVote?.status === item.id && ' (Đã chọn)'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -606,24 +728,65 @@ export default function SessionDetail() {
 
       {/* Votes List */}
       <div className="detail-section">
-        <h2 className="section-title">Danh sách đăng ký ({session.votes?.length || 0})</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h2 className="section-title" style={{ margin: 0 }}>
+            Danh sách đăng ký ({joinedVotes.length + (session.guests?.length || 0)})
+          </h2>
+          {isAdmin && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => setShowAttendanceModal(true)}
+            >
+              📋 Quản lý điểm danh
+            </button>
+          )}
+        </div>
         <div className="votes-table">
           {joinedVotes.length > 0 && (
             <div className="vote-group">
-              <h3 className="vote-group-title">Tham gia ({joinedVotes.length})</h3>
+              <h3 className="vote-group-title">
+                Tham gia ({joinedVotes.length})
+                {joinedVotes.filter(v => v.isCheckedIn).length > 0 && (
+                  <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600, marginLeft: '6px' }}>
+                    · {joinedVotes.filter(v => v.isCheckedIn).length} đã đến sân
+                  </span>
+                )}
+              </h3>
               <div className="vote-list">
                 {joinedVotes.map(v => (
-                  <span key={v.id} className="vote-chip vote-chip-join">{v.user?.displayName}</span>
+                  <span
+                    key={v.id}
+                    className="vote-chip vote-chip-join"
+                    style={v.isCheckedIn ? { borderLeft: '3px solid #16a34a', background: '#f0fdf4' } : {}}
+                    title={v.isCheckedIn ? 'Đã điểm danh có mặt tại sân' : 'Chưa điểm danh'}
+                  >
+                    {v.user?.displayName}
+                    {v.isCheckedIn && <span style={{ color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>✓</span>}
+                  </span>
                 ))}
               </div>
             </div>
           )}
-          {maybeVotes.length > 0 && (
+          {session.guests?.length > 0 && (
             <div className="vote-group">
-              <h3 className="vote-group-title">Cân nhắc ({maybeVotes.length})</h3>
+              <h3 className="vote-group-title" style={{ color: '#ea580c' }}>
+                Khách mời ({session.guests.length})
+              </h3>
               <div className="vote-list">
-                {maybeVotes.map(v => (
-                  <span key={v.id} className="vote-chip vote-chip-maybe">{v.user?.displayName}</span>
+                {session.guests.map(g => (
+                  <span
+                    key={g.id}
+                    className="vote-chip"
+                    style={{
+                      background: g.isCheckedIn ? '#f0fdf4' : '#fff7ed',
+                      borderColor: g.isCheckedIn ? '#bbf7d0' : '#fdba74',
+                      color: g.isCheckedIn ? '#166534' : '#9a3412',
+                      borderLeft: g.status === 'PLAYING' ? '3px solid #2563eb' : '3px solid #ea580c',
+                    }}
+                  >
+                    {g.name} {g.tier ? `(${g.tier})` : ''} · {g.status === 'PLAYING' ? 'Đá chính' : 'Dự bị'}
+                    {g.isCheckedIn && <span style={{ color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>✓</span>}
+                  </span>
                 ))}
               </div>
             </div>
@@ -638,7 +801,9 @@ export default function SessionDetail() {
               </div>
             </div>
           )}
-          {!session.votes?.length && <p className="text-muted">Chưa có ai đăng ký</p>}
+          {!session.votes?.length && (!session.guests || session.guests.length === 0) && (
+            <p className="text-muted">Chưa có ai đăng ký</p>
+          )}
         </div>
       </div>
 
@@ -815,12 +980,26 @@ export default function SessionDetail() {
                      p.status === 'PAID' ? 'Đã chuyển tiền' : 'Đã xác nhận'}
                   </span>
 
-                  {/* User can mark their own payment as paid */}
+                  {/* Nút thanh toán VietQR PayOS tự động */}
+                  {p.status === 'PENDING' && (p.user?.id === user?.id || isAdmin) && (
+                    <button
+                      className="btn btn-primary btn-sm btn-payos-qr"
+                      style={{ background: 'linear-gradient(135deg, #10b981, #059669)', borderColor: '#059669', color: '#ffffff', gap: '4px' }}
+                      onClick={() => setPayOSPayment(p)}
+                      id={`btn-payos-${p.id}`}
+                      title="Quét mã VietQR chuyển khoản tự động gạch nợ ngay"
+                    >
+                      ⚡ Thanh toán VietQR
+                    </button>
+                  )}
+
+                  {/* User can mark their own payment as paid (thủ công) */}
                   {p.status === 'PENDING' && p.user?.id === user?.id && (
                     <button
-                      className="btn btn-success btn-sm"
+                      className="btn btn-outline btn-sm"
                       onClick={() => handleMarkPaid(p.id)}
                       disabled={actionLoading === p.id}
+                      title="Đánh dấu đã chuyển tiền nếu chuyển ngoài"
                     >
                       {actionLoading === p.id ? '...' : 'Đã chuyển tiền'}
                     </button>
@@ -1040,19 +1219,90 @@ export default function SessionDetail() {
             </form>
           </div>
         </Modal>
+      {/* ====== Attendance Dashboard Modal ====== */}
+      {showAttendanceModal && (
+        <AttendanceDashboardModal
+          session={session}
+          onClose={() => setShowAttendanceModal(false)}
+          onSessionUpdated={fetchData}
+          onOpenTeamGenerator={(onlyAttended) => {
+            setUseAttendedOnlyForGen(Boolean(onlyAttended));
+            setAutoRebalance(true);
+            setShowTeamGenModal(true);
+          }}
+        />
+      )}
+
+      {/* ====== Decline Reason Modal ====== */}
+      {declineModal.isOpen && (
+        <Modal isOpen={true} onClose={() => setDeclineModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="card animate-scale-up" style={{ width: '100%', maxWidth: 450, padding: 24, background: '#ffffff', borderRadius: 12, boxSizing: 'border-box' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', color: '#0f172a' }}>
+              {declineModal.isLate ? '⚠️ Báo Vắng Sát Giờ Thi Đấu' : 'Xác nhận Báo Vắng'}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.5 }}>
+              {declineModal.isLate
+                ? 'Trận đấu sắp diễn ra trong vòng 2 tiếng (hoặc đã được Admin chốt danh sách). Việc báo vắng muộn sẽ được ghi nhận vào lịch sử vi phạm nội quy của câu lạc bộ.'
+                : 'Bạn đang xác nhận không thể tham gia trận đấu này. Vui lòng cho Admin biết lý do (nếu có).'}
+            </p>
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Lý do báo vắng (tùy chọn):</label>
+              <textarea
+                className="form-input"
+                rows={3}
+                placeholder="VD: Bận việc đột xuất, chấn thương, ốm sốt..."
+                value={declineModal.reason}
+                onChange={(e) => setDeclineModal(prev => ({ ...prev, reason: e.target.value }))}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setDeclineModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => submitVote('DECLINE', declineModal.reason)}
+                disabled={actionLoading === 'vote'}
+              >
+                {actionLoading === 'vote' ? 'Đang gửi...' : 'Xác nhận Báo vắng'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* ====== Team Generator Modal ====== */}
       {showTeamGenModal && (
         <TeamGeneratorModal
           session={session}
           autoRebalance={autoRebalance}
+          useAttendedOnly={useAttendedOnlyForGen}
           onClose={() => {
             setShowTeamGenModal(false);
             setAutoRebalance(false);
+            setUseAttendedOnlyForGen(false);
           }}
           onTeamsSaved={(updatedSession) => {
             setSession(updatedSession);
             setSuccess('Đã lưu và cập nhật danh sách đội hình thi đấu!');
             setTimeout(() => setSuccess(''), 3000);
+          }}
+        />
+      )}
+
+      {/* ====== PayOS VietQR Payment Modal ====== */}
+      {payOSPayment && (
+        <PayOSModal
+          payment={payOSPayment}
+          session={session}
+          onClose={() => setPayOSPayment(null)}
+          onSuccess={() => {
+            setPayOSPayment(null);
+            fetchData();
           }}
         />
       )}

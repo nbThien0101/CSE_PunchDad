@@ -29,6 +29,7 @@ export default function Members() {
   const [editingId, setEditingId] = useState(null);
   const [editTier, setEditTier] = useState('');
   const [saving, setSaving] = useState(false);
+  const [togglingGkId, setTogglingGkId] = useState(null);
   const [filter, setFilter] = useState('all');
 
   const isAdmin = user?.role === 'ADMIN';
@@ -80,6 +81,31 @@ export default function Members() {
     }
   };
 
+  const handleToggleGoalkeeper = async (member) => {
+    const newStatus = !member.isGoalkeeper;
+    setTogglingGkId(member.id);
+    try {
+      const result = await usersAPI.updateGoalkeeper(member.id, newStatus);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setSuccess(
+          newStatus
+            ? `Đã chỉ định "${member.displayName}" làm thủ môn 🧤`
+            : `Đã hủy quyền thủ môn của "${member.displayName}"`
+        );
+        setMembers(prev =>
+          prev.map(m => m.id === member.id ? { ...m, isGoalkeeper: newStatus } : m)
+        );
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch {
+      setError('Cập nhật vai trò thủ môn thất bại');
+    } finally {
+      setTogglingGkId(null);
+    }
+  };
+
   const handleDeleteMember = async (member) => {
     if (!window.confirm(`Bạn chắc chắn muốn xóa thành viên "${member.displayName}"?\n\nTất cả dữ liệu votes và payments của người này sẽ bị xóa vĩnh viễn!`)) return;
     try {
@@ -107,6 +133,7 @@ export default function Members() {
   const filteredMembers = members.filter(m => {
     if (filter === 'all') return true;
     if (filter === 'admin') return m.role === 'ADMIN';
+    if (filter === 'gk') return Boolean(m.isGoalkeeper);
     if (filter === 'no-tier') return !m.tier;
     return m.tier === filter;
   });
@@ -114,6 +141,7 @@ export default function Members() {
   const stats = {
     total: members.length,
     admins: members.filter(m => m.role === 'ADMIN').length,
+    goalkeepers: members.filter(m => m.isGoalkeeper).length,
     withTier: members.filter(m => m.tier).length,
     noTier: members.filter(m => !m.tier).length,
   };
@@ -133,7 +161,7 @@ export default function Members() {
         <div>
           <h1 className="page-title">Thành viên câu lạc bộ</h1>
           <p className="page-subtitle">
-            {stats.total} thành viên · {stats.withTier} đã xếp hạng trình độ
+            {stats.total} thành viên · {stats.goalkeepers} thủ môn · {stats.withTier} đã xếp hạng trình độ
           </p>
         </div>
       </div>
@@ -147,6 +175,10 @@ export default function Members() {
         <div className="member-stat">
           <span className="member-stat-number member-stat-admin">{stats.admins}</span>
           <span className="member-stat-label">Ban cán sự</span>
+        </div>
+        <div className="member-stat">
+          <span className="member-stat-number member-stat-gk">{stats.goalkeepers}</span>
+          <span className="member-stat-label">Thủ môn</span>
         </div>
         <div className="member-stat">
           <span className="member-stat-number member-stat-tier">{stats.withTier}</span>
@@ -184,7 +216,8 @@ export default function Members() {
       <div className="filter-tabs">
         {[
           { key: 'all', label: 'Tất cả' },
-          { key: 'admin', label: 'Admin' },
+          { key: 'admin', label: 'Ban cán sự' },
+          { key: 'gk', label: `🧤 Thủ môn (${stats.goalkeepers})` },
           { key: 'S', label: 'Tier S' },
           { key: 'A', label: 'Tier A' },
           { key: 'B', label: 'Tier B' },
@@ -235,6 +268,11 @@ export default function Members() {
                     {member.role === 'ADMIN' && (
                       <span className="badge badge-admin">Admin</span>
                     )}
+                    {member.isGoalkeeper && (
+                      <span className="badge badge-gk" title="Thủ môn">
+                        🧤 Thủ môn
+                      </span>
+                    )}
                     {member.tier ? (
                       <span className={`badge member-tier-badge ${TIER_COLORS[member.tier] || ''}`}>
                         Tier {member.tier}
@@ -279,7 +317,7 @@ export default function Members() {
                 </div>
               </div>
 
-              {/* Admin: Edit Tier */}
+              {/* Admin Actions */}
               {isAdmin && (
                 <div className="member-card-admin">
                   {editingId === member.id ? (
@@ -324,19 +362,40 @@ export default function Members() {
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                        Đổi tier
+                        Tier
+                      </button>
+                      <button
+                        className={`btn btn-sm ${member.isGoalkeeper ? 'btn-gk-active' : 'btn-outline btn-gk-toggle'}`}
+                        onClick={() => handleToggleGoalkeeper(member)}
+                        disabled={togglingGkId === member.id}
+                        title={member.isGoalkeeper ? 'Hủy quyền Thủ môn' : 'Chỉ định làm Thủ môn'}
+                        id={`btn-toggle-gk-${member.id}`}
+                      >
+                        {togglingGkId === member.id ? (
+                          '...'
+                        ) : member.isGoalkeeper ? (
+                          <>
+                            <span style={{ marginRight: '4px' }}>🧤</span>
+                            <span>Là GK</span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ marginRight: '4px' }}>🧤</span>
+                            <span>Gán GK</span>
+                          </>
+                        )}
                       </button>
                       {member.role !== 'ADMIN' && member.id !== user?.id && (
                         <button
                           className="btn btn-danger-solid btn-sm"
                           onClick={() => handleDeleteMember(member)}
                           id={`btn-delete-member-${member.id}`}
+                          title="Xóa thành viên"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                           </svg>
-                          Xóa
                         </button>
                       )}
                     </div>

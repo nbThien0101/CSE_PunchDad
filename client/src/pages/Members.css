@@ -13,7 +13,7 @@
 /* Stats */
 .members-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
@@ -43,6 +43,7 @@
 }
 
 .member-stat-admin { color: var(--accent-500); }
+.member-stat-gk { color: #059669; }
 .member-stat-tier { color: var(--success-500); }
 .member-stat-notier { color: var(--text-muted); }
 
@@ -171,6 +172,18 @@
   border: 1px dashed var(--gray-300);
 }
 
+.badge-gk {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.2));
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 /* Card Details */
 .member-card-details {
   display: flex;
@@ -206,10 +219,49 @@
 .member-admin-actions {
   display: flex;
   gap: var(--space-2);
+  align-items: center;
 }
 
 .member-admin-actions .btn {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.member-admin-actions .btn-danger-solid {
+  flex: 0 0 36px;
+  padding: 6px;
+  justify-content: center;
+}
+
+.btn-gk-active {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  border: 1px solid #059669;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  transition: all var(--duration-fast, 0.15s) ease;
+}
+
+.btn-gk-active:hover {
+  background: linear-gradient(135deg, #047857, #059669);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.35);
+}
+
+.btn-gk-toggle {
+  transition: all var(--duration-fast, 0.15s) ease;
+}
+
+.btn-gk-toggle:hover {
+  border-color: #10b981;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.08);
 }
 
 .tier-edit-form {
@@ -233,6 +285,12 @@
 }
 
 /* Responsive */
+@media (max-width: 900px) {
+  .members-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .members-stats {
     grid-template-columns: repeat(2, 1fr);
@@ -240,5 +298,9 @@
 
   .members-grid {
     grid-template-columns: 1fr;
+  }
+
+  .member-admin-actions {
+    flex-wrap: wrap;
   }
 }

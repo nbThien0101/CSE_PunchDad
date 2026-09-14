@@ -71,6 +71,17 @@ const getSession = async (req, res, next) => {
           },
           orderBy: { votedAt: 'asc' },
         },
+        guests: {
+          orderBy: { addedAt: 'asc' },
+        },
+        absenceLogs: {
+          include: {
+            user: {
+              select: { id: true, displayName: true, avatar: true },
+            },
+          },
+          orderBy: { reportedAt: 'desc' },
+        },
         payments: {
           include: {
             user: {
@@ -277,7 +288,7 @@ const getTeamSuggestions = async (req, res, next) => {
 const generateTeams = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { teamCount, goalkeeperOverrides } = req.body;
+    const { teamCount, goalkeeperOverrides, useAttendedOnly } = req.body;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -290,6 +301,9 @@ const generateTeams = async (req, res, next) => {
           },
           orderBy: { votedAt: 'asc' },
         },
+        guests: {
+          orderBy: { addedAt: 'asc' },
+        },
       },
     });
 
@@ -297,7 +311,48 @@ const generateTeams = async (req, res, next) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    const result = balanceTeams(session.votes, { teamCount, goalkeeperOverrides });
+    let candidates = session.votes;
+
+    // Nếu chọn chỉ chia những người ĐÃ ĐIỂM DANH CÓ MẶT
+    if (useAttendedOnly) {
+      candidates = session.votes.filter(v => v.isCheckedIn);
+      const attendedGuests = (session.guests || [])
+        .filter(g => g.isCheckedIn)
+        .map(g => ({
+          id: g.id,
+          status: 'JOIN',
+          votedAt: g.addedAt,
+          user: {
+            id: g.id,
+            displayName: `${g.name} (Khách)`,
+            avatar: null,
+            tier: g.tier || 'C',
+            isGoalkeeper: g.isGoalkeeper,
+            isGuest: true,
+          },
+        }));
+      candidates = [...candidates, ...attendedGuests];
+    } else {
+      // Nếu chia bình thường nhưng có guest đang đá chính (PLAYING)
+      const playingGuests = (session.guests || [])
+        .filter(g => g.status === 'PLAYING')
+        .map(g => ({
+          id: g.id,
+          status: 'JOIN',
+          votedAt: g.addedAt,
+          user: {
+            id: g.id,
+            displayName: `${g.name} (Khách)`,
+            avatar: null,
+            tier: g.tier || 'C',
+            isGoalkeeper: g.isGoalkeeper,
+            isGuest: true,
+          },
+        }));
+      candidates = [...candidates, ...playingGuests];
+    }
+
+    const result = balanceTeams(candidates, { teamCount, goalkeeperOverrides });
     res.json({ result });
   } catch (error) {
     next(error);

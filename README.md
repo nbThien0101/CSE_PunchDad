@@ -1,10 +1,10 @@
 # CSE PunchDad · Sports Club Management Platform
 
-![Version](https://img.shields.io/badge/version-v1.2.1-blue.svg?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.2.2-blue.svg?style=flat-square)
 ![Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)
 
-> **Phiên bản hiện tại: `v1.2.1`** — Nền tảng quản lý câu lạc bộ thể thao toàn diện: Lịch thi đấu, bình chọn tham gia, thuật toán tự động chia đội hình theo Tier & Thủ môn, quản lý chi phí sân bóng và hàng rào bảo mật chống DoS/DDoS đa tầng.
+> **Phiên bản hiện tại: `v1.2.2`** — Nền tảng quản lý câu lạc bộ thể thao toàn diện: Lịch thi đấu, bình chọn tham gia tinh gọn, thuật toán tự động chia đội hình theo Tier & Thủ môn, quản lý vai trò thủ môn linh hoạt bởi Admin, khôi phục mật khẩu qua OTP Email bảo mật, tích hợp cổng thanh toán trực tuyến PayOS và hàng rào bảo mật chống DoS/DDoS đa tầng.
 
 ---
 
@@ -15,13 +15,29 @@
 - **Chỉnh sửa toàn diện (Admin Edit Modal)**: Cập nhật mọi thông số của trận đấu bất kỳ lúc nào qua modal giao diện SaaS chuẩn, bảo mật quyền quản trị viên.
 - **Quản lý trạng thái tự động**: Các mốc trạng thái chuẩn xác: *Đang bình chọn* $\rightarrow$ *Đủ người chơi* $\rightarrow$ *Đã đặt sân* $\rightarrow$ *Đã hoàn thành* hoặc *Đã hủy trận*.
 
-### 2. Xác thực Tài khoản & Hồ sơ Cá nhân
-- **Bảo mật OTP qua Email**: Đăng ký tài khoản yêu cầu xác thực bằng mã OTP 6 chữ số gửi qua **Brevo Transactional Email API**, có cơ chế chống spam (cooldown 60 giây và giới hạn 5 lần gửi / 15 phút).
+### 2. Xác thực Tài khoản, Hồ sơ Cá nhân & Khôi phục Mật khẩu
+- **Bảo mật OTP qua Email**: Đăng ký tài khoản yêu cầu xác thực bằng mã OTP 6 chữ số gửi qua **Brevo Transactional Email API** (hỗ trợ fallback SMTP Gmail), có cơ chế chống spam (cooldown 60 giây và giới hạn 5 lần gửi / 15 phút).
+- **Khôi phục Mật khẩu qua OTP (Forgot Password Flow)**:
+  - Quy trình 3 bước bảo mật cao:
+    1. Yêu cầu đặt lại qua Email hoặc Tên đăng nhập (Username). Hệ thống tự động che mờ email (vd: `ng***@gmail.com`) để đảm bảo quyền riêng tư.
+    2. Xác thực mã OTP 6 số (thời hạn 5 phút) gửi đến hòm thư người dùng, hỗ trợ đếm ngược 60 giây gửi lại mã.
+    3. Cấp mã xác thực một lần (`resetToken`, hiệu lực 10 phút) để người dùng đặt lại mật khẩu mới an toàn.
+- **Sửa lỗi Chuẩn hóa Email Gmail**: Khắc phục triệt để lỗi tự động xóa dấu chấm (`.`) trong địa chỉ Gmail, đảm bảo quá trình đăng ký và nhận mã OTP chuẩn xác 100%.
 - **Cập nhật Ảnh đại diện (Avatar)**: Tải lên và xem trước ảnh đại diện cá nhân, lưu trữ đồng bộ trong cơ sở dữ liệu.
 - **Mã VietQR thanh toán**: Tải lên hình ảnh mã QR ngân hàng cá nhân, hiển thị trực quan cho các thành viên khác quét chuyển khoản khi phân chia tiền sân.
-- **Vai trò Thủ môn (`isGoalkeeper`)**: Thành viên tự đăng ký vị trí thủ môn trong trang Tài khoản hoặc do Admin chỉ định trực tiếp.
 
-### 3. Thuật toán Tự động Chia & Cân bằng Đội hình (Team Balancer Engine)
+### 3. Quy trình Bình chọn Tinh gọn (Streamlined Voting)
+- **Quyết định dứt khoát 2 trạng thái**: Rút gọn các tùy chọn bình chọn chỉ còn **Tham gia (`JOIN`)** hoặc **Báo vắng (`LEAVE`)**, loại bỏ hoàn toàn trạng thái lấp lửng "Cân nhắc" (`MAYBE`).
+- **Đồng bộ quân số chuẩn xác**: Ban Quản trị và các thành viên nắm bắt chính xác 100% quân số thực tế tham gia ngay trên tiêu đề trận đấu, tối ưu hóa công tác đặt sân và phân bổ đội hình.
+
+### 4. Quản lý Thành viên & Chỉ định Thủ môn (Goalkeeper Management)
+- **Admin Chỉ định & Quản lý Thủ môn**:
+  - Quản trị viên có toàn quyền bật/tắt vai trò Thủ môn (`isGoalkeeper`) cho bất kỳ thành viên nào trực tiếp trên trang Thành viên (`/members`) hoặc ngay trong Modal Điểm danh trận đấu (`AttendanceDashboardModal`).
+  - Huy hiệu trực quan `🧤 Thủ môn` nổi bật trên thẻ thành viên.
+  - Bộ lọc thành viên theo vai trò (*Tất cả*, *Thủ môn*, *Cầu thủ sân*) cùng thống kê tổng số lượng thủ môn sẵn có của câu lạc bộ.
+- **Tự đăng ký vị trí**: Thành viên cũng có thể chủ động cập nhật vị trí sở trường thủ môn trong trang Tài khoản cá nhân.
+
+### 5. Thuật toán Tự động Chia & Cân bằng Đội hình (Team Balancer Engine)
 - **Quy chuẩn mỗi đội 5 người**: Gồm **1 Thủ môn (GK)** và **4 Cầu thủ sân**.
 - **Cơ chế phân bổ Thủ môn thông minh**:
   - *Số GK > Số đội*: Các thủ môn dư sẽ tự động được điều chuyển sang thi đấu như cầu thủ sân bình thường.
@@ -42,18 +58,21 @@
   - Phủ kín 100% viewport (`100vw x 100vh`), làm mờ sâu toàn màn hình (`backdrop-filter: blur(12px)`) che phủ cả thanh điều hướng và lề trang.
   - Khóa cuộn trang nền (`body.modal-open { overflow: hidden }`), hỗ trợ phím `Escape` và hoán đổi vị trí cầu thủ thủ công trước khi lưu.
 
-### 4. Quản lý Chi phí & Chia Tiền Sân
-- Admin nhập tổng chi phí thực tế và chọn thành viên đại diện đứng ra thanh toán sân.
-- Hệ thống tự động chia đều số tiền trên đầu người tham gia chính thức.
-- Hiển thị thông tin chuyển khoản ngân hàng và mã VietQR của người thanh toán để thành viên quét mã nhanh chóng.
-- Theo dõi trạng thái nộp tiền của từng thành viên (*Chờ thanh toán* / *Đã thanh toán*).
+### 6. Quản lý Chi phí & Tích hợp Cổng Thanh toán PayOS
+- **Tự động chia tiền sân**: Admin nhập tổng chi phí thực tế và chọn thành viên đại diện đứng ra thanh toán sân. Hệ thống tự động chia đều số tiền trên đầu người tham gia chính thức.
+- **Tích hợp Cổng Thanh toán Thông minh PayOS**:
+  - Tích hợp cổng thanh toán trực tuyến **PayOS** tạo link thanh toán VietQR động cho từng thành viên tham gia trận đấu.
+  - Mã QR thanh toán nhúng sẵn chính xác số tiền cần nộp và cú pháp chuyển khoản định danh riêng cho từng thành viên và trận đấu.
+  - Webhook PayOS xác thực chữ ký bảo mật Checksum (`checksum key`), tự động xác nhận giao dịch chuyển khoản thành công và cập nhật trạng thái `Đã thanh toán` (`PAID`) tức thì vào hệ thống theo thời gian thực mà không cần xác nhận thủ công.
+- **Chuyển khoản VietQR Cá nhân**: Hiển thị song song thông tin ngân hàng và mã VietQR của người đại diện chi trả để thành viên quét mã nhanh chóng qua ứng dụng ngân hàng.
+- **Theo dõi trạng thái nộp tiền**: Bảng thống kê trực quan tiến độ thu tiền sân (*Chờ thanh toán* / *Đã thanh toán*), tỷ lệ phần trăm hoàn thành và danh sách thành viên chưa hoàn thành nghĩa vụ đóng quỹ.
 
-### 5. Hàng rào Bảo mật Chống DoS và DDoS Đa tầng
+### 7. Hàng rào Bảo mật Chống DoS và DDoS Đa tầng
 - **Tầng ứng dụng (Layer 7 App Defenses)**:
   - **`globalLimiter`**: Giới hạn 200 requests / 15 phút trên mỗi IP cho toàn bộ `/api/*`, trả về header chuẩn `RateLimit-*`.
   - **`speedLimiter` (Speed Bumps)**: Tự động làm chậm phản hồi thêm 300ms (tối đa 2s) khi client gửi trên 80 requests / 15 phút để làm nản lòng botnet và crawler.
   - **`otpLimiter`**: Giới hạn tối đa 5 lần gửi OTP / 15 phút trên mỗi IP, bảo vệ hạn ngạch Brevo API và chống spam email.
-  - **`authLimiter`**: Giới hạn 15 lần thử đăng nhập/đăng ký / 15 phút trên mỗi IP, chống tấn công dò mật khẩu (brute-force).
+  - **`authLimiter`**: Giới hạn 15 lần thử đăng nhập/đăng ký/khôi phục mật khẩu / 15 phút trên mỗi IP, chống tấn công brute-force.
   - **`computeLimiter`**: Giới hạn 20 lần chạy thuật toán chia đội / phút trên mỗi IP, bảo vệ tài nguyên CPU.
   - **`helmet` & `hpp`**: Thiết lập toàn diện các HTTP Security Headers chuẩn OWASP, chống MIME-sniffing, Clickjacking, XSS và HTTP Parameter Pollution. Ẩn hoàn toàn header `X-Powered-By`.
   - **Chống Slowloris DoS**: Cấu hình Node.js timeouts (`headersTimeout = 20s`, `requestTimeout = 30s`, `keepAliveTimeout = 5s`) tự động ngắt kết nối gửi dữ liệu nhỏ giọt.
@@ -69,7 +88,8 @@
 | **Frontend** | React 19, Vite 8, React Router 7, Vanilla CSS SaaS Design System |
 | **Backend** | Node.js, Express 4, Prisma ORM 6 |
 | **Cơ sở dữ liệu** | PostgreSQL (Neon Serverless PostgreSQL Database) |
-| **Xác thực** | JWT (JSON Web Tokens), Bcrypt.js, Mã OTP Email 6 số |
+| **Cổng thanh toán** | PayOS SDK (VietQR động, Webhook Checksum tự động gạch nợ) |
+| **Xác thực** | JWT (JSON Web Tokens), Bcrypt.js, Mã OTP Email 6 số, Reset Token |
 | **Dịch vụ Email** | Brevo Transactional Email API (REST API / Nodemailer fallback) |
 | **Bảo mật** | Helmet, HPP, Express-Rate-Limit, Express-Slow-Down |
 
@@ -87,9 +107,9 @@ CSE_PunchDad/
 │   │   │   ├── SessionCard/    # Thẻ hiển thị trận đấu danh sách
 │   │   │   ├── TeamGenerator/  # Modal phân chia, xáo trộn & cân bằng đội hình
 │   │   │   └── VoteButton/     # Nút bình chọn tham gia
-│   │   ├── pages/              # Dashboard, SessionDetail, CreateSession, Members, Profile, Login, Register
+│   │   ├── pages/              # Dashboard, SessionDetail, CreateSession, Members, Profile, Login, Register, ForgotPassword
 │   │   ├── context/            # AuthContext lưu trữ trạng thái người dùng
-│   │   ├── services/           # Axios / Fetch API client
+│   │   ├── services/           # Axios / Fetch API client (auth, payment, session, user)
 │   │   └── index.css           # Global SaaS Design System (typography, variables, animations)
 │   └── package.json
 │
@@ -102,7 +122,7 @@ CSE_PunchDad/
 │   │   ├── controllers/        # Điều khiển logic nghiệp vụ (Auth, Session, Vote, Payment, User, OTP)
 │   │   ├── middleware/         # Auth, Validation, Error Handler, Security (Rate Limiters, Speed Bumps)
 │   │   ├── routes/             # Định tuyến API
-│   │   ├── services/           # Team Balancer Service (Snake Draft, 2-Opt, Shuffle) & Brevo Email Service
+│   │   ├── services/           # Team Balancer Service, Brevo Email Service, PayOS Service
 │   │   └── app.js              # Khởi chạy Express Server, bảo mật Helmet, HPP & Slowloris Timeout
 │   └── package.json
 │
@@ -135,9 +155,14 @@ PORT=5001
 NODE_ENV=development
 CLIENT_URL="http://localhost:5173"
 
-# Dịch vụ Email Brevo (Gửi mã OTP)
+# Dịch vụ Email Brevo (Gửi mã OTP đăng ký & quên mật khẩu)
 BREVO_API_KEY="xkeysib-..."
 SMTP_EMAIL="csepunchdad@gmail.com"
+
+# Cổng thanh toán PayOS
+PAYOS_CLIENT_ID="your_payos_client_id"
+PAYOS_API_KEY="your_payos_api_key"
+PAYOS_CHECKSUM_KEY="your_payos_checksum_key"
 ```
 
 ### 3. Cập nhật Cơ sở dữ liệu
@@ -164,10 +189,10 @@ Hệ thống sẽ khởi chạy đồng thời:
 
 | Tên đăng nhập | Mật khẩu | Họ và tên | Vai trò | Quyền hạn |
 | :--- | :--- | :--- | :--- | :--- |
-| **`admin`** | `admin123` | Admin CLB | **ADMIN** | Tạo trận, sửa/xóa trận, chia đội hình, quản lý thanh toán |
-| **`member1`** | `member123` | Nguyen Van A | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình |
-| **`member2`** | `member123` | Tran Van B | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình |
-| **`member3`** | `member123` | Le Van C | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình |
+| **`admin`** | `admin123` | Admin CLB | **ADMIN** | Tạo trận, sửa/xóa trận, chia đội hình, chỉ định thủ môn, quản lý thanh toán |
+| **`member1`** | `member123` | Nguyen Van A | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
+| **`member2`** | `member123` | Tran Van B | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
+| **`member3`** | `member123` | Le Van C | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
 
 ---
 
@@ -176,10 +201,13 @@ Hệ thống sẽ khởi chạy đồng thời:
 ### Xác thực & Tài khoản (`/api/auth`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/send-otp` | `otpLimiter (5/15m)` | Gửi mã OTP xác thực email qua Brevo API |
-| `POST` | `/api/auth/verify-otp` | `authLimiter (15/15m)` | Kiểm tra tính hợp lệ của mã OTP |
+| `POST` | `/api/auth/send-otp` | `otpLimiter (5/15m)` | Gửi mã OTP xác thực email đăng ký qua Brevo API |
+| `POST` | `/api/auth/verify-otp` | `authLimiter (15/15m)` | Kiểm tra tính hợp lệ của mã OTP đăng ký |
 | `POST` | `/api/auth/register` | `authLimiter`, Validate | Đăng ký tài khoản thành viên mới |
 | `POST` | `/api/auth/login` | `authLimiter`, Validate | Đăng nhập hệ thống, cấp Access & Refresh Token |
+| `POST` | `/api/auth/forgot-password` | `otpLimiter (5/15m)` | Gửi mã OTP 6 số khôi phục mật khẩu qua email |
+| `POST` | `/api/auth/verify-reset-otp` | `authLimiter (15/15m)` | Xác thực OTP khôi phục và cấp `resetToken` (10 phút) |
+| `POST` | `/api/auth/reset-password` | `authLimiter`, Validate | Thiết lập mật khẩu mới bằng `resetToken` |
 | `GET` | `/api/auth/me` | `authenticate` | Lấy thông tin tài khoản đang đăng nhập |
 
 ### Trận đấu & Đội hình (`/api/sessions`)
@@ -198,14 +226,22 @@ Hệ thống sẽ khởi chạy đồng thời:
 ### Bình chọn (`/api/votes`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/votes` | `authenticate` | Bình chọn trạng thái tham gia (`JOIN`, `MAYBE`, `LEAVE`) |
+| `POST` | `/api/votes` | `authenticate` | Bình chọn trạng thái tham gia trận đấu (`JOIN`, `LEAVE`) |
+
+### Quản lý Chi phí & Thanh toán (`/api/payments`)
+| Phương thức | Endpoint | Middleware | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/payments/calculate` | `requireAdmin` | Phân chia chi phí sân bóng cho các thành viên tham gia |
+| `PUT` | `/api/payments/:id/status` | `requireAdmin` | Cập nhật thủ công trạng thái nộp tiền của thành viên |
+| `POST` | `/api/payments/payos/create-payment-link` | `authenticate` | Khởi tạo link thanh toán VietQR PayOS động cho trận đấu |
+| `POST` | `/api/payments/payos/webhook` | — | Webhook PayOS xác thực Checksum, tự động cập nhật trạng thái `PAID` |
 
 ### Người dùng & Hồ sơ (`/api/users`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/users` | `authenticate` | Lấy danh sách toàn bộ thành viên câu lạc bộ |
 | `PUT` | `/api/users/profile` | `authenticate` | Cập nhật hồ sơ cá nhân (Avatar, mã VietQR, vai trò Thủ môn) |
-| `PUT` | `/api/users/:userId/goalkeeper` | `requireAdmin` | Bật/tắt nhanh vai trò thủ môn cho thành viên |
+| `PUT` | `/api/users/:userId/goalkeeper` | `requireAdmin` | Admin gán hoặc hủy vai trò thủ môn cho thành viên |
 
 ---
 
@@ -223,7 +259,30 @@ Hệ thống sẽ khởi chạy đồng thời:
 
 ## Lịch sử Phiên bản (Changelog)
 
-### `v1.2.1` (Phiên bản hiện tại)
+### `v1.2.2` (Phiên bản hiện tại)
+- **Khôi phục Mật khẩu Bảo mật qua OTP Email (Forgot Password Flow)**:
+  - Cho phép người dùng tìm lại tài khoản qua Email hoặc Tên đăng nhập (Username).
+  - Gửi mã OTP xác thực 6 chữ số (thời hạn 5 phút) qua Brevo API / Gmail fallback với template HTML phong cách câu lạc bộ chuyên nghiệp.
+  - Tự động che mờ địa chỉ email hiển thị (vd: `ng***@gmail.com`) nhằm bảo vệ quyền riêng tư người dùng.
+  - Cấp token đặt lại mật khẩu một lần (`resetToken`, hiệu lực 10 phút), kiểm tra độ dài và tính khớp của mật khẩu mới.
+  - Xây dựng giao diện `ForgotPassword.jsx` với tiến trình 3 bước trực quan, tích hợp bộ đếm ngược 60 giây và chống spam.
+- **Admin Quản lý & Chỉ định Vai trò Thủ môn (Goalkeeper Management)**:
+  - Admin có toàn quyền gán hoặc hủy vai trò Thủ môn (`isGoalkeeper`) của bất kỳ thành viên nào trực tiếp trên trang Thành viên (`/members`) và modal Điểm danh trận đấu (`AttendanceDashboardModal`).
+  - Hiển thị huy hiệu nhận diện `🧤 Thủ môn` nổi bật trên thẻ thành viên.
+  - Bổ sung bộ lọc thành viên theo vai trò (*Tất cả*, *Thủ môn*, *Cầu thủ*) cùng thống kê trực quan số lượng thủ môn hiện có của CLB.
+- **Quy trình Bình chọn Tinh gọn (Loại bỏ tùy chọn "Cân nhắc")**:
+  - Loại bỏ hoàn toàn trạng thái lấp lửng `MAYBE` khỏi luồng bình chọn, giao diện và cơ sở dữ liệu.
+  - Giữ lại 2 quyết định dứt khoát: **Tham gia** (`JOIN`) hoặc **Báo vắng** (`LEAVE`), giúp danh sách thi đấu minh bạch và chính xác.
+  - Đồng bộ chuẩn xác số lượng người tham gia thực tế hiển thị trên tiêu đề và chi tiết trận đấu.
+- **Tích hợp Cổng Thanh toán Thông minh PayOS**:
+  - Tích hợp PayOS SDK tạo mã VietQR thanh toán động cho từng thành viên và từng trận đấu với số tiền chính xác.
+  - Xử lý Webhook PayOS tự động xác thực tính toàn vẹn giao dịch qua `checksum key`, tự động gạch nợ và chuyển trạng thái sang `Đã thanh toán` (`PAID`) theo thời gian thực.
+- **Khắc phục Lỗi Chuẩn hóa Email (Gmail Dot Bug)**:
+  - Loại bỏ bộ lọc `normalizeEmail()` tự ý xóa dấu chấm (`.`) trong địa chỉ Gmail từ `express-validator`, đảm bảo địa chỉ email người dùng được giữ nguyên vẹn khi đăng ký và gửi mã OTP.
+- **Cập nhật Giao diện & Trải nghiệm Người dùng**:
+  - Nâng cấp hiển thị phiên bản `v1.2.2` đồng bộ tại Footer hệ thống và toàn bộ cấu hình dự án.
+
+### `v1.2.1`
 - **Hàng rào Bảo vệ Chống DoS / DDoS**:
   - Tích hợp `express-rate-limit` đa cấp: Global API limiter (200 reqs/15m), OTP limiter (5 reqs/15m), Auth limiter (15 reqs/15m), Compute limiter (20 reqs/1m).
   - Tích hợp `express-slow-down` (Speed Bumps) làm chậm request sau 80 hits/15m.

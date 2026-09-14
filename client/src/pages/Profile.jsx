@@ -246,12 +246,26 @@ export default function Profile() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
     setSuccess('');
 
+    // Validate phone if provided
+    if (form.phone && form.phone.trim()) {
+      const cleanPhone = form.phone.trim().replace(/[\s.-]/g, '');
+      const phoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        setError('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (VD: 0901234567)');
+        return;
+      }
+    }
+
+    setSaving(true);
+
     try {
-      const data = await usersAPI.updateProfile(form);
+      const data = await usersAPI.updateProfile({
+        ...form,
+        phone: form.phone ? form.phone.trim().replace(/[\s.-]/g, '') : '',
+      });
       if (data.error) {
         setError(data.error);
       } else {

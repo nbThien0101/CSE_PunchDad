@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 /**
  * Gửi email qua Brevo HTTP REST API (port 443 HTTPS - không bao giờ bị Render/Cloud chặn)
  */
-const sendViaBrevo = async (email, otp, htmlContent) => {
+const sendViaBrevo = async (email, otp, htmlContent, subject) => {
   const apiKey = (process.env.BREVO_API_KEY || '').replace(/^["']|["']$/g, '').trim();
   const senderEmail = (process.env.SMTP_EMAIL || 'csepunchdad@gmail.com').replace(/^["']|["']$/g, '').trim();
 
@@ -24,7 +24,7 @@ const sendViaBrevo = async (email, otp, htmlContent) => {
           email: email,
         },
       ],
-      subject: `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
+      subject: subject || `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
       htmlContent,
     }),
   });
@@ -85,8 +85,21 @@ const verifyTransporter = async (transporter) => {
  * Gửi email OTP xác thực
  * @param {string} email - Email người nhận
  * @param {string} otp - Mã OTP 6 số
+ * @param {string} type - 'REGISTER' | 'FORGOT_PASSWORD'
  */
-const sendOTPEmail = async (email, otp) => {
+const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
+  const isForgotPassword = type === 'FORGOT_PASSWORD';
+  const subject = isForgotPassword
+    ? `[CSE PunchDad] Mã xác nhận đặt lại mật khẩu: ${otp}`
+    : `[CSE PunchDad] Mã xác thực OTP: ${otp}`;
+  const titleText = isForgotPassword ? 'Đặt lại mật khẩu' : 'Xác thực email đăng ký';
+  const bodyDesc = isForgotPassword
+    ? 'Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản CSE PunchDad. Vui lòng sử dụng mã OTP bên dưới để tiếp tục:'
+    : 'Bạn đang đăng ký tài khoản CSE PunchDad. Vui lòng sử dụng mã OTP bên dưới để hoàn tất xác thực:';
+  const footerNotice = isForgotPassword
+    ? 'Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này để đảm bảo an toàn cho tài khoản.'
+    : 'Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.';
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -104,7 +117,7 @@ const sendOTPEmail = async (email, otp) => {
                 <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
                   <div style="font-size: 2rem; margin-bottom: 8px;">⚽</div>
                   <h1 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #111827; letter-spacing: -0.02em;">CSE PunchDad</h1>
-                  <p style="margin: 4px 0 0; font-size: 0.85rem; color: #6b7280;">Xác thực email đăng ký</p>
+                  <p style="margin: 4px 0 0; font-size: 0.85rem; color: #6b7280;">${titleText}</p>
                 </td>
               </tr>
               <!-- Body -->
@@ -114,7 +127,7 @@ const sendOTPEmail = async (email, otp) => {
                     Xin chào! 👋
                   </p>
                   <p style="margin: 0 0 24px; font-size: 0.9rem; color: #4b5563; line-height: 1.6;">
-                    Bạn đang đăng ký tài khoản CSE PunchDad. Vui lòng sử dụng mã OTP bên dưới để hoàn tất xác thực:
+                    ${bodyDesc}
                   </p>
                   <!-- OTP Code -->
                   <div style="text-align: center; margin: 24px 0;">
@@ -131,7 +144,7 @@ const sendOTPEmail = async (email, otp) => {
               <tr>
                 <td style="padding: 20px 32px; background: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb;">
                   <p style="margin: 0; font-size: 0.75rem; color: #9ca3af; text-align: center; line-height: 1.5;">
-                    Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.<br>
+                    ${footerNotice}<br>
                     © ${new Date().getFullYear()} CSE PunchDad
                   </p>
                 </td>
@@ -148,7 +161,7 @@ const sendOTPEmail = async (email, otp) => {
 
   // Ưu tiên 1: Gửi qua Brevo HTTPS API (an toàn, không bị Render/Cloud chặn port)
   if (brevoApiKey) {
-    return await sendViaBrevo(email, otp, htmlContent);
+    return await sendViaBrevo(email, otp, htmlContent, subject);
   }
 
   // Ưu tiên 2: Fallback qua Nodemailer SMTP nếu không có BREVO_API_KEY
@@ -158,7 +171,7 @@ const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: `"CSE PunchDad ⚽" <${smtpEmail}>`,
     to: email,
-    subject: `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
+    subject: subject,
     html: htmlContent,
   };
 

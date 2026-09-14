@@ -15,6 +15,11 @@ const { globalLimiter, speedLimiter } = require('./middleware/security.middlewar
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Hỗ trợ serialize BigInt sang Number khi trả JSON về client
+BigInt.prototype.toJSON = function () {
+  return Number(this);
+};
+
 // ==========================================
 // Proxy & Security Configurations
 // ==========================================

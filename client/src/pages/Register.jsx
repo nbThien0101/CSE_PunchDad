@@ -44,19 +44,60 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
-    if (form.password !== form.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+    // 1. Kiểm tra Tên hiển thị
+    if (!form.displayName.trim() || form.displayName.trim().length < 2) {
+      setError('Tên hiển thị phải có ít nhất 2 ký tự');
       return;
     }
 
+    // 2. Kiểm tra Tên đăng nhập
+    const cleanUsername = form.username.trim();
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      setError('Tên đăng nhập phải từ 3 đến 30 ký tự');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+      setError('Tên đăng nhập chỉ được chứa chữ cái, chữ số và dấu gạch dưới (_)');
+      return;
+    }
+
+    // 3. Kiểm tra Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError('Email không đúng định dạng');
+      return;
+    }
+
+    // 4. Kiểm tra Mật khẩu
     if (form.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
+    if (form.password !== form.confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    // 5. Kiểm tra Số điện thoại (Chặn ngay lập tức nếu không hợp lệ!)
+    const rawPhone = form.phone ? form.phone.trim() : '';
+    let cleanPhone = undefined;
+    if (rawPhone) {
+      cleanPhone = rawPhone.replace(/[\s.-]/g, '');
+      const phoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        setError('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (VD: 0901234567)');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const data = await authAPI.sendOTP(form.email);
+      const data = await authAPI.sendOTP({
+        email: form.email.trim(),
+        phone: cleanPhone,
+        username: cleanUsername,
+      });
       if (data.error) {
         setError(data.error);
       } else {
@@ -117,11 +158,18 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const data = await authAPI.sendOTP(form.email);
+      const cleanEmail = form.email.trim();
+      const cleanPhone = form.phone ? form.phone.trim().replace(/[\s.-]/g, '') : undefined;
+      const data = await authAPI.sendOTP({
+        email: cleanEmail,
+        phone: cleanPhone,
+        username: form.username.trim(),
+      });
       if (data.error) {
         setError(data.error);
       } else {
         setCountdown(60);
+        setVerificationToken('');
         setOtpDigits(['', '', '', '', '', '']);
         otpRefs.current[0]?.focus();
       }
@@ -145,22 +193,29 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // Step 1: Verify OTP
-      const verifyData = await authAPI.verifyOTP(form.email, otp);
-      if (verifyData.error) {
-        setError(verifyData.error);
-        setLoading(false);
-        return;
+      const cleanEmail = form.email.trim();
+      let token = verificationToken;
+
+      // Nếu chưa có token xác thực, gọi verifyOTP
+      if (!token) {
+        const verifyData = await authAPI.verifyOTP(cleanEmail, otp);
+        if (verifyData.error) {
+          setError(verifyData.error);
+          setLoading(false);
+          return;
+        }
+        token = verifyData.verificationToken;
+        setVerificationToken(token);
       }
 
-      // Step 2: Register with verificationToken
+      // Step 2: Register với verificationToken
       await register({
-        username: form.username,
+        username: form.username.trim(),
         password: form.password,
-        displayName: form.displayName,
-        email: form.email,
-        phone: form.phone || undefined,
-        verificationToken: verifyData.verificationToken,
+        displayName: form.displayName.trim(),
+        email: cleanEmail,
+        phone: form.phone ? form.phone.trim() : undefined,
+        verificationToken: token,
       });
 
       navigate('/');

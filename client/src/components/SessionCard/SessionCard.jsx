@@ -97,12 +97,6 @@ export default function SessionCard({ session, currentUser, onVote }) {
           >
             {userVote?.status === 'DECLINE' && '✓ '}Báo vắng
           </button>
-          <button
-            className={`vote-btn vote-maybe ${userVote?.status === 'MAYBE' ? 'active' : ''}`}
-            onClick={() => onVote(session.id, 'MAYBE')}
-          >
-            {userVote?.status === 'MAYBE' && '✓ '}Cân nhắc
-          </button>
         </div>
       )}
 

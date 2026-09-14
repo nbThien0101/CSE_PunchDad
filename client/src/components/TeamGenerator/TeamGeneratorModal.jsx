@@ -5,12 +5,19 @@ import './TeamGeneratorModal.css';
 
 const TIER_WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
 
-export default function TeamGeneratorModal({ session, onClose, onTeamsSaved, autoRebalance = false }) {
+export default function TeamGeneratorModal({
+  session,
+  onClose,
+  onTeamsSaved,
+  autoRebalance = false,
+  useAttendedOnly = false,
+}) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const [onlyAttended, setOnlyAttended] = useState(useAttendedOnly);
   const [suggestions, setSuggestions] = useState(null);
   const [teamCount, setTeamCount] = useState(2);
   const [goalkeeperOverrides, setGoalkeeperOverrides] = useState({});
@@ -30,10 +37,10 @@ export default function TeamGeneratorModal({ session, onClose, onTeamsSaved, aut
         setTeamCount(defaultCount);
 
         if (autoRebalance) {
-          handleRunBalance(defaultCount);
+          handleRunBalance(defaultCount, onlyAttended);
         }
       } catch {
-        if (autoRebalance) handleRunBalance();
+        if (autoRebalance) handleRunBalance(teamCount, onlyAttended);
       }
     };
     init();
@@ -47,7 +54,7 @@ export default function TeamGeneratorModal({ session, onClose, onTeamsSaved, aut
     }));
   };
 
-  const handleRunBalance = async (targetCount = teamCount) => {
+  const handleRunBalance = async (targetCount = teamCount, attendedOnly = onlyAttended) => {
     setLoading(true);
     setError('');
     setSelectedSwapPlayer(null);
@@ -56,6 +63,7 @@ export default function TeamGeneratorModal({ session, onClose, onTeamsSaved, aut
       const res = await sessionsAPI.generateTeams(session.id, {
         teamCount: targetCount,
         goalkeeperOverrides,
+        useAttendedOnly: attendedOnly,
       });
 
       if (res.error) {
@@ -175,10 +183,25 @@ export default function TeamGeneratorModal({ session, onClose, onTeamsSaved, aut
               </div>
             </div>
 
+            <div className="control-group" style={{ display: 'flex', alignItems: 'center' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#334155' }}>
+                <input
+                  type="checkbox"
+                  checked={onlyAttended}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setOnlyAttended(next);
+                    handleRunBalance(teamCount, next);
+                  }}
+                />
+                <span>Chỉ chia người đã điểm danh</span>
+              </label>
+            </div>
+
             <button
               type="button"
               className="btn-run-balance"
-              onClick={() => handleRunBalance(teamCount)}
+              onClick={() => handleRunBalance(teamCount, onlyAttended)}
               disabled={loading || joinVotes.length < 4}
               id="btn-run-balance"
             >

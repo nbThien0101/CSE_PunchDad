@@ -27,10 +27,12 @@
   margin: auto !important;
   position: relative !important;
   z-index: 100000 !important;
+  width: 100% !important;
   max-width: 100% !important;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
+  box-sizing: border-box !important;
 }
 
 /* Complete background scroll lock */

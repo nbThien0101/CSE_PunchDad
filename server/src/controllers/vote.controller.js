@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { calculateMinutesBeforeMatch, checkIsLateDecline } = require('./attendance.controller');
 
 const prisma = new PrismaClient();
 
@@ -8,17 +9,17 @@ const prisma = new PrismaClient();
  */
 const castVote = async (req, res, next) => {
   try {
-    const { sessionId, status } = req.body;
+    const { sessionId, status, reason } = req.body;
 
     if (!sessionId || !status) {
       return res.status(400).json({ error: 'sessionId and status are required' });
     }
 
-    if (!['JOIN', 'DECLINE', 'MAYBE'].includes(status)) {
-      return res.status(400).json({ error: 'Status must be JOIN, DECLINE, or MAYBE' });
+    if (!['JOIN', 'DECLINE'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be JOIN or DECLINE' });
     }
 
-    // Kiểm tra session tồn tại và đang ở trạng thái VOTING
+    // Kiểm tra session tồn tại
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
     });
@@ -27,13 +28,52 @@ const castVote = async (req, res, next) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    if (session.status !== 'VOTING') {
-      return res.status(400).json({ error: 'Session is no longer accepting votes' });
+    // Chỉ cho phép vote khi session đang ở VOTING hoặc CONFIRMED (chưa book / completed / cancelled)
+    if (!['VOTING', 'CONFIRMED'].includes(session.status)) {
+      return res.status(400).json({ error: 'Trận đấu không còn nhận bình chọn' });
+    }
+
+    // Kiểm tra session đã bị Admin chốt danh sách vote chưa
+    if (session.isVoteLocked && status !== 'DECLINE') {
+      return res.status(400).json({
+        error: 'Admin đã chốt danh sách bình chọn. Vui lòng liên hệ Admin nếu muốn tham gia.',
+        isVoteLocked: true,
+      });
     }
 
     // Kiểm tra deadline
-    if (session.voteDeadline && new Date() > session.voteDeadline) {
-      return res.status(400).json({ error: 'Vote deadline has passed' });
+    if (session.voteDeadline && new Date() > session.voteDeadline && status !== 'DECLINE') {
+      return res.status(400).json({ error: 'Đã hết hạn bình chọn' });
+    }
+
+    // Lấy vote cũ nếu có để kiểm tra việc chuyển trạng thái sang DECLINE
+    const existingVote = await prisma.vote.findUnique({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId: req.user.id,
+        },
+      },
+    });
+
+    // Nếu chuyển sang DECLINE (đặc biệt khi trước đó đã vote JOIN hoặc đang sát giờ / đã chốt danh sách)
+    let absenceLog = null;
+    if (status === 'DECLINE') {
+      const minutesBeforeMatch = calculateMinutesBeforeMatch(session, new Date());
+      const isLate = checkIsLateDecline(session, new Date());
+
+      // Ghi log báo vắng nếu trước đó từng vote JOIN hoặc nếu báo vắng sát giờ / sau khi chốt danh sách
+      if (existingVote?.status === 'JOIN' || isLate) {
+        absenceLog = await prisma.absenceLog.create({
+          data: {
+            sessionId,
+            userId: req.user.id,
+            reason: reason || (isLate ? 'Báo vắng sát giờ thi đấu' : 'Báo bận không tham gia được'),
+            isLate,
+            minutesBeforeMatch,
+          },
+        });
+      }
     }
 
     // Upsert vote (tạo mới hoặc cập nhật nếu đã vote)
@@ -47,6 +87,8 @@ const castVote = async (req, res, next) => {
       update: {
         status,
         votedAt: new Date(),
+        // Nếu báo vắng, reset trạng thái điểm danh
+        ...(status === 'DECLINE' ? { isCheckedIn: false, checkedInAt: null } : {}),
       },
       create: {
         sessionId,
@@ -66,7 +108,7 @@ const castVote = async (req, res, next) => {
         where: { sessionId, status: 'JOIN' },
       });
 
-      // Nếu đủ min_players → auto confirm
+      // Nếu đủ min_players và đang VOTING → chuyển status sang CONFIRMED
       if (joinCount >= session.minPlayers && session.status === 'VOTING') {
         await prisma.session.update({
           where: { id: sessionId },
@@ -74,7 +116,7 @@ const castVote = async (req, res, next) => {
         });
 
         return res.json({
-          message: 'Vote recorded! Session has been CONFIRMED - enough players!',
+          message: 'Bình chọn thành công! Trận đấu đã đủ người tối thiểu!',
           vote,
           sessionConfirmed: true,
           joinCount,
@@ -87,11 +129,21 @@ const castVote = async (req, res, next) => {
       where: { sessionId, status: 'JOIN' },
     });
 
+    let message = 'Đã ghi nhận bình chọn của bạn';
+    if (status === 'DECLINE') {
+      if (absenceLog?.isLate) {
+        message = 'Đã ghi nhận báo vắng. Lưu ý: Bạn báo vắng sát giờ thi đấu (dưới 2 tiếng hoặc sau khi chốt danh sách).';
+      } else {
+        message = 'Đã ghi nhận báo vắng thành công.';
+      }
+    }
+
     res.json({
-      message: 'Vote recorded',
+      message,
       vote,
       sessionConfirmed: false,
       joinCount,
+      absenceLog,
     });
   } catch (error) {
     next(error);
@@ -105,10 +157,10 @@ const castVote = async (req, res, next) => {
 const updateVote = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, reason } = req.body;
 
-    if (!['JOIN', 'DECLINE', 'MAYBE'].includes(status)) {
-      return res.status(400).json({ error: 'Status must be JOIN, DECLINE, or MAYBE' });
+    if (!['JOIN', 'DECLINE'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be JOIN or DECLINE' });
     }
 
     // Kiểm tra vote thuộc về user hiện tại
@@ -125,13 +177,44 @@ const updateVote = async (req, res, next) => {
       return res.status(403).json({ error: 'You can only update your own vote' });
     }
 
-    if (existingVote.session.status !== 'VOTING') {
-      return res.status(400).json({ error: 'Session is no longer accepting votes' });
+    const session = existingVote.session;
+
+    if (!['VOTING', 'CONFIRMED'].includes(session.status)) {
+      return res.status(400).json({ error: 'Trận đấu không còn nhận bình chọn' });
+    }
+
+    if (session.isVoteLocked && status !== 'DECLINE') {
+      return res.status(400).json({
+        error: 'Admin đã chốt danh sách bình chọn. Vui lòng liên hệ Admin nếu muốn tham gia.',
+        isVoteLocked: true,
+      });
+    }
+
+    let absenceLog = null;
+    if (status === 'DECLINE') {
+      const minutesBeforeMatch = calculateMinutesBeforeMatch(session, new Date());
+      const isLate = checkIsLateDecline(session, new Date());
+
+      if (existingVote.status === 'JOIN' || isLate) {
+        absenceLog = await prisma.absenceLog.create({
+          data: {
+            sessionId: session.id,
+            userId: req.user.id,
+            reason: reason || (isLate ? 'Báo vắng sát giờ thi đấu' : 'Báo bận không tham gia được'),
+            isLate,
+            minutesBeforeMatch,
+          },
+        });
+      }
     }
 
     const vote = await prisma.vote.update({
       where: { id },
-      data: { status, votedAt: new Date() },
+      data: {
+        status,
+        votedAt: new Date(),
+        ...(status === 'DECLINE' ? { isCheckedIn: false, checkedInAt: null } : {}),
+      },
       include: {
         user: {
           select: { id: true, displayName: true, avatar: true },
@@ -139,7 +222,16 @@ const updateVote = async (req, res, next) => {
       },
     });
 
-    res.json({ message: 'Vote updated', vote });
+    let message = 'Cập nhật bình chọn thành công';
+    if (status === 'DECLINE') {
+      if (absenceLog?.isLate) {
+        message = 'Đã ghi nhận báo vắng. Lưu ý: Bạn báo vắng sát giờ thi đấu (dưới 2 tiếng hoặc sau khi chốt danh sách).';
+      } else {
+        message = 'Đã ghi nhận báo vắng.';
+      }
+    }
+
+    res.json({ message, vote, absenceLog });
   } catch (error) {
     next(error);
   }

@@ -83,11 +83,12 @@ export const authAPI = {
     return res.json();
   },
 
-  sendOTP: async (email) => {
+  sendOTP: async (payload) => {
+    const body = typeof payload === 'string' ? { email: payload } : payload;
     const res = await fetch(`${API_BASE}/auth/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(body),
     });
     return res.json();
   },
@@ -97,6 +98,33 @@ export const authAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp }),
+    });
+    return res.json();
+  },
+
+  forgotPasswordSendOTP: async (emailOrUsername) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailOrUsername }),
+    });
+    return res.json();
+  },
+
+  forgotPasswordVerifyOTP: async (email, otp) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+    return res.json();
+  },
+
+  resetPassword: async (data) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
     return res.json();
   },
@@ -221,6 +249,82 @@ export const paymentsAPI = {
   confirm: async (id) => {
     const res = await fetchWithAuth(`/payments/${id}/confirm`, {
       method: 'PUT',
+    });
+    return res.json();
+  },
+
+  createPayOSLink: async (id) => {
+    const res = await fetchWithAuth(`/payments/${id}/payos-link`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+
+  getPayOSStatus: async (id) => {
+    const res = await fetchWithAuth(`/payments/${id}/payos-status`);
+    return res.json();
+  },
+};
+
+// ==========================================
+// Attendance & Matchday API
+// ==========================================
+export const attendanceAPI = {
+  getDashboard: async (sessionId) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/attendance`);
+    return res.json();
+  },
+
+  toggleLockVote: async (sessionId, isLocked) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/lock-vote`, {
+      method: 'POST',
+      body: JSON.stringify(isLocked !== undefined ? { isLocked } : {}),
+    });
+    return res.json();
+  },
+
+  checkIn: async (sessionId, userId, isCheckedIn, checkInNote) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/attendance`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, isCheckedIn, checkInNote }),
+    });
+    return res.json();
+  },
+
+  bulkCheckIn: async (sessionId, isCheckedIn) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/attendance/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ isCheckedIn }),
+    });
+    return res.json();
+  },
+
+  addGuest: async (sessionId, guestData) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/guests`, {
+      method: 'POST',
+      body: JSON.stringify(guestData),
+    });
+    return res.json();
+  },
+
+  updateGuest: async (sessionId, guestId, guestData) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/guests/${guestId}`, {
+      method: 'PUT',
+      body: JSON.stringify(guestData),
+    });
+    return res.json();
+  },
+
+  deleteGuest: async (sessionId, guestId) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/guests/${guestId}`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
+  recalculatePayments: async (sessionId) => {
+    const res = await fetchWithAuth(`/sessions/${sessionId}/recalculate-payments`, {
+      method: 'POST',
     });
     return res.json();
   },

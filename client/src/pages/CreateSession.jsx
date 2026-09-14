@@ -48,10 +48,12 @@ export default function CreateSession() {
     }
   };
 
-  // Generate tomorrow's date as default min
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  // Generate today's date in local time as minDate (allows creating session for today or future dates)
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const minDate = `${year}-${month}-${day}`;
 
   return (
     <div className="create-session animate-fade-in">

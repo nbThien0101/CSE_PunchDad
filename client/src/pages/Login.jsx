@@ -64,7 +64,12 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="login-password">Mật khẩu</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <label className="form-label" htmlFor="login-password" style={{ margin: 0 }}>Mật khẩu</label>
+              <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--primary-600)', textDecoration: 'none', fontWeight: 600 }}>
+                Quên mật khẩu?
+              </Link>
+            </div>
             <div className="password-input-wrapper">
               <input
                 id="login-password"

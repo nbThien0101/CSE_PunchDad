@@ -36,16 +36,17 @@ const register = async (req, res, next) => {
     }
 
     const { username, password, displayName, phone, email, verificationToken } = req.body;
+    const normalizedEmail = (email || '').trim().toLowerCase();
 
     // Kiểm tra verificationToken
-    if (!verificationToken || !email) {
+    if (!verificationToken || !normalizedEmail) {
       return res.status(400).json({ error: 'Cần xác thực email trước khi đăng ký' });
     }
 
     // Verify token hợp lệ
     const tokenRecord = await prisma.otpVerification.findFirst({
       where: {
-        email,
+        email: normalizedEmail,
         otp: `verified_${verificationToken}`,
         used: false,
         expiresAt: {
@@ -69,11 +70,11 @@ const register = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
-        username,
+        username: username.trim(),
         passwordHash,
-        displayName,
-        phone,
-        email,
+        displayName: displayName.trim(),
+        phone: phone ? phone.trim() : null,
+        email: normalizedEmail,
       },
       select: {
         id: true,

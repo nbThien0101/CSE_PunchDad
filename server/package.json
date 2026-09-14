@@ -1,6 +1,6 @@
 {
   "name": "cse-punchdad-server",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "CSE PunchDad Backend API",
   "main": "src/app.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "test": "echo \"No tests yet\" && exit 0"
   },
   "dependencies": {
+    "@payos/node": "^2.0.5",
     "@prisma/client": "^6.9.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

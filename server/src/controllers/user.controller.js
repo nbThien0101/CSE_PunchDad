@@ -95,7 +95,16 @@ const updateProfile = async (req, res, next) => {
     };
 
     if (phone !== undefined) {
-      updateData.phone = phone?.trim() || null;
+      const cleanPhone = phone?.trim();
+      if (cleanPhone) {
+        const phoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+        if (!phoneRegex.test(cleanPhone.replace(/[\s.-]/g, ''))) {
+          return res.status(400).json({ error: 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (VD: 0901234567)' });
+        }
+        updateData.phone = cleanPhone.replace(/[\s.-]/g, '');
+      } else {
+        updateData.phone = null;
+      }
     }
 
     if (bankInfo !== undefined) {
