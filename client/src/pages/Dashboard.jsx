@@ -19,6 +19,9 @@ export default function Dashboard() {
   const fetchSessions = async () => {
     try {
       const data = await sessionsAPI.getAll();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
       setSessions(data.sessions || []);
     } catch (err) {
       setError('Không thể tải danh sách sessions');
