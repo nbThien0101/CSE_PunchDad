@@ -156,7 +156,7 @@ const updateSession = async (req, res, next) => {
     const allowedFields = [
       'title', 'playDate', 'startTime', 'endTime',
       'location', 'minPlayers', 'maxPlayers', 'totalCost',
-      'payerId', 'status', 'voteDeadline',
+      'payerId', 'status', 'voteDeadline', 'splitCount',
     ];
 
     for (const field of allowedFields) {
@@ -169,6 +169,8 @@ const updateSession = async (req, res, next) => {
           updateData[field] = parseInt(req.body[field]);
         } else if (field === 'totalCost') {
           updateData[field] = req.body[field] !== null && req.body[field] !== '' ? parseFloat(req.body[field]) : null;
+        } else if (field === 'splitCount') {
+          updateData[field] = req.body[field] !== null && req.body[field] !== '' ? parseInt(req.body[field]) : null;
         } else {
           updateData[field] = req.body[field];
         }
@@ -194,7 +196,7 @@ const updateSession = async (req, res, next) => {
         where: { sessionId: id, status: 'JOIN' },
       });
 
-      const amountPerPerson = parseFloat(updateData.totalCost) / joinedVotes.length;
+      const amountPerPerson = parseFloat(updateData.totalCost) / (updateData.splitCount || joinedVotes.length);
 
       // Tạo payment cho mỗi người tham gia (trừ người thanh toán)
       const paymentData = joinedVotes
@@ -274,8 +276,12 @@ const getTeamSuggestions = async (req, res, next) => {
     const joinCount = await prisma.vote.count({
       where: { sessionId: id, status: 'JOIN' },
     });
-    const suggestions = getSuggestedTeamCounts(joinCount);
-    res.json({ totalJoin: joinCount, suggestions });
+    const guestCount = await prisma.guestPlayer.count({
+      where: { sessionId: id, status: 'PLAYING' },
+    });
+    const totalPlayers = joinCount + guestCount;
+    const suggestions = getSuggestedTeamCounts(totalPlayers);
+    res.json({ totalJoin: totalPlayers, memberCount: joinCount, guestCount, suggestions });
   } catch (error) {
     next(error);
   }

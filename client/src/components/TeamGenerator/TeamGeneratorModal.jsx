@@ -202,7 +202,7 @@ export default function TeamGeneratorModal({
               type="button"
               className="btn-run-balance"
               onClick={() => handleRunBalance(teamCount, onlyAttended)}
-              disabled={loading || joinVotes.length < 4}
+              disabled={loading || (joinVotes.length + (onlyAttended ? (session.guests || []).filter(g => g.isCheckedIn).length : (session.guests || []).filter(g => g.status === 'PLAYING').length)) < 4}
               id="btn-run-balance"
             >
               {loading ? (
@@ -226,7 +226,11 @@ export default function TeamGeneratorModal({
           <div className="voters-preview-section">
             <div className="voters-preview-header">
               <span className="voters-preview-title">
-                Thành viên tham gia ({joinVotes.length})
+                Thành viên tham gia ({joinVotes.length + (
+                  onlyAttended
+                    ? (session.guests || []).filter(g => g.isCheckedIn).length
+                    : (session.guests || []).filter(g => g.status === 'PLAYING').length
+                )})
               </span>
               <span className="voters-preview-hint">
                 Nhấn <strong>[GK]</strong> để chỉ định vị trí Thủ môn cho thành viên
@@ -262,6 +266,41 @@ export default function TeamGeneratorModal({
                   </div>
                 );
               })}
+
+              {/* Khách mời */}
+              {(session.guests || [])
+                .filter(g => onlyAttended ? g.isCheckedIn : g.status === 'PLAYING')
+                .map((g, i) => {
+                  const guestId = g.id;
+                  const isGK = goalkeeperOverrides[guestId] !== undefined
+                    ? goalkeeperOverrides[guestId]
+                    : Boolean(g.isGoalkeeper);
+
+                  return (
+                    <div key={guestId} className="voter-chip" style={{ borderColor: '#fdba74', background: '#fff7ed' }}>
+                      <span className="voter-chip-order" style={{ background: '#ea580c' }}>#{joinVotes.length + i + 1}</span>
+                      <span style={{ fontWeight: 600 }}>{g.name}</span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#ea580c', background: '#ffedd5', padding: '1px 5px', borderRadius: '4px' }}>
+                        Khách
+                      </span>
+                      {g.tier ? (
+                        <span className={`badge member-tier-badge tier-${g.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                          {g.tier}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>-</span>
+                      )}
+                      <button
+                        type="button"
+                        className={`voter-chip-gk-toggle ${isGK ? 'active' : ''}`}
+                        onClick={() => handleToggleGK(guestId, g.isGoalkeeper)}
+                        title={isGK ? 'Đã chọn làm Thủ môn' : 'Đặt làm Thủ môn'}
+                      >
+                        GK
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 

@@ -89,6 +89,7 @@ model Session {
   minPlayers Int           @map("min_players")
   maxPlayers Int           @map("max_players")
   totalCost  Decimal?      @map("total_cost") @db.Decimal(10, 2)
+  splitCount Int?          @map("split_count")
   status     SessionStatus @default(VOTING)
   teams      Json?         @map("teams")
 
@@ -162,6 +163,7 @@ model GuestPlayer {
   isCheckedIn  Boolean   @default(false) @map("is_checked_in")
   checkedInAt  DateTime? @map("checked_in_at")
   note         String?   @db.Text
+  isPaid       Boolean   @default(false) @map("is_paid")
   addedAt      DateTime  @default(now()) @map("added_at")
 
   // Relations

@@ -370,6 +370,10 @@ const updateGuest = async (req, res, next) => {
       data.checkedInAt = Boolean(isCheckedIn) ? (existingGuest.checkedInAt || new Date()) : null;
     }
 
+    if (req.body.isPaid !== undefined) {
+      data.isPaid = Boolean(req.body.isPaid);
+    }
+
     const updatedGuest = await prisma.guestPlayer.update({
       where: { id: guestId },
       data,

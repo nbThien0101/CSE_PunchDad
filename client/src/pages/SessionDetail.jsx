@@ -44,6 +44,7 @@ export default function SessionDetail() {
   const [bookForm, setBookForm] = useState({
     totalCost: '',
     payerId: '',
+    splitCount: '',
   });
 
   // Admin edit session state
@@ -167,11 +168,15 @@ export default function SessionDetail() {
     }
     setActionLoading('book');
     try {
-      await sessionsAPI.update(id, {
+      const payload = {
         status: 'BOOKED',
         totalCost: parseFloat(bookForm.totalCost),
         payerId: bookForm.payerId,
-      });
+      };
+      if (bookForm.splitCount) {
+        payload.splitCount = parseInt(bookForm.splitCount);
+      }
+      await sessionsAPI.update(id, payload);
       setSuccess('Đặt sân thành công!');
       await fetchData();
     } catch {
@@ -202,6 +207,19 @@ export default function SessionDetail() {
       await fetchData();
     } catch {
       setError('Xác nhận thất bại');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleGuestPaymentToggle = async (guestId, isPaid) => {
+    setActionLoading(`guest-${guestId}`);
+    try {
+      await attendanceAPI.updateGuest(id, guestId, { isPaid });
+      setSuccess(isPaid ? 'Đã đánh dấu khách mời đã thanh toán' : 'Đã bỏ đánh dấu thanh toán khách mời');
+      await fetchData();
+    } catch {
+      setError('Cập nhật trạng thái thanh toán khách mời thất bại');
     } finally {
       setActionLoading('');
     }
@@ -343,102 +361,94 @@ export default function SessionDetail() {
         Quay lại
       </button>
 
-      {/* Header */}
-      <div className="detail-header">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-            <span className={`badge ${config.className}`}>
-              <span className="badge-dot"></span>
-              {config.label}
+      {/* Status + Title */}
+      <div style={{ margin: 'var(--space-6) 0 var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <span className={`badge ${config.className}`} style={{ whiteSpace: 'nowrap' }}>
+            <span className="badge-dot"></span>
+            {config.label}
+          </span>
+          {session.isVoteLocked && (
+            <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>
+              🔒 Đã chốt danh sách
             </span>
-            {session.isVoteLocked && (
-              <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
-                🔒 Đã chốt danh sách
-              </span>
-            )}
-          </div>
-          <h1 className="detail-title">{session.title}</h1>
-          <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
+          )}
         </div>
-        <div className="detail-header-actions">
-          {isAdmin && (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => setShowAttendanceModal(true)}
-              id="btn-open-attendance-modal"
-              style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669', color: '#ffffff' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
-                <path d="M9 11l3 3L22 4"></path>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-              </svg>
-              Điểm danh sân
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              className={`btn btn-outline btn-sm ${session.isVoteLocked ? 'btn-danger' : ''}`}
-              onClick={handleToggleLockVote}
-              disabled={actionLoading === 'toggleLock'}
-              id="btn-header-toggle-lock"
-              title={session.isVoteLocked ? 'Mở lại bình chọn cho mọi người' : 'Chốt danh sách, không cho vote thêm'}
-            >
-              {session.isVoteLocked ? '🔓 Mở lại vote' : '🔒 Chốt danh sách'}
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => {
-                setAutoRebalance(Boolean(session.teams));
-                setShowTeamGenModal(true);
-              }}
-              id="btn-open-team-gen-header"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
-                <polyline points="16 3 21 3 21 8"></polyline>
-                <line x1="4" y1="20" x2="21" y2="3"></line>
-                <polyline points="21 16 21 21 16 21"></polyline>
-                <line x1="15" y1="15" x2="21" y2="21"></line>
-                <line x1="4" y1="4" x2="9" y2="9"></line>
-              </svg>
-              {session.teams ? 'Chia lại đội' : 'Chia đội'}
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={handleOpenEdit}
-              id="btn-edit-session"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              Chỉnh sửa
-            </button>
-          )}
-          {isAdmin && !['COMPLETED', 'CANCELLED'].includes(session.status) && (
+        <h1 className="detail-title" style={{ marginTop: 0 }}>{session.title}</h1>
+        <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
+      </div>
+
+      {/* Admin Actions */}
+      {isAdmin && (
+        <div className="detail-header-actions" style={{ marginBottom: 'var(--space-6)' }}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowAttendanceModal(true)}
+            id="btn-open-attendance-modal"
+            style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderColor: '#059669', color: '#ffffff' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            Điểm danh sân
+          </button>
+          <button
+            className={`btn btn-outline btn-sm ${session.isVoteLocked ? 'btn-danger' : ''}`}
+            onClick={handleToggleLockVote}
+            disabled={actionLoading === 'toggleLock'}
+            id="btn-header-toggle-lock"
+            title={session.isVoteLocked ? 'Mở lại bình chọn cho mọi người' : 'Chốt danh sách, không cho vote thêm'}
+          >
+            {session.isVoteLocked ? '🔓 Mở lại vote' : '🔒 Chốt danh sách'}
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              setAutoRebalance(Boolean(session.teams));
+              setShowTeamGenModal(true);
+            }}
+            id="btn-open-team-gen-header"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+            {session.teams ? 'Chia lại đội' : 'Chia đội'}
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={handleOpenEdit}
+            id="btn-edit-session"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Chỉnh sửa
+          </button>
+          {!['COMPLETED', 'CANCELLED'].includes(session.status) && (
             <button className="btn btn-danger btn-sm" onClick={handleCancel} disabled={actionLoading === 'cancel'} id="btn-cancel-session">
               {actionLoading === 'cancel' ? 'Đang hủy...' : 'Hủy trận đấu'}
             </button>
           )}
-          {isAdmin && (
-            <button
-              className="btn btn-danger-solid btn-sm"
-              onClick={handleForceDelete}
-              disabled={actionLoading === 'forceDelete'}
-              id="btn-force-delete-session"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              {actionLoading === 'forceDelete' ? 'Đang xóa...' : 'Xóa trận đấu'}
-            </button>
-          )}
+          <button
+            className="btn btn-danger-solid btn-sm"
+            onClick={handleForceDelete}
+            disabled={actionLoading === 'forceDelete'}
+            id="btn-force-delete-session"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            {actionLoading === 'forceDelete' ? 'Đang xóa...' : 'Xóa trận đấu'}
+          </button>
         </div>
-      </div>
+      )}
 
       {/* Alerts */}
       {error && (
@@ -823,11 +833,26 @@ export default function SessionDetail() {
                 onChange={(e) => setBookForm(prev => ({ ...prev, totalCost: e.target.value }))}
                 required
               />
-              {bookForm.totalCost && joinedVotes.length > 0 && (
-                <span className="form-hint">
-                  ≈ {Math.round(parseFloat(bookForm.totalCost) / joinedVotes.length).toLocaleString('vi-VN')}đ / người
-                </span>
-              )}
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="split-count">Số người chia tiền (bao gồm khách mời)</label>
+              <input
+                id="split-count"
+                type="number"
+                className="form-input"
+                min="1"
+                placeholder={`Mặc định: ${joinedVotes.length + (session.guests?.filter(g => g.status === 'PLAYING').length || 0)} người`}
+                value={bookForm.splitCount}
+                onChange={(e) => setBookForm(prev => ({ ...prev, splitCount: e.target.value }))}
+              />
+              <span className="form-hint">
+                Thành viên: {joinedVotes.length} · Khách mời (đá chính): {session.guests?.filter(g => g.status === 'PLAYING').length || 0}
+                {bookForm.totalCost && (
+                  <strong style={{ display: 'block', marginTop: '4px', color: '#059669' }}>
+                    ≈ {Math.round(parseFloat(bookForm.totalCost) / (parseInt(bookForm.splitCount) || joinedVotes.length + (session.guests?.filter(g => g.status === 'PLAYING').length || 0))).toLocaleString('vi-VN')}đ / người
+                  </strong>
+                )}
+              </span>
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="payer-select">Người thanh toán trước</label>
@@ -894,7 +919,7 @@ export default function SessionDetail() {
               <div className="payer-total">
                 Tổng cộng: <strong>{Number(session.totalCost).toLocaleString('vi-VN')}đ</strong>
                 <span className="cost-per-person">
-                  ({Math.round(Number(session.totalCost) / (joinedVotes.length || 1)).toLocaleString('vi-VN')}đ/người)
+                  ({Math.round(Number(session.totalCost) / (session.splitCount || joinedVotes.length || 1)).toLocaleString('vi-VN')}đ/người · {session.splitCount || joinedVotes.length} người)
                 </span>
               </div>
 
@@ -1019,6 +1044,62 @@ export default function SessionDetail() {
               </div>
             ))}
           </div>
+
+          {/* Guest Payment Section */}
+          {session.guests?.length > 0 && (
+            <div className="guest-payment-section">
+              <h3 className="guest-payment-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: '-2px' }}>
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Thanh toán khách mời ({session.guests.length})
+              </h3>
+              <p className="guest-payment-note">Admin tự liên hệ khách mời để thu tiền và đánh dấu bên dưới</p>
+              <div className="payment-list">
+                {session.guests.map(g => {
+                  const guestAmount = session.totalCost
+                    ? Math.round(Number(session.totalCost) / (session.splitCount || joinedVotes.length || 1))
+                    : 0;
+                  return (
+                    <div key={g.id} className={`payment-item payment-guest ${g.isPaid ? 'guest-paid' : 'guest-pending'}`}>
+                      <div className="payment-user">
+                        <span className="payment-avatar guest-avatar">
+                          {g.name?.[0]?.toUpperCase()}
+                        </span>
+                        <div>
+                          <span className="payment-name">{g.name} <span className="guest-tag">Khách mời</span></span>
+                          <span className="payment-amount">{guestAmount.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                      </div>
+                      <div className="payment-actions">
+                        <span className={`badge ${g.isPaid ? 'badge-confirmed' : 'badge-pending'}`}>
+                          <span className="badge-dot"></span>
+                          {g.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        </span>
+                        {isAdmin && (
+                          <label className="guest-payment-checkbox" title={g.isPaid ? 'Bỏ đánh dấu đã thanh toán' : 'Đánh dấu đã thanh toán'}>
+                            <input
+                              type="checkbox"
+                              checked={g.isPaid}
+                              disabled={actionLoading === `guest-${g.id}`}
+                              onChange={(e) => handleGuestPaymentToggle(g.id, e.target.checked)}
+                              id={`guest-paid-${g.id}`}
+                            />
+                            <span className="guest-checkbox-label">
+                              {actionLoading === `guest-${g.id}` ? '...' : (g.isPaid ? 'Đã thu' : 'Đánh dấu đã thu')}
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
