@@ -1018,24 +1018,13 @@ export default function SessionDetail() {
                     </button>
                   )}
 
-                  {/* User can mark their own payment as paid (thủ công) */}
-                  {p.status === 'PENDING' && p.user?.id === user?.id && (
+                  {/* Payer or admin can confirm */}
+                  {p.status !== 'CONFIRMED' && (isPayer || isAdmin) && (
                     <button
                       className="btn btn-outline btn-sm"
-                      onClick={() => handleMarkPaid(p.id)}
-                      disabled={actionLoading === p.id}
-                      title="Đánh dấu đã chuyển tiền nếu chuyển ngoài"
-                    >
-                      {actionLoading === p.id ? '...' : 'Đã chuyển tiền'}
-                    </button>
-                  )}
-
-                  {/* Payer or admin can confirm */}
-                  {p.status === 'PAID' && (isPayer || isAdmin) && (
-                    <button
-                      className="btn btn-primary btn-sm"
                       onClick={() => handleConfirmPayment(p.id)}
                       disabled={actionLoading === p.id}
+                      title="Xác nhận thành viên đã thanh toán"
                     >
                       {actionLoading === p.id ? '...' : 'Xác nhận đã nhận'}
                     </button>
