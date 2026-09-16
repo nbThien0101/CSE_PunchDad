@@ -196,7 +196,7 @@ const updateSession = async (req, res, next) => {
         where: { sessionId: id, status: 'JOIN' },
       });
 
-      const amountPerPerson = parseFloat(updateData.totalCost) / (updateData.splitCount || joinedVotes.length);
+      const amountPerPerson = Math.round(parseFloat(updateData.totalCost) / (updateData.splitCount || joinedVotes.length));
 
       // Tạo payment cho mỗi người tham gia (trừ người thanh toán)
       const paymentData = joinedVotes

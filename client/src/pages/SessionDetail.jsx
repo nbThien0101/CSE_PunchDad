@@ -995,7 +995,7 @@ export default function SessionDetail() {
                   </span>
                   <div>
                     <span className="payment-name">{p.user?.displayName}</span>
-                    <span className="payment-amount">{Number(p.amount).toLocaleString('vi-VN')}đ</span>
+                    <span className="payment-amount">{Math.round(Number(p.amount)).toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
                 <div className="payment-actions">

@@ -31,9 +31,17 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
     try {
       const res = await paymentsAPI.createPayOSLink(payment.id);
 
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
       if (res.status === 'CONFIRMED') {
         handlePaidSuccess();
         return;
+      }
+
+      if (!res?.accountNumber) {
+        throw new Error('Chưa nhận được thông tin tài khoản ngân hàng từ PayOS. Vui lòng kiểm tra lại cấu hình PayOS API Keys trên Render.');
       }
 
       setPayData(res);
@@ -42,7 +50,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
       startPolling(payment.id);
     } catch (err) {
       console.error('Init PayOS Error:', err);
-      setError(err?.message || 'Không thể tạo link thanh toán PayOS');
+      setError(err?.message || 'Không thể tạo link thanh toán PayOS. Vui lòng kiểm tra cấu hình PayOS trên server.');
     } finally {
       setLoading(false);
     }
@@ -99,11 +107,16 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
   // Tạo URL ảnh VietQR chuẩn
   const getVietQRImageUrl = () => {
     if (!payData) return '';
+    if (payData.qrCode && (payData.qrCode.startsWith('data:image') || payData.qrCode.startsWith('http'))) {
+      return payData.qrCode;
+    }
     const bin = payData.bin || '970422'; // Default MBBank
     const acc = payData.accountNumber || '';
-    const amt = payData.amount || Number(payment.amount);
+    const amt = Math.round(Number(payData.amount || payment.amount));
     const desc = payData.description || `CSE ${payment.id.slice(0, 6)}`;
     const name = payData.accountName || '';
+
+    if (!acc) return '';
 
     return `https://api.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${encodeURIComponent(desc)}&accountName=${encodeURIComponent(name)}`;
   };
@@ -157,7 +170,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
               <div className="payos-amount-card">
                 <span className="payos-amount-label">Số tiền cần chuyển:</span>
                 <span className="payos-amount-value">
-                  {Number(payData?.amount || payment.amount).toLocaleString('vi-VN')}đ
+                  {Math.round(Number(payData?.amount || payment.amount)).toLocaleString('vi-VN')}đ
                 </span>
               </div>
 

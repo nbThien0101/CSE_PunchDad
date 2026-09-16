@@ -267,7 +267,7 @@ const createPayOSLink = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Create PayOS Link error:', error);
-    next(error);
+    res.status(400).json({ error: error.message || 'Không thể tạo link thanh toán PayOS' });
   }
 };
 
