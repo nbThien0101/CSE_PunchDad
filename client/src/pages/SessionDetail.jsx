@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sessionsAPI, votesAPI, paymentsAPI, usersAPI, attendanceAPI } from '../services/api';
 import TeamGeneratorModal from '../components/TeamGenerator/TeamGeneratorModal';
@@ -106,6 +106,11 @@ export default function SessionDetail() {
   };
 
   const handleVote = async (status) => {
+    if (status === 'JOIN' && session?.unpaidPreviousPayment) {
+      setError(session.unpaidPreviousPayment.errorMessage || 'Bạn chưa thanh toán tiền sân ở trận đấu trước. Vui lòng hoàn tất thanh toán trước khi bình chọn tham gia.');
+      return;
+    }
+
     if (status === 'DECLINE') {
       const matchDate = new Date(session.playDate);
       const [h, m] = (session.startTime || '00:00').split(':').map(Number);
@@ -544,6 +549,37 @@ export default function SessionDetail() {
             )}
           </div>
 
+          {session.unpaidPreviousPayment && (
+            <div
+              className="alert alert-danger"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                marginBottom: '16px',
+                borderLeft: '4px solid #ef4444',
+              }}
+            >
+              <div>
+                <strong>⚠️ Bạn chưa thanh toán tiền sân ở trận đấu trước!</strong>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>
+                  {session.unpaidPreviousPayment.errorMessage || 'Vui lòng hoàn tất thanh toán trước khi bình chọn tham gia.'}
+                </p>
+              </div>
+              {session.unpaidPreviousPayment.sessionId && (
+                <Link
+                  to={`/sessions/${session.unpaidPreviousPayment.sessionId}`}
+                  className="btn btn-warning btn-sm"
+                  style={{ textDecoration: 'none', fontWeight: 600 }}
+                >
+                  💳 Xem & Thanh toán ngay ↗
+                </Link>
+              )}
+            </div>
+          )}
+
           {session.isVoteLocked ? (
             <div className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -565,28 +601,34 @@ export default function SessionDetail() {
               {[
                 { id: 'JOIN', label: 'Tham gia', btnClass: 'btn-success' },
                 { id: 'DECLINE', label: 'Báo vắng', btnClass: 'btn-danger' },
-              ].map(item => (
-                <button
-                  key={item.id}
-                  className={`btn ${item.btnClass} ${userVote?.status === item.id ? '' : 'btn-outline'}`}
-                  onClick={() => handleVote(item.id)}
-                  disabled={actionLoading === 'vote'}
-                >
-                  {item.id === 'JOIN' && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  )}
-                  {item.id === 'DECLINE' && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  )}
-                  {item.label}
-                  {userVote?.status === item.id && ' (Đã chọn)'}
-                </button>
-              ))}
+              ].map(item => {
+                const isJoinBlockedByUnpaid = item.id === 'JOIN' && Boolean(session.unpaidPreviousPayment);
+                return (
+                  <button
+                    key={item.id}
+                    className={`btn ${item.btnClass} ${userVote?.status === item.id ? '' : 'btn-outline'}`}
+                    onClick={() => handleVote(item.id)}
+                    disabled={actionLoading === 'vote'}
+                    title={isJoinBlockedByUnpaid ? session.unpaidPreviousPayment.errorMessage : ''}
+                    style={isJoinBlockedByUnpaid ? { opacity: 0.65 } : {}}
+                  >
+                    {item.id === 'JOIN' && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    )}
+                    {item.id === 'DECLINE' && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    )}
+                    {item.label}
+                    {isJoinBlockedByUnpaid && ' (Chưa nộp tiền)'}
+                    {userVote?.status === item.id && !isJoinBlockedByUnpaid && ' (Đã chọn)'}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

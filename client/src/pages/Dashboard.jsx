@@ -32,10 +32,15 @@ export default function Dashboard() {
 
   const handleVote = async (sessionId, status) => {
     try {
-      await votesAPI.cast({ sessionId, status });
+      const res = await votesAPI.cast({ sessionId, status });
+      if (res?.error) {
+        setError(res.error);
+        return;
+      }
+      setError('');
       await fetchSessions();
     } catch (err) {
-      setError('Vote thất bại');
+      setError(err?.message || 'Vote thất bại');
     }
   };
 

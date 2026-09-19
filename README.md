@@ -26,8 +26,16 @@
 - **Cập nhật Ảnh đại diện (Avatar)**: Tải lên và xem trước ảnh đại diện cá nhân, lưu trữ đồng bộ trong cơ sở dữ liệu.
 - **Mã VietQR thanh toán**: Tải lên hình ảnh mã QR ngân hàng cá nhân, hiển thị trực quan cho các thành viên khác quét chuyển khoản khi phân chia tiền sân.
 
-### 3. Quy trình Bình chọn Tinh gọn (Streamlined Voting)
-- **Quyết định dứt khoát 2 trạng thái**: Rút gọn các tùy chọn bình chọn chỉ còn **Tham gia (`JOIN`)** hoặc **Báo vắng (`LEAVE`)**, loại bỏ hoàn toàn trạng thái lấp lửng "Cân nhắc" (`MAYBE`).
+### 3. Quy trình Bình chọn Tinh gọn & Chặn Vote Khi Chưa Thanh Toán (Debt-Gated Voting)
+- **Quyết định dứt khoát 2 trạng thái**: Rút gọn các tùy chọn bình chọn chỉ còn **Tham gia (`JOIN`)** hoặc **Báo vắng (`DECLINE`)**, loại bỏ hoàn toàn trạng thái lấp lửng "Cân nhắc" (`MAYBE`).
+- **Cơ chế Chặn Bình chọn khi Nợ Tiền Sân (Debt Prevention Policy)**:
+  - **Tự động quét lịch sử nợ**: Khi thành viên bấm bình chọn, hệ thống tự động rà soát các khoản tiền sân chưa được xác nhận hoàn tất (`status !== 'CONFIRMED'`) từ tất cả các trận đấu trước đó (`playDate <= playDate hiện tại`, không tính các trận đã HỦY).
+  - **Chặn quyền Tham gia (`JOIN`)**: Nếu phát hiện thành viên còn nợ tiền sân ở bất kỳ trận đấu trước nào, API sẽ từ chối với mã lỗi HTTP `400 Bad Request`, đồng thời thông báo rõ ràng tên trận đấu nợ, ngày thi đấu và số tiền nợ cụ thể (hoặc tổng nợ nếu nợ nhiều trận).
+  - **Bảo lưu quyền Báo vắng (`DECLINE`)**: Thành viên vẫn được toàn quyền gửi "Báo vắng" khi bận đột xuất để Ban Quản trị nắm chắc quân số mà không bị cưỡng chế thanh toán trước.
+  - **Cảnh báo Trực quan & Thanh toán Nhanh 1-Click**:
+    - Giao diện chi tiết trận đấu hiển thị Banner cảnh báo viền đỏ nổi bật, giải thích lý do bị chặn bình chọn kèm nút bấm `💳 Xem & Thanh toán ngay ↗` điều hướng ngay đến trận đấu nợ.
+    - Nút "Tham gia" tự động đổi sang trạng thái `(Chưa nộp tiền)` với độ mờ cảnh báo trực quan.
+    - Khi bấm vote từ danh sách trận đấu trên Dashboard, lỗi nợ tiền được hiển thị tức thì trên thanh thông báo đầu trang.
 - **Đồng bộ quân số chuẩn xác**: Ban Quản trị và các thành viên nắm bắt chính xác 100% quân số thực tế tham gia ngay trên tiêu đề trận đấu, tối ưu hóa công tác đặt sân và phân bổ đội hình.
 
 ### 4. Quản lý Thành viên & Chỉ định Thủ môn (Goalkeeper Management)
@@ -214,7 +222,7 @@ Hệ thống sẽ khởi chạy đồng thời:
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/sessions` | `authenticate` | Lấy danh sách trận đấu (hỗ trợ bộ lọc tab) |
-| `GET` | `/api/sessions/:id` | `authenticate` | Lấy thông tin chi tiết trận đấu, danh sách vote và đội hình |
+| `GET` | `/api/sessions/:id` | `authenticate` | Lấy chi tiết trận đấu, danh sách vote, đội hình và thông tin nợ tiền sân (`unpaidPreviousPayment`) |
 | `POST` | `/api/sessions` | `requireAdmin`, Validate | Tạo mới trận đấu (Admin) |
 | `PUT` | `/api/sessions/:id` | `requireAdmin` | Chỉnh sửa toàn diện thông tin trận đấu (Admin) |
 | `DELETE` | `/api/sessions/:id` | `requireAdmin` | Hủy hoặc xóa trận đấu (Admin) |
@@ -226,7 +234,9 @@ Hệ thống sẽ khởi chạy đồng thời:
 ### Bình chọn (`/api/votes`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/votes` | `authenticate` | Bình chọn trạng thái tham gia trận đấu (`JOIN`, `LEAVE`) |
+| `POST` | `/api/votes` | `authenticate` | Bình chọn tham gia (`JOIN`, `DECLINE`), tự động chặn `JOIN` nếu chưa thanh toán tiền sân trận trước |
+| `PUT` | `/api/votes/:id` | `authenticate` | Cập nhật bình chọn (áp dụng chặn `JOIN` nếu chưa thanh toán tiền sân trận trước) |
+| `GET` | `/api/votes/session/:sessionId` | `authenticate` | Lấy danh sách lượt vote và thống kê tổng số lượng người tham gia |
 
 ### Quản lý Chi phí & Thanh toán (`/api/payments`)
 | Phương thức | Endpoint | Middleware | Mô tả |
@@ -270,9 +280,11 @@ Hệ thống sẽ khởi chạy đồng thời:
   - Admin có toàn quyền gán hoặc hủy vai trò Thủ môn (`isGoalkeeper`) của bất kỳ thành viên nào trực tiếp trên trang Thành viên (`/members`) và modal Điểm danh trận đấu (`AttendanceDashboardModal`).
   - Hiển thị huy hiệu nhận diện `🧤 Thủ môn` nổi bật trên thẻ thành viên.
   - Bổ sung bộ lọc thành viên theo vai trò (*Tất cả*, *Thủ môn*, *Cầu thủ*) cùng thống kê trực quan số lượng thủ môn hiện có của CLB.
-- **Quy trình Bình chọn Tinh gọn (Loại bỏ tùy chọn "Cân nhắc")**:
+- **Quy trình Bình chọn Tinh gọn & Chặn Vote Khi Chưa Thanh Toán**:
   - Loại bỏ hoàn toàn trạng thái lấp lửng `MAYBE` khỏi luồng bình chọn, giao diện và cơ sở dữ liệu.
-  - Giữ lại 2 quyết định dứt khoát: **Tham gia** (`JOIN`) hoặc **Báo vắng** (`LEAVE`), giúp danh sách thi đấu minh bạch và chính xác.
+  - Giữ lại 2 quyết định dứt khoát: **Tham gia** (`JOIN`) hoặc **Báo vắng** (`DECLINE`).
+  - **Cơ chế Chặn Bình chọn khi Nợ Tiền Sân (Debt-Gated Voting)**: Tự động phát hiện các khoản nợ tiền sân chưa xác nhận (`status !== 'CONFIRMED'`) từ các trận trước. Chặn quyền bình chọn Tham gia (`JOIN`) và báo lỗi chi tiết số tiền nợ/trận nợ; đồng thời vẫn bảo lưu quyền Báo vắng (`DECLINE`) để nắm bắt quân số.
+  - Hiển thị Banner cảnh báo nổi bật kèm nút `💳 Xem & Thanh toán ngay ↗` chuyển hướng nhanh đến giao diện quét mã VietQR PayOS để thanh toán gạch nợ tức thì.
   - Đồng bộ chuẩn xác số lượng người tham gia thực tế hiển thị trên tiêu đề và chi tiết trận đấu.
 - **Tích hợp Cổng Thanh toán Thông minh PayOS**:
   - Tích hợp PayOS SDK tạo mã VietQR thanh toán động cho từng thành viên và từng trận đấu với số tiền chính xác.

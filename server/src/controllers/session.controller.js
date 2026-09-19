@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
 const { balanceTeams, getSuggestedTeamCounts } = require('../services/team-balancer.service');
+const { checkUnpaidPreviousPayment } = require('./vote.controller');
 
 const prisma = new PrismaClient();
 
@@ -96,7 +97,13 @@ const getSession = async (req, res, next) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    res.json({ session });
+    // Kiểm tra xem user hiện tại có nợ tiền sân ở trận đấu trước không
+    let unpaidPreviousPayment = null;
+    if (req.user?.id) {
+      unpaidPreviousPayment = await checkUnpaidPreviousPayment(req.user.id, session);
+    }
+
+    res.json({ session: { ...session, unpaidPreviousPayment } });
   } catch (error) {
     next(error);
   }

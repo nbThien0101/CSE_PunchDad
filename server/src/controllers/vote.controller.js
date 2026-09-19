@@ -4,6 +4,81 @@ const { calculateMinutesBeforeMatch, checkIsLateDecline } = require('./attendanc
 const prisma = new PrismaClient();
 
 /**
+ * Kiểm tra xem user có khoản thanh toán nào chưa hoàn tất ở các trận đấu trước không.
+ * @param {string} userId - ID của user cần kiểm tra
+ * @param {object} session - Session hiện tại đang được vote/xem (cần id, playDate)
+ * @param {object} [dbClient] - Prisma client (tùy chọn)
+ * @returns {Promise<object|null>} Trả về thông tin khoản nợ hoặc null nếu không nợ
+ */
+const checkUnpaidPreviousPayment = async (userId, session, dbClient = prisma) => {
+  if (!userId || !session) return null;
+
+  const unpaidPayments = await dbClient.payment.findMany({
+    where: {
+      userId,
+      status: { not: 'CONFIRMED' },
+      session: {
+        id: { not: session.id },
+        status: { not: 'CANCELLED' },
+        playDate: { lte: session.playDate },
+      },
+    },
+    include: {
+      session: {
+        select: {
+          id: true,
+          title: true,
+          playDate: true,
+          startTime: true,
+          location: true,
+        },
+      },
+    },
+    orderBy: [
+      { session: { playDate: 'desc' } },
+      { session: { createdAt: 'desc' } },
+    ],
+  });
+
+  if (!unpaidPayments || unpaidPayments.length === 0) {
+    return null;
+  }
+
+  const latestUnpaid = unpaidPayments[0];
+  const totalDebt = unpaidPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const formatDateStr = (dateVal) => {
+    if (!dateVal) return '';
+    const d = new Date(dateVal);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+  };
+
+  const formattedDate = formatDateStr(latestUnpaid.session.playDate);
+  const formattedAmount = Math.round(Number(latestUnpaid.amount)).toLocaleString('vi-VN');
+
+  let errorMessage = '';
+  if (unpaidPayments.length === 1) {
+    errorMessage = `Bạn chưa thanh toán tiền sân ở trận đấu trước (${latestUnpaid.session.title} ngày ${formattedDate}: ${formattedAmount}đ). Vui lòng hoàn tất thanh toán trước khi bình chọn tham gia.`;
+  } else {
+    errorMessage = `Bạn còn ${unpaidPayments.length} trận đấu trước chưa thanh toán tiền sân (gần nhất: ${latestUnpaid.session.title}, tổng nợ: ${Math.round(totalDebt).toLocaleString('vi-VN')}đ). Vui lòng hoàn tất thanh toán trước khi bình chọn tham gia.`;
+  }
+
+  return {
+    hasUnpaid: true,
+    count: unpaidPayments.length,
+    totalDebt,
+    latestPaymentId: latestUnpaid.id,
+    sessionId: latestUnpaid.session.id,
+    sessionTitle: latestUnpaid.session.title,
+    playDate: latestUnpaid.session.playDate,
+    amount: Number(latestUnpaid.amount),
+    errorMessage,
+  };
+};
+
+/**
  * POST /api/votes
  * User vote cho một session
  */
@@ -44,6 +119,17 @@ const castVote = async (req, res, next) => {
     // Kiểm tra deadline
     if (session.voteDeadline && new Date() > session.voteDeadline && status !== 'DECLINE') {
       return res.status(400).json({ error: 'Đã hết hạn bình chọn' });
+    }
+
+    // Kiểm tra chưa thanh toán trận đấu trước
+    if (status !== 'DECLINE') {
+      const unpaidCheck = await checkUnpaidPreviousPayment(req.user.id, session);
+      if (unpaidCheck) {
+        return res.status(400).json({
+          error: unpaidCheck.errorMessage,
+          unpaidPayment: unpaidCheck,
+        });
+      }
     }
 
     // Lấy vote cũ nếu có để kiểm tra việc chuyển trạng thái sang DECLINE
@@ -190,6 +276,22 @@ const updateVote = async (req, res, next) => {
       });
     }
 
+    // Kiểm tra deadline
+    if (session.voteDeadline && new Date() > session.voteDeadline && status !== 'DECLINE') {
+      return res.status(400).json({ error: 'Đã hết hạn bình chọn' });
+    }
+
+    // Kiểm tra chưa thanh toán trận đấu trước
+    if (status !== 'DECLINE') {
+      const unpaidCheck = await checkUnpaidPreviousPayment(req.user.id, session);
+      if (unpaidCheck) {
+        return res.status(400).json({
+          error: unpaidCheck.errorMessage,
+          unpaidPayment: unpaidCheck,
+        });
+      }
+    }
+
     let absenceLog = null;
     if (status === 'DECLINE') {
       const minutesBeforeMatch = calculateMinutesBeforeMatch(session, new Date());
@@ -268,4 +370,4 @@ const getSessionVotes = async (req, res, next) => {
   }
 };
 
-module.exports = { castVote, updateVote, getSessionVotes };
+module.exports = { castVote, updateVote, getSessionVotes, checkUnpaidPreviousPayment };
