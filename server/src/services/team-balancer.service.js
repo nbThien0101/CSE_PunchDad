@@ -15,14 +15,14 @@ const TIER_WEIGHTS = {
 const DEFAULT_TIER_WEIGHT = 2; // Unranked / null
 
 const TEAM_CONFIGS = [
-  { name: 'Team Xanh Dương', color: '#2563eb', bg: '#eff6ff' },
-  { name: 'Team Cam', color: '#ea580c', bg: '#fff7ed' },
-  { name: 'Team Xanh Lá', color: '#16a34a', bg: '#f0fdf4' },
-  { name: 'Team Đỏ', color: '#dc2626', bg: '#fef2f2' },
-  { name: 'Team Tím', color: '#9333ea', bg: '#faf5ff' },
-  { name: 'Team Vàng', color: '#ca8a04', bg: '#fefce8' },
-  { name: 'Team Xám', color: '#475569', bg: '#f8fafc' },
-  { name: 'Team Hồng', color: '#db2777', bg: '#fdf2f8' },
+  { name: 'Team 1', color: '#2563eb', bg: '#eff6ff' },
+  { name: 'Team 2', color: '#ea580c', bg: '#fff7ed' },
+  { name: 'Team 3', color: '#16a34a', bg: '#f0fdf4' },
+  { name: 'Team 4', color: '#dc2626', bg: '#fef2f2' },
+  { name: 'Team 5', color: '#9333ea', bg: '#faf5ff' },
+  { name: 'Team 6', color: '#ca8a04', bg: '#fefce8' },
+  { name: 'Team 7', color: '#475569', bg: '#f8fafc' },
+  { name: 'Team 8', color: '#db2777', bg: '#fdf2f8' },
 ];
 
 /**
@@ -200,7 +200,7 @@ function balanceTeams(voters, options = {}) {
     const cfg = TEAM_CONFIGS[i % TEAM_CONFIGS.length];
     teams.push({
       id: `team-${i + 1}`,
-      name: cfg.name,
+      name: `Team ${i + 1}`,
       color: cfg.color,
       bg: cfg.bg,
       goalkeeper: null,
