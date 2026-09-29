@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { attendanceAPI, usersAPI } from '../../services/api';
 import Modal from '../Modal/Modal';
+import AdminAdjustVoteModal from '../Vote/AdminAdjustVoteModal';
 import './AttendanceDashboardModal.css';
 
 export default function AttendanceDashboardModal({
@@ -15,7 +16,9 @@ export default function AttendanceDashboardModal({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('roster'); // 'roster' | 'guests' | 'warnings'
-  const [rosterFilter, setRosterFilter] = useState('ALL'); // 'ALL' | 'ATTENDED' | 'UNATTENDED'
+  const [rosterFilter, setRosterFilter] = useState('ALL'); // 'ALL' | 'ATTENDED' | 'UNATTENDED' | 'DECLINED'
+  const [showAdminVoteModal, setShowAdminVoteModal] = useState(false);
+  const [adminVoteTargetUserId, setAdminVoteTargetUserId] = useState('');
 
   // Guest Form State
   const [guestForm, setGuestForm] = useState({
@@ -229,12 +232,13 @@ export default function AttendanceDashboardModal({
   const summary = data?.summary || {};
   const isLocked = Boolean(data?.session?.isVoteLocked);
 
-  // Lọc danh sách vote JOIN theo bộ lọc
+  // Lọc danh sách vote theo bộ lọc
   const filteredJoined = (data?.joined || []).filter((v) => {
     if (rosterFilter === 'ATTENDED') return v.isCheckedIn;
     if (rosterFilter === 'UNATTENDED') return !v.isCheckedIn;
     return true;
   });
+  const displayRoster = rosterFilter === 'DECLINED' ? (data?.declined || []) : filteredJoined;
 
   const lateWarnings = data?.warnings?.lateCancellations || [];
   const noShowWarnings = data?.warnings?.noShows || [];
@@ -387,9 +391,29 @@ export default function AttendanceDashboardModal({
                     >
                       Chưa đến ({summary.unattendedMembersCount || 0})
                     </button>
+                    {data?.declined?.length > 0 && (
+                      <button
+                        className={`roster-filter-btn ${rosterFilter === 'DECLINED' ? 'active' : ''}`}
+                        onClick={() => setRosterFilter('DECLINED')}
+                        style={rosterFilter === 'DECLINED' ? { borderColor: '#ef4444', color: '#b91c1c' } : { color: '#ef4444' }}
+                      >
+                        Báo vắng ({data?.declined?.length || 0})
+                      </button>
+                    )}
                   </div>
 
                   <div className="roster-bulk-actions">
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setAdminVoteTargetUserId('');
+                        setShowAdminVoteModal(true);
+                      }}
+                      id="btn-attendance-adjust-vote"
+                      title="Admin điều chỉnh hoặc đăng ký vote cho bất kỳ thành viên nào"
+                    >
+                      ⚙️ Điều chỉnh vote
+                    </button>
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleBulkCheckIn(true)}
@@ -410,10 +434,10 @@ export default function AttendanceDashboardModal({
                 </div>
 
                 <div className="roster-grid">
-                  {filteredJoined.map((vote) => (
+                  {displayRoster.map((vote) => (
                     <div
                       key={vote.id}
-                      className={`roster-card ${vote.isCheckedIn ? 'is-checked-in' : ''}`}
+                      className={`roster-card ${vote.isCheckedIn ? 'is-checked-in' : ''} ${vote.status === 'DECLINE' ? 'is-declined' : ''}`}
                     >
                       <div className="roster-card-left">
                         <div className="roster-avatar">
@@ -424,7 +448,17 @@ export default function AttendanceDashboardModal({
                           )}
                         </div>
                         <div className="roster-player-meta">
-                          <span className="roster-player-name">{vote.user?.displayName}</span>
+                          <span
+                            className="roster-player-name"
+                            style={{ cursor: 'pointer' }}
+                            title="Bấm để điều chỉnh vote của thành viên này"
+                            onClick={() => {
+                              setAdminVoteTargetUserId(vote.userId);
+                              setShowAdminVoteModal(true);
+                            }}
+                          >
+                            {vote.user?.displayName} <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>✎</span>
+                          </span>
                           <div className="roster-tags">
                             {vote.user?.tier && (
                               <span className={`badge member-tier-badge tier-${vote.user.tier.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
@@ -461,17 +495,30 @@ export default function AttendanceDashboardModal({
                         </div>
                       </div>
 
-                      <button
-                        className={`btn-checkin-toggle ${vote.isCheckedIn ? 'active' : 'inactive'}`}
-                        onClick={() => handleCheckIn(vote.userId, vote.isCheckedIn)}
-                        disabled={actionLoading === `checkin-${vote.userId}`}
-                        id={`btn-checkin-${vote.userId}`}
-                      >
-                        {vote.isCheckedIn ? '✓ Đã đến' : 'Điểm danh'}
-                      </button>
+                      {vote.status === 'DECLINE' ? (
+                        <button
+                          className="btn btn-outline btn-sm"
+                          style={{ borderColor: '#10b981', color: '#047857', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                          onClick={() => {
+                            setAdminVoteTargetUserId(vote.userId);
+                            setShowAdminVoteModal(true);
+                          }}
+                        >
+                          Đổi sang Tham gia
+                        </button>
+                      ) : (
+                        <button
+                          className={`btn-checkin-toggle ${vote.isCheckedIn ? 'active' : 'inactive'}`}
+                          onClick={() => handleCheckIn(vote.userId, vote.isCheckedIn)}
+                          disabled={actionLoading === `checkin-${vote.userId}`}
+                          id={`btn-checkin-${vote.userId}`}
+                        >
+                          {vote.isCheckedIn ? '✓ Đã đến' : 'Điểm danh'}
+                        </button>
+                      )}
                     </div>
                   ))}
-                  {filteredJoined.length === 0 && (
+                  {displayRoster.length === 0 && (
                     <p style={{ color: '#64748b', fontSize: '0.9rem', gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0' }}>
                       Không có thành viên nào thỏa điều kiện lọc
                     </p>
@@ -774,6 +821,23 @@ export default function AttendanceDashboardModal({
         </div>
       </div>
       </div>
+
+      {showAdminVoteModal && (
+        <AdminAdjustVoteModal
+          isOpen={showAdminVoteModal}
+          onClose={() => {
+            setShowAdminVoteModal(false);
+            setAdminVoteTargetUserId('');
+          }}
+          session={session}
+          preselectedUserId={adminVoteTargetUserId}
+          onSuccess={async (msg) => {
+            notifySuccess(msg);
+            await fetchDashboard();
+            if (onSessionUpdated) onSessionUpdated();
+          }}
+        />
+      )}
     </Modal>
   );
 }

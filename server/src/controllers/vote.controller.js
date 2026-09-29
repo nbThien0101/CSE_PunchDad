@@ -370,4 +370,177 @@ const getSessionVotes = async (req, res, next) => {
   }
 };
 
-module.exports = { castVote, updateVote, getSessionVotes, checkUnpaidPreviousPayment };
+/**
+ * POST /api/votes/admin/adjust
+ * Admin điều chỉnh trạng thái bình chọn của bất kỳ user nào trong session
+ */
+const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
+  try {
+    const { sessionId, userId, status, reason } = req.body;
+
+    if (!sessionId || !userId || !status) {
+      return res.status(400).json({ error: 'sessionId, userId và status là bắt buộc' });
+    }
+
+    const normalizedStatus = status.toUpperCase();
+    const validStatuses = ['JOIN', 'DECLINE', 'MAYBE', 'NONE', 'DELETE'];
+    if (!validStatuses.includes(normalizedStatus)) {
+      return res.status(400).json({ error: 'Status không hợp lệ (hỗ trợ JOIN, DECLINE, MAYBE, NONE)' });
+    }
+
+    // Kiểm tra session tồn tại
+    const session = await dbClient.session.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Không tìm thấy trận đấu' });
+    }
+
+    if (session.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Không thể điều chỉnh bình chọn cho trận đấu đã hủy' });
+    }
+
+    // Kiểm tra user tồn tại
+    const targetUser = await dbClient.user.findUnique({
+      where: { id: userId },
+      select: { id: true, displayName: true, avatar: true },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    // Tìm vote hiện tại nếu có
+    const existingVote = await dbClient.vote.findUnique({
+      where: {
+        sessionId_userId: { sessionId, userId },
+      },
+    });
+
+    // 1. Trường hợp xóa bình chọn (NONE hoặc DELETE)
+    if (normalizedStatus === 'NONE' || normalizedStatus === 'DELETE') {
+      if (existingVote) {
+        await dbClient.vote.delete({
+          where: { id: existingVote.id },
+        });
+      }
+
+      const joinCount = await dbClient.vote.count({
+        where: { sessionId, status: 'JOIN' },
+      });
+
+      return res.json({
+        message: `Đã hủy lượt bình chọn của ${targetUser.displayName}`,
+        vote: null,
+        deleted: true,
+        joinCount,
+      });
+    }
+
+    // 2. Trường hợp Báo vắng (DECLINE)
+    if (normalizedStatus === 'DECLINE') {
+      const minutesBeforeMatch = calculateMinutesBeforeMatch(session, new Date());
+      const isLate = checkIsLateDecline(session, new Date());
+
+      let absenceLog = null;
+      if (existingVote?.status === 'JOIN' || isLate) {
+        absenceLog = await dbClient.absenceLog.create({
+          data: {
+            sessionId,
+            userId,
+            reason: reason || (isLate ? 'Admin điều chỉnh: Báo vắng sát giờ thi đấu' : 'Admin điều chỉnh: Báo bận không tham gia'),
+            isLate,
+            minutesBeforeMatch,
+          },
+        });
+      }
+
+      const vote = await dbClient.vote.upsert({
+        where: {
+          sessionId_userId: { sessionId, userId },
+        },
+        update: {
+          status: 'DECLINE',
+          votedAt: new Date(),
+          isCheckedIn: false,
+          checkedInAt: null,
+        },
+        create: {
+          sessionId,
+          userId,
+          status: 'DECLINE',
+        },
+        include: {
+          user: {
+            select: { id: true, displayName: true, avatar: true },
+          },
+        },
+      });
+
+      const joinCount = await dbClient.vote.count({
+        where: { sessionId, status: 'JOIN' },
+      });
+
+      return res.json({
+        message: `Đã chuyển trạng thái của ${targetUser.displayName} sang Báo vắng`,
+        vote,
+        sessionConfirmed: false,
+        joinCount,
+        absenceLog,
+      });
+    }
+
+    // 3. Trường hợp Tham gia (JOIN) hoặc MAYBE
+    const vote = await dbClient.vote.upsert({
+      where: {
+        sessionId_userId: { sessionId, userId },
+      },
+      update: {
+        status: normalizedStatus,
+        votedAt: new Date(),
+      },
+      create: {
+        sessionId,
+        userId,
+        status: normalizedStatus,
+      },
+      include: {
+        user: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+      },
+    });
+
+    const joinCount = await dbClient.vote.count({
+      where: { sessionId, status: 'JOIN' },
+    });
+
+    let sessionConfirmed = false;
+    if (normalizedStatus === 'JOIN' && joinCount >= session.minPlayers && session.status === 'VOTING') {
+      await dbClient.session.update({
+        where: { id: sessionId },
+        data: { status: 'CONFIRMED' },
+      });
+      sessionConfirmed = true;
+    }
+
+    return res.json({
+      message: `Đã chuyển trạng thái của ${targetUser.displayName} sang ${normalizedStatus === 'JOIN' ? 'Tham gia' : 'Có thể tham gia'}`,
+      vote,
+      sessionConfirmed,
+      joinCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  castVote,
+  updateVote,
+  getSessionVotes,
+  checkUnpaidPreviousPayment,
+  adminAdjustVote,
+};
+

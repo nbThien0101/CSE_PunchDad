@@ -228,6 +228,14 @@ export const votesAPI = {
     const res = await fetchWithAuth(`/votes/session/${sessionId}`);
     return res.json();
   },
+
+  adminAdjust: async ({ sessionId, userId, status, reason }) => {
+    const res = await fetchWithAuth('/votes/admin/adjust', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, userId, status, reason }),
+    });
+    return res.json();
+  },
 };
 
 // ==========================================

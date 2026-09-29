@@ -86,6 +86,7 @@ model Session {
   startTime  String        @map("start_time")
   endTime    String        @map("end_time")
   location   String
+  googleMapsUrl String?    @map("google_maps_url")
   minPlayers Int           @map("min_players")
   maxPlayers Int           @map("max_players")
   totalCost  Decimal?      @map("total_cost") @db.Decimal(10, 2)

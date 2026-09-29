@@ -11,6 +11,7 @@ export default function CreateSession() {
     startTime: '17:00',
     endTime: '19:00',
     location: '',
+    googleMapsUrl: '',
     minPlayers: 6,
     maxPlayers: 14,
     voteDeadline: '',
@@ -34,6 +35,7 @@ export default function CreateSession() {
         minPlayers: parseInt(form.minPlayers),
         maxPlayers: parseInt(form.maxPlayers),
         voteDeadline: form.voteDeadline || undefined,
+        googleMapsUrl: form.googleMapsUrl.trim() || undefined,
       };
       const result = await sessionsAPI.create(data);
       if (result.error || result.errors) {
@@ -149,6 +151,22 @@ export default function CreateSession() {
             onChange={handleChange}
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="google-maps-url">
+            Link Google Maps <span className="text-muted">(tùy chọn)</span>
+          </label>
+          <input
+            id="google-maps-url"
+            name="googleMapsUrl"
+            type="url"
+            className="form-input"
+            placeholder="https://maps.app.goo.gl/..."
+            value={form.googleMapsUrl}
+            onChange={handleChange}
+          />
+          <span className="form-hint">Dán link chia sẻ từ Google Maps để mở đúng vị trí sân.</span>
         </div>
 
         <div className="form-row">

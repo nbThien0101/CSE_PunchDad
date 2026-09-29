@@ -5,6 +5,24 @@ const { checkUnpaidPreviousPayment } = require('./vote.controller');
 
 const prisma = new PrismaClient();
 
+const isGoogleMapsUrl = (value) => {
+  if (!value) return true;
+
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+    const isGoogleHost = hostname === 'google.com' || hostname.endsWith('.google.com');
+    const isShortMapsUrl = hostname === 'maps.app.goo.gl'
+      || (hostname === 'goo.gl' && url.pathname.startsWith('/maps'));
+    const isGoogleMapsPath = url.pathname.startsWith('/maps') || hostname === 'maps.google.com';
+
+    return url.protocol === 'https:'
+      && (isShortMapsUrl || (isGoogleHost && isGoogleMapsPath));
+  } catch {
+    return false;
+  }
+};
+
 /**
  * GET /api/sessions
  * Lấy danh sách tất cả sessions
@@ -122,8 +140,12 @@ const createSession = async (req, res, next) => {
 
     const {
       title, playDate, startTime, endTime,
-      location, minPlayers, maxPlayers, voteDeadline,
+      location, googleMapsUrl, minPlayers, maxPlayers, voteDeadline,
     } = req.body;
+
+    if (!isGoogleMapsUrl(googleMapsUrl)) {
+      return res.status(400).json({ error: 'Vui lòng nhập link Google Maps hợp lệ' });
+    }
 
     const session = await prisma.session.create({
       data: {
@@ -132,6 +154,7 @@ const createSession = async (req, res, next) => {
         startTime,
         endTime,
         location,
+        googleMapsUrl: googleMapsUrl || null,
         minPlayers: parseInt(minPlayers),
         maxPlayers: parseInt(maxPlayers),
         voteDeadline: voteDeadline ? new Date(voteDeadline) : null,
@@ -162,7 +185,7 @@ const updateSession = async (req, res, next) => {
     // Chỉ cho phép update các field hợp lệ
     const allowedFields = [
       'title', 'playDate', 'startTime', 'endTime',
-      'location', 'minPlayers', 'maxPlayers', 'totalCost',
+      'location', 'googleMapsUrl', 'minPlayers', 'maxPlayers', 'totalCost',
       'payerId', 'status', 'voteDeadline', 'splitCount',
     ];
 
@@ -182,6 +205,10 @@ const updateSession = async (req, res, next) => {
           updateData[field] = req.body[field];
         }
       }
+    }
+
+    if (!isGoogleMapsUrl(updateData.googleMapsUrl)) {
+      return res.status(400).json({ error: 'Vui lòng nhập link Google Maps hợp lệ' });
     }
 
     const session = await prisma.session.update({

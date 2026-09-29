@@ -58,6 +58,11 @@ const createSessionValidation = [
     .trim()
     .notEmpty()
     .withMessage('Location is required'),
+  body('googleMapsUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL({ protocols: ['https'], require_protocol: true })
+    .withMessage('Google Maps URL không hợp lệ'),
   body('minPlayers')
     .isInt({ min: 2, max: 30 })
     .withMessage('Min players must be between 2 and 30'),

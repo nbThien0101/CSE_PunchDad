@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { sessionsAPI, votesAPI, paymentsAPI, usersAPI, attendanceAPI } from '../services/api';
 import TeamGeneratorModal from '../components/TeamGenerator/TeamGeneratorModal';
 import AttendanceDashboardModal from '../components/Attendance/AttendanceDashboardModal';
+import AdminAdjustVoteModal from '../components/Vote/AdminAdjustVoteModal';
 import PayOSModal from '../components/Payment/PayOSModal';
 import Modal from '../components/Modal/Modal';
+import { getGoogleMapsLinks } from '../utils/googleMaps';
 import './SessionDetail.css';
 
 const STATUS_CONFIG = {
@@ -32,6 +34,8 @@ export default function SessionDetail() {
 
   // Attendance & Matchday states
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showAdminVoteModal, setShowAdminVoteModal] = useState(false);
+  const [adminVoteTargetUserId, setAdminVoteTargetUserId] = useState('');
   const [useAttendedOnlyForGen, setUseAttendedOnlyForGen] = useState(false);
   const [declineModal, setDeclineModal] = useState({
     isOpen: false,
@@ -58,6 +62,7 @@ export default function SessionDetail() {
     startTime: '',
     endTime: '',
     location: '',
+    googleMapsUrl: '',
     minPlayers: 6,
     maxPlayers: 14,
     status: 'VOTING',
@@ -289,6 +294,7 @@ export default function SessionDetail() {
       startTime: session.startTime || '17:00',
       endTime: session.endTime || '19:00',
       location: session.location || '',
+      googleMapsUrl: session.googleMapsUrl || '',
       minPlayers: session.minPlayers ?? 6,
       maxPlayers: session.maxPlayers ?? 14,
       status: session.status || 'VOTING',
@@ -310,6 +316,7 @@ export default function SessionDetail() {
         startTime: editForm.startTime,
         endTime: editForm.endTime,
         location: editForm.location.trim(),
+        googleMapsUrl: editForm.googleMapsUrl.trim() || null,
         minPlayers: parseInt(editForm.minPlayers, 10),
         maxPlayers: parseInt(editForm.maxPlayers, 10),
         status: editForm.status,
@@ -335,6 +342,8 @@ export default function SessionDetail() {
       setEditLoading(false);
     }
   };
+
+  const mapLinks = getGoogleMapsLinks(session?.location, session?.googleMapsUrl);
 
   if (loading) {
     return <div className="loading-screen"><div className="spinner"></div><p>Đang tải...</p></div>;
@@ -532,6 +541,39 @@ export default function SessionDetail() {
           </div>
         </div>
       </div>
+
+      {mapLinks.embedUrl && (
+        <section className="venue-map" aria-labelledby="venue-map-title">
+          <div className="venue-map-header">
+            <div>
+              <span className="venue-map-eyebrow">Địa điểm thi đấu</span>
+              <h2 id="venue-map-title" className="venue-map-title">{session.location}</h2>
+            </div>
+            <a
+              className="btn btn-outline btn-sm venue-map-link"
+              href={mapLinks.directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mở trên Google Maps
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 3h7v7"></path>
+                <path d="M10 14 21 3"></path>
+                <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+              </svg>
+            </a>
+          </div>
+          <div className="venue-map-frame">
+            <iframe
+              title={`Bản đồ ${session.location}`}
+              src={mapLinks.embedUrl}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </section>
+      )}
 
       {/* Vote Section */}
       {['VOTING', 'CONFIRMED'].includes(session.status) && (
@@ -780,18 +822,37 @@ export default function SessionDetail() {
 
       {/* Votes List */}
       <div className="detail-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>
             Danh sách đăng ký ({joinedVotes.length + (session.guests?.length || 0)})
           </h2>
-          {isAdmin && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => setShowAttendanceModal(true)}
-            >
-              📋 Quản lý điểm danh
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {isAdmin && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  setAdminVoteTargetUserId('');
+                  setShowAdminVoteModal(true);
+                }}
+                id="btn-admin-adjust-vote-header"
+                title="Admin điều chỉnh hoặc đăng ký vote cho bất kỳ thành viên nào"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Điều chỉnh vote
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setShowAttendanceModal(true)}
+              >
+                📋 Quản lý điểm danh
+              </button>
+            )}
+          </div>
         </div>
         <div className="votes-table">
           {joinedVotes.length > 0 && (
@@ -808,12 +869,17 @@ export default function SessionDetail() {
                 {joinedVotes.map(v => (
                   <span
                     key={v.id}
-                    className="vote-chip vote-chip-join"
+                    className={`vote-chip vote-chip-join ${isAdmin ? 'vote-chip-admin-editable' : ''}`}
                     style={v.isCheckedIn ? { borderLeft: '3px solid #16a34a', background: '#f0fdf4' } : {}}
-                    title={v.isCheckedIn ? 'Đã điểm danh có mặt tại sân' : 'Chưa điểm danh'}
+                    title={isAdmin ? `Admin: Bấm để điều chỉnh vote của ${v.user?.displayName}` : (v.isCheckedIn ? 'Đã điểm danh có mặt tại sân' : 'Chưa điểm danh')}
+                    onClick={isAdmin ? () => {
+                      setAdminVoteTargetUserId(v.user?.id || v.userId);
+                      setShowAdminVoteModal(true);
+                    } : undefined}
                   >
                     {v.user?.displayName}
                     {v.isCheckedIn && <span style={{ color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>✓</span>}
+                    {isAdmin && <span className="chip-admin-edit-icon" title="Điều chỉnh vote">✎</span>}
                   </span>
                 ))}
               </div>
@@ -848,7 +914,18 @@ export default function SessionDetail() {
               <h3 className="vote-group-title">Báo vắng ({declinedVotes.length})</h3>
               <div className="vote-list">
                 {declinedVotes.map(v => (
-                  <span key={v.id} className="vote-chip vote-chip-decline">{v.user?.displayName}</span>
+                  <span
+                    key={v.id}
+                    className={`vote-chip vote-chip-decline ${isAdmin ? 'vote-chip-admin-editable' : ''}`}
+                    title={isAdmin ? `Admin: Bấm để điều chỉnh vote của ${v.user?.displayName}` : ''}
+                    onClick={isAdmin ? () => {
+                      setAdminVoteTargetUserId(v.user?.id || v.userId);
+                      setShowAdminVoteModal(true);
+                    } : undefined}
+                  >
+                    {v.user?.displayName}
+                    {isAdmin && <span className="chip-admin-edit-icon" title="Điều chỉnh vote">✎</span>}
+                  </span>
                 ))}
               </div>
             </div>
@@ -1241,6 +1318,21 @@ export default function SessionDetail() {
                     required
                   />
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="edit-googleMapsUrl">
+                    Link Google Maps <span className="text-muted">(tùy chọn)</span>
+                  </label>
+                  <input
+                    id="edit-googleMapsUrl"
+                    type="url"
+                    className="form-input"
+                    placeholder="https://maps.app.goo.gl/..."
+                    value={editForm.googleMapsUrl}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, googleMapsUrl: e.target.value }))}
+                  />
+                  <span className="form-hint">Dán link chia sẻ từ Google Maps để mở đúng vị trí sân.</span>
+                </div>
               </div>
 
               {/* Section 3: Quy mô & Chi phí */}
@@ -1415,6 +1507,24 @@ export default function SessionDetail() {
           onSuccess={() => {
             setPayOSPayment(null);
             fetchData();
+          }}
+        />
+      )}
+
+      {/* ====== Admin Adjust Vote Modal ====== */}
+      {showAdminVoteModal && (
+        <AdminAdjustVoteModal
+          isOpen={showAdminVoteModal}
+          onClose={() => {
+            setShowAdminVoteModal(false);
+            setAdminVoteTargetUserId('');
+          }}
+          session={session}
+          preselectedUserId={adminVoteTargetUserId}
+          onSuccess={async (msg) => {
+            setSuccess(msg);
+            await fetchData();
+            setTimeout(() => setSuccess(''), 3500);
           }}
         />
       )}

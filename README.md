@@ -12,6 +12,7 @@
 
 ### 1. Quản lý Trận đấu (Session Management)
 - **Thiết lập trận đấu linh hoạt**: Admin tạo trận đấu với đầy đủ thông tin: Ngày chơi, khung giờ thi đấu, địa điểm sân, số người tối thiểu/tối đa, tổng tiền sân dự kiến và hạn chót bình chọn.
+- **Tích hợp Google Maps cho địa điểm sân**: Admin có thể lưu link chia sẻ Google Maps khi tạo hoặc chỉnh sửa trận đấu. Trang chi tiết nhúng bản đồ trực tiếp và cung cấp nút **Mở trên Google Maps**; các trận cũ chưa có link vẫn tự động tìm bản đồ theo tên địa điểm.
 - **Chỉnh sửa toàn diện (Admin Edit Modal)**: Cập nhật mọi thông số của trận đấu bất kỳ lúc nào qua modal giao diện SaaS chuẩn, bảo mật quyền quản trị viên.
 - **Quản lý trạng thái tự động**: Các mốc trạng thái chuẩn xác: *Đang bình chọn* $\rightarrow$ *Đủ người chơi* $\rightarrow$ *Đã đặt sân* $\rightarrow$ *Đã hoàn thành* hoặc *Đã hủy trận*.
 
@@ -191,6 +192,11 @@ Hệ thống sẽ khởi chạy đồng thời:
 - **Frontend**: `http://localhost:5173`
 - **Backend API**: `http://localhost:5001` (Health check: `http://localhost:5001/api/health`)
 
+### 5. Sử dụng Google Maps cho địa điểm sân
+- Khi tạo hoặc chỉnh sửa trận đấu, dán link chia sẻ Google Maps vào trường **Link Google Maps**. Hỗ trợ cả link đầy đủ và link rút gọn dạng `https://maps.app.goo.gl/...`.
+- Trường này không bắt buộc. Nếu để trống, hệ thống dùng nội dung **Địa điểm sân** để tìm và nhúng bản đồ.
+- Khi cập nhật phiên bản có tính năng này trên môi trường đã tồn tại, cần chạy `npx prisma migrate deploy` để thêm cột `google_maps_url` vào bảng `sessions`.
+
 ---
 
 ## Tài khoản Mặc định
@@ -270,6 +276,11 @@ Hệ thống sẽ khởi chạy đồng thời:
 ## Lịch sử Phiên bản (Changelog)
 
 ### `v1.2.2` (Phiên bản hiện tại)
+- **Tích hợp Google Maps cho Địa điểm Sân**:
+  - Thêm trường `googleMapsUrl` tùy chọn khi tạo và chỉnh sửa trận đấu.
+  - Nhúng bản đồ trực tiếp trên trang chi tiết trận đấu và bổ sung nút mở vị trí trong Google Maps.
+  - Hỗ trợ link chia sẻ ngắn, link chứa tọa độ và cơ chế dự phòng tìm kiếm bằng tên địa điểm.
+  - Thêm migration `google_maps_url` cho bảng `sessions` mà không ảnh hưởng dữ liệu trận đấu hiện có.
 - **Khôi phục Mật khẩu Bảo mật qua OTP Email (Forgot Password Flow)**:
   - Cho phép người dùng tìm lại tài khoản qua Email hoặc Tên đăng nhập (Username).
   - Gửi mã OTP xác thực 6 chữ số (thời hạn 5 phút) qua Brevo API / Gmail fallback với template HTML phong cách câu lạc bộ chuyên nghiệp.
