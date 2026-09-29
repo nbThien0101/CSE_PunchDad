@@ -100,20 +100,6 @@ export default function SessionCard({ session, currentUser, onVote }) {
         </div>
       )}
 
-      {/* Total cost if booked */}
-      {session.totalCost && session.status !== 'CANCELLED' && (
-        <div className="session-cost">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px', verticalAlign: '-2px' }}>
-            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-            <line x1="2" y1="10" x2="22" y2="10"></line>
-          </svg>
-          {Number(session.totalCost).toLocaleString('vi-VN')}đ
-          <span className="cost-per-person">
-            (~{Math.round(Number(session.totalCost) / (joinCount || 1)).toLocaleString('vi-VN')}đ/người)
-          </span>
-        </div>
-      )}
-
       <Link to={`/sessions/${session.id}`} className="session-card-link">
         Xem chi tiết →
       </Link>
