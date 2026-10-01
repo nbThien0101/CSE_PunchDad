@@ -54,10 +54,27 @@ const createSessionValidation = [
   body('endTime')
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
     .withMessage('End time must be in HH:mm format'),
+  body('timeSlots')
+    .optional()
+    .isArray({ min: 1, max: 20 })
+    .withMessage('Time slots must contain between 1 and 20 options'),
+  body('timeSlots.*.startTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('Time slot start time must be in HH:mm format'),
+  body('timeSlots.*.endTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('Time slot end time must be in HH:mm format'),
   body('location')
     .trim()
     .notEmpty()
     .withMessage('Location is required'),
+  body('googleMapsUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL({ protocols: ['https'], require_protocol: true })
+    .withMessage('Google Maps URL không hợp lệ'),
   body('minPlayers')
     .isInt({ min: 2, max: 30 })
     .withMessage('Min players must be between 2 and 30'),

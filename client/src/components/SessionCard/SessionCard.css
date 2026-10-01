@@ -57,6 +57,27 @@
   flex-shrink: 0;
 }
 
+.session-cancellation-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--danger-500);
+  border-radius: var(--radius-sm);
+  background: var(--danger-50);
+  color: #b91c1c;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.session-cancellation-note-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Progress Bar */
 .progress-section {
   display: flex;
@@ -103,6 +124,8 @@
   transition: all var(--duration-fast) var(--ease-out);
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
+  text-align: center;
 }
 
 .vote-btn:hover {

@@ -67,6 +67,13 @@ export default function SessionCard({ session, currentUser, onVote }) {
         </div>
       </div>
 
+      {session.status === 'CANCELLED' && session.cancellationNote && (
+        <div className="session-cancellation-note">
+          <span className="session-cancellation-note-label">Lý do hủy</span>
+          <span>{session.cancellationNote}</span>
+        </div>
+      )}
+
       {/* Progress bar */}
       {session.status === 'VOTING' && (
         <div className="progress-section">
@@ -85,12 +92,21 @@ export default function SessionCard({ session, currentUser, onVote }) {
       {/* Vote buttons */}
       {session.status === 'VOTING' && (
         <div className="session-card-actions">
-          <button
-            className={`vote-btn vote-join ${userVote?.status === 'JOIN' ? 'active' : ''}`}
-            onClick={() => onVote(session.id, 'JOIN')}
-          >
-            {userVote?.status === 'JOIN' && '✓ '}Tham gia
-          </button>
+          {session.timeSlots?.length > 1 ? (
+            <Link
+              className={`vote-btn vote-join ${userVote?.status === 'JOIN' ? 'active' : ''}`}
+              to={`/sessions/${session.id}`}
+            >
+              {userVote?.status === 'JOIN' ? '✓ Sửa khung giờ' : 'Chọn khung giờ'}
+            </Link>
+          ) : (
+            <button
+              className={`vote-btn vote-join ${userVote?.status === 'JOIN' ? 'active' : ''}`}
+              onClick={() => onVote(session.id, 'JOIN')}
+            >
+              {userVote?.status === 'JOIN' && '✓ '}Tham gia
+            </button>
+          )}
           <button
             className={`vote-btn vote-decline ${userVote?.status === 'DECLINE' ? 'active' : ''}`}
             onClick={() => onVote(session.id, 'DECLINE')}

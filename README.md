@@ -1,17 +1,26 @@
 # CSE PunchDad · Sports Club Management Platform
 
-![Version](https://img.shields.io/badge/version-v1.2.2-blue.svg?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.2.3-blue.svg?style=flat-square)
 ![Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)
 
-> **Phiên bản hiện tại: `v1.2.2`** — Nền tảng quản lý câu lạc bộ thể thao toàn diện: Lịch thi đấu, bình chọn tham gia tinh gọn, thuật toán tự động chia đội hình theo Tier & Thủ môn, quản lý vai trò thủ môn linh hoạt bởi Admin, khôi phục mật khẩu qua OTP Email bảo mật, tích hợp cổng thanh toán trực tuyến PayOS và hàng rào bảo mật chống DoS/DDoS đa tầng.
+> **Phiên bản hiện tại: `v1.2.3`** — Nền tảng quản lý câu lạc bộ thể thao với bình chọn nhiều khung giờ, ghi chú hủy trận, bản đồ sân, điểm danh, chia đội, quản lý thanh toán và phân quyền quản trị.
 
 ---
 
 ## Tính năng Nổi bật
 
 ### 1. Quản lý Trận đấu (Session Management)
-- **Thiết lập trận đấu linh hoạt**: Admin tạo trận đấu với đầy đủ thông tin: Ngày chơi, khung giờ thi đấu, địa điểm sân, số người tối thiểu/tối đa, tổng tiền sân dự kiến và hạn chót bình chọn.
+- **Thiết lập trận đấu linh hoạt**: Admin tạo trận đấu với ngày chơi, một hoặc nhiều khung giờ để thành viên lựa chọn, địa điểm sân, số người tối thiểu/tối đa và hạn chót bình chọn.
+- **Bình chọn nhiều khung giờ**:
+  - Admin được tạo tối đa 20 khung giờ hợp lệ, không trùng nhau; mỗi khung phải có giờ bắt đầu nhỏ hơn giờ kết thúc.
+  - Thành viên chọn một hoặc nhiều khung giờ phù hợp khi đăng ký tham gia. Với trận chỉ có một lựa chọn, hệ thống tự chọn khung giờ đó để giữ tương thích với luồng cũ.
+  - Giao diện hiển thị số lượt chọn theo từng khung giờ và đánh dấu phương án có nhiều người tham gia nhất.
+  - Khi đặt sân, Admin có thể chốt một phương án; nếu không chỉ định, backend tự chọn khung có nhiều lượt nhất. Khung giờ không thể thay đổi sau khi trận đã `BOOKED` hoặc `COMPLETED`.
+- **Tích hợp Google Maps cho địa điểm sân**: Admin có thể lưu link chia sẻ Google Maps khi tạo hoặc chỉnh sửa trận đấu. Trang chi tiết nhúng bản đồ trực tiếp và cung cấp nút **Mở trên Google Maps**; các trận cũ chưa có link vẫn tự động tìm bản đồ theo tên địa điểm.
+- **Ghi chú hủy trận**:
+  - Admin bắt buộc nhập lý do khi hủy; nội dung được chuẩn hóa, giới hạn 500 ký tự và hiển thị trên thẻ trận đấu lẫn trang chi tiết.
+  - Admin có thể cập nhật ghi chú trong form chỉnh sửa. Ghi chú được xóa tự động nếu trận được chuyển khỏi trạng thái `CANCELLED`.
 - **Chỉnh sửa toàn diện (Admin Edit Modal)**: Cập nhật mọi thông số của trận đấu bất kỳ lúc nào qua modal giao diện SaaS chuẩn, bảo mật quyền quản trị viên.
 - **Quản lý trạng thái tự động**: Các mốc trạng thái chuẩn xác: *Đang bình chọn* $\rightarrow$ *Đủ người chơi* $\rightarrow$ *Đã đặt sân* $\rightarrow$ *Đã hoàn thành* hoặc *Đã hủy trận*.
 
@@ -27,7 +36,9 @@
 - **Mã VietQR thanh toán**: Tải lên hình ảnh mã QR ngân hàng cá nhân, hiển thị trực quan cho các thành viên khác quét chuyển khoản khi phân chia tiền sân.
 
 ### 3. Quy trình Bình chọn Tinh gọn & Chặn Vote Khi Chưa Thanh Toán (Debt-Gated Voting)
-- **Quyết định dứt khoát 2 trạng thái**: Rút gọn các tùy chọn bình chọn chỉ còn **Tham gia (`JOIN`)** hoặc **Báo vắng (`DECLINE`)**, loại bỏ hoàn toàn trạng thái lấp lửng "Cân nhắc" (`MAYBE`).
+- **Quyết định dứt khoát 2 trạng thái**: Giao diện bình chọn của thành viên chỉ hiển thị **Tham gia (`JOIN`)** hoặc **Báo vắng (`DECLINE`)**. Giá trị `MAYBE` vẫn được giữ trong enum để tương thích dữ liệu/API cũ nhưng không còn là lựa chọn trong luồng người dùng thông thường.
+- **Chọn thời gian có thể tham gia**: Khi vote `JOIN`, client gửi danh sách `timeSlotIds`; backend loại bỏ ID trùng, kiểm tra mọi ID thuộc đúng trận đấu và yêu cầu ít nhất một lựa chọn hợp lệ.
+- **Admin điều chỉnh bình chọn**: Quản trị viên có thể thêm, chuyển trạng thái hoặc xóa lượt bình chọn của thành viên ngay trên trang chi tiết. Không cho phép điều chỉnh trận đã hủy; thao tác chuyển sang báo vắng vẫn ghi nhận lịch sử vắng và trạng thái báo muộn khi phù hợp.
 - **Cơ chế Chặn Bình chọn khi Nợ Tiền Sân (Debt Prevention Policy)**:
   - **Tự động quét lịch sử nợ**: Khi thành viên bấm bình chọn, hệ thống tự động rà soát các khoản tiền sân chưa được xác nhận hoàn tất (`status !== 'CONFIRMED'`) từ tất cả các trận đấu trước đó (`playDate <= playDate hiện tại`, không tính các trận đã HỦY).
   - **Chặn quyền Tham gia (`JOIN`)**: Nếu phát hiện thành viên còn nợ tiền sân ở bất kỳ trận đấu trước nào, API sẽ từ chối với mã lỗi HTTP `400 Bad Request`, đồng thời thông báo rõ ràng tên trận đấu nợ, ngày thi đấu và số tiền nợ cụ thể (hoặc tổng nợ nếu nợ nhiều trận).
@@ -114,7 +125,7 @@ CSE_PunchDad/
 │   │   │   ├── Modal/          # Universal Modal Portal (Fullscreen blur & Scroll lock)
 │   │   │   ├── SessionCard/    # Thẻ hiển thị trận đấu danh sách
 │   │   │   ├── TeamGenerator/  # Modal phân chia, xáo trộn & cân bằng đội hình
-│   │   │   └── VoteButton/     # Nút bình chọn tham gia
+│   │   │   └── Vote/           # Modal Admin điều chỉnh bình chọn
 │   │   ├── pages/              # Dashboard, SessionDetail, CreateSession, Members, Profile, Login, Register, ForgotPassword
 │   │   ├── context/            # AuthContext lưu trữ trạng thái người dùng
 │   │   ├── services/           # Axios / Fetch API client (auth, payment, session, user)
@@ -123,7 +134,7 @@ CSE_PunchDad/
 │
 ├── server/                     # Backend Node.js (Express)
 │   ├── prisma/
-│   │   ├── schema.prisma       # Định nghĩa bảng User, Session, Vote, Payment, Team
+│   │   ├── schema.prisma       # User, Session, TimeSlot, Vote, Payment, Guest và các quan hệ
 │   │   ├── migrations/         # Lịch sử các migration database
 │   │   └── seed.js             # Dữ liệu khởi tạo tài khoản ban đầu
 │   ├── src/
@@ -191,6 +202,48 @@ Hệ thống sẽ khởi chạy đồng thời:
 - **Frontend**: `http://localhost:5173`
 - **Backend API**: `http://localhost:5001` (Health check: `http://localhost:5001/api/health`)
 
+### 5. Sử dụng Google Maps cho địa điểm sân
+- Khi tạo hoặc chỉnh sửa trận đấu, dán link chia sẻ Google Maps vào trường **Link Google Maps**. Hỗ trợ cả link đầy đủ và link rút gọn dạng `https://maps.app.goo.gl/...`.
+- Trường này không bắt buộc. Nếu để trống, hệ thống dùng nội dung **Địa điểm sân** để tìm và nhúng bản đồ.
+- Backend chỉ chấp nhận URL HTTPS thuộc Google Maps (`google.com/maps`, `maps.google.com`, `maps.app.goo.gl` hoặc `goo.gl/maps`).
+
+### 6. Nâng cấp môi trường hiện có lên `v1.2.3`
+
+```bash
+git pull origin main
+cd server
+npm install
+npx prisma generate
+npx prisma migrate deploy
+```
+
+Ba migration liên quan sẽ được áp dụng theo thứ tự:
+
+1. `20260929103000_add_google_maps_url`: thêm `sessions.google_maps_url`.
+2. `20261001100000_add_session_time_slot_voting`: tạo `session_time_slots`, `time_slot_votes`, thêm `selected_time_slot_id` và chuyển mỗi trận cũ thành một lựa chọn thời gian mặc định.
+3. `20261001143000_add_session_cancellation_note`: thêm `sessions.cancellation_note` dạng nullable để tương thích dữ liệu cũ.
+
+Sau khi generate Prisma Client hoặc migrate database, cần restart backend. Trên Render, cấu hình hiện tại tự chạy `prisma generate` lúc build và `prisma migrate deploy` trước khi khởi động server.
+
+---
+
+## Đặc tả Dữ liệu `v1.2.3`
+
+| Model / Field | Kiểu | Quy tắc |
+| :--- | :--- | :--- |
+| `Session.googleMapsUrl` | `String?` | Link Google Maps HTTPS tùy chọn |
+| `Session.cancellationNote` | `String? @db.Text` | Bắt buộc khi chuyển mới sang `CANCELLED`; tối đa 500 ký tự |
+| `Session.selectedTimeSlotId` | `String?` | ID khung giờ được chốt khi đặt sân |
+| `SessionTimeSlot` | Model | Thuộc một session; cặp `sessionId + startTime + endTime` là duy nhất |
+| `TimeSlotVote` | Model | Bảng nối Vote–TimeSlot; cặp `voteId + timeSlotId` là duy nhất |
+
+Quy tắc toàn vẹn:
+
+- Xóa session sẽ cascade xóa toàn bộ khung giờ và lựa chọn thời gian liên quan.
+- Xóa hoặc đổi vote sang `DECLINE` sẽ xóa các `TimeSlotVote` tương ứng.
+- Khi danh sách khung giờ được sửa trước lúc đặt sân, backend thay thế chúng trong transaction và đặt lại `selectedTimeSlotId`.
+- Trận cũ vẫn hoạt động nhờ migration tự tạo một `SessionTimeSlot` từ `startTime` và `endTime` hiện có.
+
 ---
 
 ## Tài khoản Mặc định
@@ -222,10 +275,11 @@ Hệ thống sẽ khởi chạy đồng thời:
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/sessions` | `authenticate` | Lấy danh sách trận đấu (hỗ trợ bộ lọc tab) |
-| `GET` | `/api/sessions/:id` | `authenticate` | Lấy chi tiết trận đấu, danh sách vote, đội hình và thông tin nợ tiền sân (`unpaidPreviousPayment`) |
-| `POST` | `/api/sessions` | `requireAdmin`, Validate | Tạo mới trận đấu (Admin) |
-| `PUT` | `/api/sessions/:id` | `requireAdmin` | Chỉnh sửa toàn diện thông tin trận đấu (Admin) |
-| `DELETE` | `/api/sessions/:id` | `requireAdmin` | Hủy hoặc xóa trận đấu (Admin) |
+| `GET` | `/api/sessions/:id` | `authenticate` | Lấy chi tiết trận, vote, lựa chọn khung giờ, đội hình và thông tin nợ tiền sân |
+| `POST` | `/api/sessions` | `requireAdmin`, Validate | Tạo trận với `timeSlots` và `googleMapsUrl` tùy chọn |
+| `PUT` | `/api/sessions/:id` | `requireAdmin` | Chỉnh sửa trận, chốt `selectedTimeSlotId` hoặc cập nhật ghi chú hủy |
+| `DELETE` | `/api/sessions/:id` | `requireAdmin` | Hủy mềm trận đấu; body bắt buộc `{ "cancellationNote": "..." }` |
+| `DELETE` | `/api/sessions/:id/force` | `requireAdmin` | Xóa vĩnh viễn trận và dữ liệu liên quan |
 | `GET` | `/api/sessions/:id/teams/suggestions` | `authenticate` | Gợi ý số đội phù hợp và danh sách vote sớm nhất |
 | `POST` | `/api/sessions/:id/teams/generate` | `requireAdmin`, `computeLimiter` | Tự động cân bằng và xáo trộn đội hình ngẫu nhiên |
 | `PUT` | `/api/sessions/:id/teams` | `requireAdmin` | Lưu danh sách đội hình chính thức vào database |
@@ -234,9 +288,49 @@ Hệ thống sẽ khởi chạy đồng thời:
 ### Bình chọn (`/api/votes`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/votes` | `authenticate` | Bình chọn tham gia (`JOIN`, `DECLINE`), tự động chặn `JOIN` nếu chưa thanh toán tiền sân trận trước |
-| `PUT` | `/api/votes/:id` | `authenticate` | Cập nhật bình chọn (áp dụng chặn `JOIN` nếu chưa thanh toán tiền sân trận trước) |
-| `GET` | `/api/votes/session/:sessionId` | `authenticate` | Lấy danh sách lượt vote và thống kê tổng số lượng người tham gia |
+| `POST` | `/api/votes` | `authenticate` | Bình chọn `JOIN`/`DECLINE`; `JOIN` nhận thêm `timeSlotIds` và áp dụng kiểm tra nợ |
+| `PUT` | `/api/votes/:id` | `authenticate` | Cập nhật trạng thái và danh sách `timeSlotIds` của chính người dùng |
+| `POST` | `/api/votes/admin/adjust` | `requireAdmin` | Admin thêm, đổi hoặc xóa vote (`JOIN`, `DECLINE`, `MAYBE`, `NONE`/`DELETE`) |
+| `GET` | `/api/votes/session/:sessionId` | `authenticate` | Lấy danh sách vote kèm các khung giờ đã chọn |
+
+Payload tiêu biểu của `v1.2.3`.
+
+Tạo hoặc cập nhật các lựa chọn thời gian của trận:
+
+```json
+{
+  "title": "Weekly match",
+  "playDate": "2026-10-04",
+  "startTime": "17:00",
+  "endTime": "19:00",
+  "timeSlots": [
+    { "startTime": "17:00", "endTime": "19:00" },
+    { "startTime": "19:00", "endTime": "21:00" }
+  ],
+  "location": "Sân CSE",
+  "googleMapsUrl": "https://maps.app.goo.gl/example",
+  "minPlayers": 10,
+  "maxPlayers": 20
+}
+```
+
+Thành viên tham gia và chọn các khung giờ phù hợp:
+
+```json
+{
+  "sessionId": "session-id",
+  "status": "JOIN",
+  "timeSlotIds": ["time-slot-id-1", "time-slot-id-2"]
+}
+```
+
+Hủy mềm trận đấu:
+
+```json
+{
+  "cancellationNote": "Sân đóng cửa do thời tiết xấu"
+}
+```
 
 ### Quản lý Chi phí & Thanh toán (`/api/payments`)
 | Phương thức | Endpoint | Middleware | Mô tả |
@@ -269,7 +363,29 @@ Hệ thống sẽ khởi chạy đồng thời:
 
 ## Lịch sử Phiên bản (Changelog)
 
-### `v1.2.2` (Phiên bản hiện tại)
+### `v1.2.3` (Phiên bản hiện tại)
+- **Bình chọn Nhiều Khung giờ**:
+  - Admin tạo, chỉnh sửa tối đa 20 phương án thời gian cho một trận đấu.
+  - Thành viên chọn một hoặc nhiều khung giờ có thể tham gia; giao diện thống kê và đánh dấu phương án phổ biến nhất.
+  - Admin chốt khung giờ khi đặt sân; backend tự chọn phương án nhiều vote nhất nếu không chỉ định.
+  - Bổ sung hai model `SessionTimeSlot`, `TimeSlotVote` cùng migration chuyển đổi an toàn dữ liệu trận cũ.
+- **Admin Điều chỉnh Bình chọn**:
+  - Bổ sung modal tìm thành viên, xem trạng thái hiện tại và chuyển sang Tham gia, Báo vắng hoặc xóa lượt vote.
+  - Đồng bộ quân số, lịch sử báo vắng và trạng thái đủ người sau mỗi thao tác.
+- **Ghi chú Hủy Trận đấu**:
+  - Yêu cầu Admin nhập lý do khi hủy trận và lưu ghi chú vào cơ sở dữ liệu.
+  - Hiển thị lý do hủy trên danh sách trận đấu và trang chi tiết cho tất cả thành viên.
+  - Cho phép Admin cập nhật ghi chú sau khi hủy và tự động xóa ghi chú khi khôi phục trạng thái trận.
+- **Phát hành & Tương thích**:
+  - Đồng bộ version `1.2.3` tại root, frontend, backend, lockfile, Footer và tài liệu.
+  - Các cột mới đều nullable hoặc có bước backfill; Render tự generate Prisma Client và chạy migration khi deploy.
+
+### `v1.2.2`
+- **Tích hợp Google Maps cho Địa điểm Sân**:
+  - Thêm trường `googleMapsUrl` tùy chọn khi tạo và chỉnh sửa trận đấu.
+  - Nhúng bản đồ trực tiếp trên trang chi tiết trận đấu và bổ sung nút mở vị trí trong Google Maps.
+  - Hỗ trợ link chia sẻ ngắn, link chứa tọa độ và cơ chế dự phòng tìm kiếm bằng tên địa điểm.
+  - Thêm migration `google_maps_url` cho bảng `sessions` mà không ảnh hưởng dữ liệu trận đấu hiện có.
 - **Khôi phục Mật khẩu Bảo mật qua OTP Email (Forgot Password Flow)**:
   - Cho phép người dùng tìm lại tài khoản qua Email hoặc Tên đăng nhập (Username).
   - Gửi mã OTP xác thực 6 chữ số (thời hạn 5 phút) qua Brevo API / Gmail fallback với template HTML phong cách câu lạc bộ chuyên nghiệp.
@@ -281,7 +397,7 @@ Hệ thống sẽ khởi chạy đồng thời:
   - Hiển thị huy hiệu nhận diện `🧤 Thủ môn` nổi bật trên thẻ thành viên.
   - Bổ sung bộ lọc thành viên theo vai trò (*Tất cả*, *Thủ môn*, *Cầu thủ*) cùng thống kê trực quan số lượng thủ môn hiện có của CLB.
 - **Quy trình Bình chọn Tinh gọn & Chặn Vote Khi Chưa Thanh Toán**:
-  - Loại bỏ hoàn toàn trạng thái lấp lửng `MAYBE` khỏi luồng bình chọn, giao diện và cơ sở dữ liệu.
+  - Loại bỏ trạng thái lấp lửng `MAYBE` khỏi luồng và giao diện bình chọn thông thường; giữ enum tương thích cho dữ liệu/API cũ.
   - Giữ lại 2 quyết định dứt khoát: **Tham gia** (`JOIN`) hoặc **Báo vắng** (`DECLINE`).
   - **Cơ chế Chặn Bình chọn khi Nợ Tiền Sân (Debt-Gated Voting)**: Tự động phát hiện các khoản nợ tiền sân chưa xác nhận (`status !== 'CONFIRMED'`) từ các trận trước. Chặn quyền bình chọn Tham gia (`JOIN`) và báo lỗi chi tiết số tiền nợ/trận nợ; đồng thời vẫn bảo lưu quyền Báo vắng (`DECLINE`) để nắm bắt quân số.
   - Hiển thị Banner cảnh báo nổi bật kèm nút `💳 Xem & Thanh toán ngay ↗` chuyển hướng nhanh đến giao diện quét mã VietQR PayOS để thanh toán gạch nợ tức thì.
@@ -326,4 +442,3 @@ Hệ thống sẽ khởi chạy đồng thời:
 ## Giấy phép
 
 Phát triển nội bộ cho **CSE PunchDad Sports Club** © 2026.
-

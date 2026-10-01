@@ -161,9 +161,10 @@ export const sessionsAPI = {
     return res.json();
   },
 
-  delete: async (id) => {
+  delete: async (id, cancellationNote) => {
     const res = await fetchWithAuth(`/sessions/${id}`, {
       method: 'DELETE',
+      body: JSON.stringify({ cancellationNote }),
     });
     return res.json();
   },
@@ -226,6 +227,14 @@ export const votesAPI = {
 
   getBySession: async (sessionId) => {
     const res = await fetchWithAuth(`/votes/session/${sessionId}`);
+    return res.json();
+  },
+
+  adminAdjust: async ({ sessionId, userId, status, reason }) => {
+    const res = await fetchWithAuth('/votes/admin/adjust', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, userId, status, reason }),
+    });
     return res.json();
   },
 };
@@ -413,4 +422,3 @@ export const usersAPI = {
     return res.json();
   },
 };
-

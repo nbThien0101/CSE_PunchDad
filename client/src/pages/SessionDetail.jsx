@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { sessionsAPI, votesAPI, paymentsAPI, usersAPI, attendanceAPI } from '../services/api';
 import TeamGeneratorModal from '../components/TeamGenerator/TeamGeneratorModal';
 import AttendanceDashboardModal from '../components/Attendance/AttendanceDashboardModal';
+import AdminAdjustVoteModal from '../components/Vote/AdminAdjustVoteModal';
 import PayOSModal from '../components/Payment/PayOSModal';
 import Modal from '../components/Modal/Modal';
+import { getGoogleMapsLinks } from '../utils/googleMaps';
 import './SessionDetail.css';
 
 const STATUS_CONFIG = {
@@ -29,9 +31,14 @@ export default function SessionDetail() {
   const [payerQR, setPayerQR] = useState(null);
   const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
+  const [selectedTimeSlotIds, setSelectedTimeSlotIds] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellationNote, setCancellationNote] = useState('');
 
   // Attendance & Matchday states
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showAdminVoteModal, setShowAdminVoteModal] = useState(false);
+  const [adminVoteTargetUserId, setAdminVoteTargetUserId] = useState('');
   const [useAttendedOnlyForGen, setUseAttendedOnlyForGen] = useState(false);
   const [declineModal, setDeclineModal] = useState({
     isOpen: false,
@@ -45,6 +52,7 @@ export default function SessionDetail() {
     totalCost: '',
     payerId: '',
     splitCount: '',
+    selectedTimeSlotId: '',
   });
 
   // Admin edit session state
@@ -55,14 +63,15 @@ export default function SessionDetail() {
   const [editForm, setEditForm] = useState({
     title: '',
     playDate: '',
-    startTime: '',
-    endTime: '',
     location: '',
+    googleMapsUrl: '',
     minPlayers: 6,
     maxPlayers: 14,
     status: 'VOTING',
+    cancellationNote: '',
     totalCost: '',
     voteDeadline: '',
+    timeSlots: [{ startTime: '17:00', endTime: '19:00' }],
   });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -81,6 +90,24 @@ export default function SessionDetail() {
     try {
       const sessionData = await sessionsAPI.getById(id);
       setSession(sessionData.session);
+      const currentVote = sessionData.session?.votes?.find(v => v.user?.id === user?.id);
+      const currentTimeSlotIds = currentVote?.timeSlotVotes?.map(item => item.timeSlotId) || [];
+      setSelectedTimeSlotIds(
+        currentTimeSlotIds.length === 0 && sessionData.session?.timeSlots?.length === 1
+          ? [sessionData.session.timeSlots[0].id]
+          : currentTimeSlotIds,
+      );
+
+      const rankedSlots = [...(sessionData.session?.timeSlots || [])].sort((a, b) => {
+        const voteDifference = (b.votes?.length || b._count?.votes || 0) - (a.votes?.length || a._count?.votes || 0);
+        return voteDifference || a.startTime.localeCompare(b.startTime);
+      });
+      setBookForm(prev => ({
+        ...prev,
+        selectedTimeSlotId: rankedSlots.some(slot => slot.id === prev.selectedTimeSlotId)
+          ? prev.selectedTimeSlotId
+          : rankedSlots[0]?.id || '',
+      }));
 
       if (['BOOKED', 'COMPLETED'].includes(sessionData.session?.status)) {
         const paymentData = await paymentsAPI.getBySession(id);
@@ -134,9 +161,18 @@ export default function SessionDetail() {
   };
 
   const submitVote = async (status, reason = '') => {
+    if (status === 'JOIN' && session?.timeSlots?.length && selectedTimeSlotIds.length === 0) {
+      setError('Vui lòng chọn ít nhất một khung giờ bạn có thể tham gia');
+      return;
+    }
     setActionLoading('vote');
     try {
-      const result = await votesAPI.cast({ sessionId: id, status, reason });
+      const result = await votesAPI.cast({
+        sessionId: id,
+        status,
+        reason,
+        timeSlotIds: status === 'JOIN' ? selectedTimeSlotIds : [],
+      });
       if (result.error) {
         setError(result.error);
       } else {
@@ -167,7 +203,7 @@ export default function SessionDetail() {
 
   const handleBook = async (e) => {
     e.preventDefault();
-    if (!bookForm.totalCost || !bookForm.payerId) {
+    if (!bookForm.totalCost || !bookForm.payerId || (session.timeSlots?.length && !bookForm.selectedTimeSlotId)) {
       setError('Vui lòng điền đầy đủ thông tin');
       return;
     }
@@ -177,11 +213,16 @@ export default function SessionDetail() {
         status: 'BOOKED',
         totalCost: parseFloat(bookForm.totalCost),
         payerId: bookForm.payerId,
+        selectedTimeSlotId: bookForm.selectedTimeSlotId,
       };
       if (bookForm.splitCount) {
         payload.splitCount = parseInt(bookForm.splitCount);
       }
-      await sessionsAPI.update(id, payload);
+      const result = await sessionsAPI.update(id, payload);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
       setSuccess('Đặt sân thành công!');
       await fetchData();
     } catch {
@@ -230,12 +271,29 @@ export default function SessionDetail() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm('Bạn chắc chắn muốn hủy session này?')) return;
+  const handleCancel = () => {
+    setCancellationNote('');
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async (e) => {
+    e.preventDefault();
+    const note = cancellationNote.trim();
+    if (!note) {
+      setError('Vui lòng nhập lý do hủy trận đấu');
+      return;
+    }
+
     setActionLoading('cancel');
+    setError('');
     try {
-      await sessionsAPI.delete(id);
-      setSuccess('Session đã hủy');
+      const result = await sessionsAPI.delete(id, note);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      setShowCancelModal(false);
+      setSuccess('Trận đấu đã được hủy và lưu ghi chú');
       await fetchData();
     } catch {
       setError('Hủy thất bại');
@@ -286,14 +344,17 @@ export default function SessionDetail() {
     setEditForm({
       title: session.title || '',
       playDate: playDateStr,
-      startTime: session.startTime || '17:00',
-      endTime: session.endTime || '19:00',
       location: session.location || '',
+      googleMapsUrl: session.googleMapsUrl || '',
       minPlayers: session.minPlayers ?? 6,
       maxPlayers: session.maxPlayers ?? 14,
       status: session.status || 'VOTING',
+      cancellationNote: session.cancellationNote || '',
       totalCost: session.totalCost ? String(session.totalCost) : '',
       voteDeadline: voteDeadlineStr,
+      timeSlots: session.timeSlots?.length
+        ? session.timeSlots.map(slot => ({ startTime: slot.startTime, endTime: slot.endTime }))
+        : [{ startTime: session.startTime || '17:00', endTime: session.endTime || '19:00' }],
     });
     setShowEditModal(true);
   };
@@ -307,12 +368,15 @@ export default function SessionDetail() {
       const payload = {
         title: editForm.title.trim(),
         playDate: editForm.playDate,
-        startTime: editForm.startTime,
-        endTime: editForm.endTime,
+        startTime: editForm.timeSlots[0].startTime,
+        endTime: editForm.timeSlots[0].endTime,
+        timeSlots: editForm.timeSlots,
         location: editForm.location.trim(),
+        googleMapsUrl: editForm.googleMapsUrl.trim() || null,
         minPlayers: parseInt(editForm.minPlayers, 10),
         maxPlayers: parseInt(editForm.maxPlayers, 10),
         status: editForm.status,
+        cancellationNote: editForm.status === 'CANCELLED' ? editForm.cancellationNote.trim() : null,
         voteDeadline: editForm.voteDeadline ? new Date(editForm.voteDeadline).toISOString() : null,
       };
 
@@ -336,6 +400,49 @@ export default function SessionDetail() {
     }
   };
 
+  const toggleTimeSlot = (timeSlotId) => {
+    setSelectedTimeSlotIds(prev => (
+      prev.includes(timeSlotId)
+        ? prev.filter(idValue => idValue !== timeSlotId)
+        : [...prev, timeSlotId]
+    ));
+  };
+
+  const toggleAllTimeSlots = () => {
+    const allIds = session?.timeSlots?.map(slot => slot.id) || [];
+    setSelectedTimeSlotIds(prev => prev.length === allIds.length ? [] : allIds);
+  };
+
+  const updateEditTimeSlot = (index, field, value) => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: prev.timeSlots.map((slot, slotIndex) => (
+        slotIndex === index ? { ...slot, [field]: value } : slot
+      )),
+    }));
+  };
+
+  const addEditTimeSlot = () => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: [
+        ...prev.timeSlots,
+        { startTime: prev.timeSlots[prev.timeSlots.length - 1]?.endTime || '', endTime: '' },
+      ],
+    }));
+  };
+
+  const removeEditTimeSlot = (index) => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: prev.timeSlots.length === 1
+        ? prev.timeSlots
+        : prev.timeSlots.filter((_, slotIndex) => slotIndex !== index),
+    }));
+  };
+
+  const mapLinks = getGoogleMapsLinks(session?.location, session?.googleMapsUrl);
+
   if (loading) {
     return <div className="loading-screen"><div className="spinner"></div><p>Đang tải...</p></div>;
   }
@@ -350,6 +457,11 @@ export default function SessionDetail() {
   const userVote = session.votes?.find(v => v.user?.id === user?.id);
   const isAdmin = user?.role === 'ADMIN';
   const isPayer = session.payer?.id === user?.id;
+  const timeSlots = session.timeSlots || [];
+  const maxTimeSlotVotes = Math.max(0, ...timeSlots.map(slot => slot.votes?.length || slot._count?.votes || 0));
+  const topTimeSlotIds = new Set(timeSlots
+    .filter(slot => (slot.votes?.length || slot._count?.votes || 0) === maxTimeSlotVotes)
+    .map(slot => slot.id));
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
@@ -382,6 +494,16 @@ export default function SessionDetail() {
         <h1 className="detail-title" style={{ marginTop: 0 }}>{session.title}</h1>
         <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
       </div>
+
+      {session.status === 'CANCELLED' && session.cancellationNote && (
+        <div className="cancellation-note-banner" role="note">
+          <div className="cancellation-note-icon" aria-hidden="true">!</div>
+          <div>
+            <span className="cancellation-note-title">Lý do hủy trận</span>
+            <p>{session.cancellationNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* Admin Actions */}
       {isAdmin && (
@@ -502,7 +624,11 @@ export default function SessionDetail() {
           </span>
           <div>
             <span className="info-block-label">Khung giờ</span>
-            <span className="info-block-value">{session.startTime} - {session.endTime}</span>
+            <span className="info-block-value">
+              {['BOOKED', 'COMPLETED'].includes(session.status)
+                ? `${session.startTime} - ${session.endTime}`
+                : `${timeSlots.length || 1} khung giờ đang bình chọn`}
+            </span>
           </div>
         </div>
         <div className="info-block">
@@ -532,6 +658,39 @@ export default function SessionDetail() {
           </div>
         </div>
       </div>
+
+      {mapLinks.embedUrl && (
+        <section className="venue-map" aria-labelledby="venue-map-title">
+          <div className="venue-map-header">
+            <div>
+              <span className="venue-map-eyebrow">Địa điểm thi đấu</span>
+              <h2 id="venue-map-title" className="venue-map-title">{session.location}</h2>
+            </div>
+            <a
+              className="btn btn-outline btn-sm venue-map-link"
+              href={mapLinks.directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mở trên Google Maps
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 3h7v7"></path>
+                <path d="M10 14 21 3"></path>
+                <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+              </svg>
+            </a>
+          </div>
+          <div className="venue-map-frame">
+            <iframe
+              title={`Bản đồ ${session.location}`}
+              src={mapLinks.embedUrl}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </section>
+      )}
 
       {/* Vote Section */}
       {['VOTING', 'CONFIRMED'].includes(session.status) && (
@@ -577,6 +736,44 @@ export default function SessionDetail() {
                   💳 Xem & Thanh toán ngay ↗
                 </Link>
               )}
+            </div>
+          )}
+
+          {timeSlots.length > 0 && (
+            <div className="time-slot-voting">
+              <div className="time-slot-voting-header">
+                <div>
+                  <h3>Chọn khung giờ bạn có thể tham gia</h3>
+                  <p>Có thể chọn nhiều khung giờ. Số vote được cập nhật sau khi bấm “Tham gia”.</p>
+                </div>
+                {!session.isVoteLocked && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={toggleAllTimeSlots}>
+                    {selectedTimeSlotIds.length === timeSlots.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả khung giờ'}
+                  </button>
+                )}
+              </div>
+              <div className="time-slot-options">
+                {timeSlots.map(slot => {
+                  const voteCount = slot.votes?.length || slot._count?.votes || 0;
+                  const isTop = maxTimeSlotVotes > 0 && topTimeSlotIds.has(slot.id);
+                  return (
+                    <label
+                      key={slot.id}
+                      className={`time-slot-option ${selectedTimeSlotIds.includes(slot.id) ? 'is-selected' : ''} ${isTop ? 'is-top' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTimeSlotIds.includes(slot.id)}
+                        onChange={() => toggleTimeSlot(slot.id)}
+                        disabled={session.isVoteLocked}
+                      />
+                      <span className="time-slot-option-time">{slot.startTime} - {slot.endTime}</span>
+                      <span className="time-slot-option-count">{voteCount} vote</span>
+                      {isTop && <span className="time-slot-top-badge">Nhiều nhất</span>}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -780,18 +977,37 @@ export default function SessionDetail() {
 
       {/* Votes List */}
       <div className="detail-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>
             Danh sách đăng ký ({joinedVotes.length + (session.guests?.length || 0)})
           </h2>
-          {isAdmin && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => setShowAttendanceModal(true)}
-            >
-              📋 Quản lý điểm danh
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {isAdmin && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  setAdminVoteTargetUserId('');
+                  setShowAdminVoteModal(true);
+                }}
+                id="btn-admin-adjust-vote-header"
+                title="Admin điều chỉnh hoặc đăng ký vote cho bất kỳ thành viên nào"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Điều chỉnh vote
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setShowAttendanceModal(true)}
+              >
+                📋 Quản lý điểm danh
+              </button>
+            )}
+          </div>
         </div>
         <div className="votes-table">
           {joinedVotes.length > 0 && (
@@ -808,12 +1024,17 @@ export default function SessionDetail() {
                 {joinedVotes.map(v => (
                   <span
                     key={v.id}
-                    className="vote-chip vote-chip-join"
+                    className={`vote-chip vote-chip-join ${isAdmin ? 'vote-chip-admin-editable' : ''}`}
                     style={v.isCheckedIn ? { borderLeft: '3px solid #16a34a', background: '#f0fdf4' } : {}}
-                    title={v.isCheckedIn ? 'Đã điểm danh có mặt tại sân' : 'Chưa điểm danh'}
+                    title={isAdmin ? `Admin: Bấm để điều chỉnh vote của ${v.user?.displayName}` : (v.isCheckedIn ? 'Đã điểm danh có mặt tại sân' : 'Chưa điểm danh')}
+                    onClick={isAdmin ? () => {
+                      setAdminVoteTargetUserId(v.user?.id || v.userId);
+                      setShowAdminVoteModal(true);
+                    } : undefined}
                   >
                     {v.user?.displayName}
                     {v.isCheckedIn && <span style={{ color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>✓</span>}
+                    {isAdmin && <span className="chip-admin-edit-icon" title="Điều chỉnh vote">✎</span>}
                   </span>
                 ))}
               </div>
@@ -848,7 +1069,18 @@ export default function SessionDetail() {
               <h3 className="vote-group-title">Báo vắng ({declinedVotes.length})</h3>
               <div className="vote-list">
                 {declinedVotes.map(v => (
-                  <span key={v.id} className="vote-chip vote-chip-decline">{v.user?.displayName}</span>
+                  <span
+                    key={v.id}
+                    className={`vote-chip vote-chip-decline ${isAdmin ? 'vote-chip-admin-editable' : ''}`}
+                    title={isAdmin ? `Admin: Bấm để điều chỉnh vote của ${v.user?.displayName}` : ''}
+                    onClick={isAdmin ? () => {
+                      setAdminVoteTargetUserId(v.user?.id || v.userId);
+                      setShowAdminVoteModal(true);
+                    } : undefined}
+                  >
+                    {v.user?.displayName}
+                    {isAdmin && <span className="chip-admin-edit-icon" title="Điều chỉnh vote">✎</span>}
+                  </span>
                 ))}
               </div>
             </div>
@@ -864,6 +1096,28 @@ export default function SessionDetail() {
         <div className="detail-section">
           <h2 className="section-title">Xác nhận đặt sân (Admin)</h2>
           <form className="book-form" onSubmit={handleBook}>
+            {timeSlots.length > 0 && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="book-time-slot">Khung giờ chốt sân</label>
+                <select
+                  id="book-time-slot"
+                  className="form-input"
+                  value={bookForm.selectedTimeSlotId}
+                  onChange={(e) => setBookForm(prev => ({ ...prev, selectedTimeSlotId: e.target.value }))}
+                  required
+                >
+                  {timeSlots.map(slot => {
+                    const voteCount = slot.votes?.length || slot._count?.votes || 0;
+                    return (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.startTime} - {slot.endTime} · {voteCount} vote{topTimeSlotIds.has(slot.id) && maxTimeSlotVotes > 0 ? ' · Cao nhất' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="form-hint">Hệ thống đã đề xuất khung giờ có nhiều lượt chọn nhất. Admin vẫn có thể đổi trước khi xác nhận.</span>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label" htmlFor="total-cost">Tổng tiền sân (VNĐ)</label>
               <input
@@ -1135,6 +1389,69 @@ export default function SessionDetail() {
       )}
 
       {/* ====== Admin Edit Session Modal ====== */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => actionLoading !== 'cancel' && setShowCancelModal(false)}
+      >
+        <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <span className="modal-badge modal-badge-danger">Hủy trận đấu</span>
+              <h2 className="modal-title">Xác nhận hủy trận</h2>
+              <p className="modal-subtitle">Ghi chú này sẽ được hiển thị cho tất cả thành viên.</p>
+            </div>
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowCancelModal(false)}
+              disabled={actionLoading === 'cancel'}
+              type="button"
+              aria-label="Đóng"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleConfirmCancel} className="modal-form">
+            <div className="form-group">
+              <label className="form-label" htmlFor="cancellation-note">
+                Lý do hủy trận <span className="text-danger">*</span>
+              </label>
+              <textarea
+                id="cancellation-note"
+                className="form-input form-textarea"
+                rows="4"
+                maxLength="500"
+                placeholder="VD: Sân đóng cửa do thời tiết xấu..."
+                value={cancellationNote}
+                onChange={(e) => setCancellationNote(e.target.value)}
+                autoFocus
+                required
+              />
+              <span className="form-character-count">{cancellationNote.length}/500</span>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setShowCancelModal(false)}
+                disabled={actionLoading === 'cancel'}
+              >
+                Giữ trận đấu
+              </button>
+              <button
+                type="submit"
+                className="btn btn-danger"
+                disabled={actionLoading === 'cancel' || !cancellationNote.trim()}
+                id="btn-confirm-cancel-session"
+              >
+                {actionLoading === 'cancel' ? 'Đang hủy...' : 'Xác nhận hủy trận'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
       <Modal isOpen={showEditModal} onClose={() => !editLoading && setShowEditModal(false)}>
         <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1186,6 +1503,25 @@ export default function SessionDetail() {
                     <option value="CANCELLED">Đã hủy trận</option>
                   </select>
                 </div>
+
+                {editForm.status === 'CANCELLED' && (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-cancellation-note">
+                      Lý do hủy trận <span className="text-danger">*</span>
+                    </label>
+                    <textarea
+                      id="edit-cancellation-note"
+                      className="form-input form-textarea"
+                      rows="3"
+                      maxLength="500"
+                      placeholder="VD: Sân đóng cửa do thời tiết xấu..."
+                      value={editForm.cancellationNote}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, cancellationNote: e.target.value }))}
+                      required
+                    />
+                    <span className="form-character-count">{editForm.cancellationNote.length}/500</span>
+                  </div>
+                )}
               </div>
 
               {/* Section 2: Thời gian & Địa điểm */}
@@ -1203,30 +1539,44 @@ export default function SessionDetail() {
                   />
                 </div>
 
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-startTime">Giờ bắt đầu <span className="text-danger">*</span></label>
-                    <input
-                      id="edit-startTime"
-                      type="time"
-                      className="form-input"
-                      value={editForm.startTime}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, startTime: e.target.value }))}
-                      required
-                    />
+                <div className="form-group">
+                  <div className="edit-time-slots-header">
+                    <label className="form-label">Các khung giờ bình chọn <span className="text-danger">*</span></label>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={addEditTimeSlot}>+ Thêm</button>
                   </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-endTime">Giờ kết thúc <span className="text-danger">*</span></label>
-                    <input
-                      id="edit-endTime"
-                      type="time"
-                      className="form-input"
-                      value={editForm.endTime}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, endTime: e.target.value }))}
-                      required
-                    />
+                  <div className="edit-time-slots">
+                    {editForm.timeSlots.map((slot, index) => (
+                      <div className="edit-time-slot-row" key={index}>
+                        <input
+                          type="time"
+                          className="form-input"
+                          value={slot.startTime}
+                          onChange={(e) => updateEditTimeSlot(index, 'startTime', e.target.value)}
+                          aria-label={`Giờ bắt đầu khung ${index + 1}`}
+                          required
+                        />
+                        <span>đến</span>
+                        <input
+                          type="time"
+                          className="form-input"
+                          value={slot.endTime}
+                          onChange={(e) => updateEditTimeSlot(index, 'endTime', e.target.value)}
+                          aria-label={`Giờ kết thúc khung ${index + 1}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => removeEditTimeSlot(index)}
+                          disabled={editForm.timeSlots.length === 1}
+                          aria-label={`Xóa khung giờ ${index + 1}`}
+                        >✕</button>
+                      </div>
+                    ))}
                   </div>
+                  {session.votes?.some(v => v.timeSlotVotes?.length) && (
+                    <span className="form-hint text-danger">Lưu thay đổi khung giờ sẽ xóa các lựa chọn giờ hiện tại; thành viên cần chọn lại.</span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -1240,6 +1590,21 @@ export default function SessionDetail() {
                     onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
                     required
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="edit-googleMapsUrl">
+                    Link Google Maps <span className="text-muted">(tùy chọn)</span>
+                  </label>
+                  <input
+                    id="edit-googleMapsUrl"
+                    type="url"
+                    className="form-input"
+                    placeholder="https://maps.app.goo.gl/..."
+                    value={editForm.googleMapsUrl}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, googleMapsUrl: e.target.value }))}
+                  />
+                  <span className="form-hint">Dán link chia sẻ từ Google Maps để mở đúng vị trí sân.</span>
                 </div>
               </div>
 
@@ -1415,6 +1780,24 @@ export default function SessionDetail() {
           onSuccess={() => {
             setPayOSPayment(null);
             fetchData();
+          }}
+        />
+      )}
+
+      {/* ====== Admin Adjust Vote Modal ====== */}
+      {showAdminVoteModal && (
+        <AdminAdjustVoteModal
+          isOpen={showAdminVoteModal}
+          onClose={() => {
+            setShowAdminVoteModal(false);
+            setAdminVoteTargetUserId('');
+          }}
+          session={session}
+          preselectedUserId={adminVoteTargetUserId}
+          onSuccess={async (msg) => {
+            setSuccess(msg);
+            await fetchData();
+            setTimeout(() => setSuccess(''), 3500);
           }}
         />
       )}
