@@ -32,6 +32,8 @@ export default function SessionDetail() {
   const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
   const [selectedTimeSlotIds, setSelectedTimeSlotIds] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellationNote, setCancellationNote] = useState('');
 
   // Attendance & Matchday states
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -66,6 +68,7 @@ export default function SessionDetail() {
     minPlayers: 6,
     maxPlayers: 14,
     status: 'VOTING',
+    cancellationNote: '',
     totalCost: '',
     voteDeadline: '',
     timeSlots: [{ startTime: '17:00', endTime: '19:00' }],
@@ -268,12 +271,29 @@ export default function SessionDetail() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm('Bạn chắc chắn muốn hủy session này?')) return;
+  const handleCancel = () => {
+    setCancellationNote('');
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async (e) => {
+    e.preventDefault();
+    const note = cancellationNote.trim();
+    if (!note) {
+      setError('Vui lòng nhập lý do hủy trận đấu');
+      return;
+    }
+
     setActionLoading('cancel');
+    setError('');
     try {
-      await sessionsAPI.delete(id);
-      setSuccess('Session đã hủy');
+      const result = await sessionsAPI.delete(id, note);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      setShowCancelModal(false);
+      setSuccess('Trận đấu đã được hủy và lưu ghi chú');
       await fetchData();
     } catch {
       setError('Hủy thất bại');
@@ -329,6 +349,7 @@ export default function SessionDetail() {
       minPlayers: session.minPlayers ?? 6,
       maxPlayers: session.maxPlayers ?? 14,
       status: session.status || 'VOTING',
+      cancellationNote: session.cancellationNote || '',
       totalCost: session.totalCost ? String(session.totalCost) : '',
       voteDeadline: voteDeadlineStr,
       timeSlots: session.timeSlots?.length
@@ -355,6 +376,7 @@ export default function SessionDetail() {
         minPlayers: parseInt(editForm.minPlayers, 10),
         maxPlayers: parseInt(editForm.maxPlayers, 10),
         status: editForm.status,
+        cancellationNote: editForm.status === 'CANCELLED' ? editForm.cancellationNote.trim() : null,
         voteDeadline: editForm.voteDeadline ? new Date(editForm.voteDeadline).toISOString() : null,
       };
 
@@ -472,6 +494,16 @@ export default function SessionDetail() {
         <h1 className="detail-title" style={{ marginTop: 0 }}>{session.title}</h1>
         <p className="detail-creator">Tạo bởi {session.createdBy?.displayName}</p>
       </div>
+
+      {session.status === 'CANCELLED' && session.cancellationNote && (
+        <div className="cancellation-note-banner" role="note">
+          <div className="cancellation-note-icon" aria-hidden="true">!</div>
+          <div>
+            <span className="cancellation-note-title">Lý do hủy trận</span>
+            <p>{session.cancellationNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* Admin Actions */}
       {isAdmin && (
@@ -1357,6 +1389,69 @@ export default function SessionDetail() {
       )}
 
       {/* ====== Admin Edit Session Modal ====== */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => actionLoading !== 'cancel' && setShowCancelModal(false)}
+      >
+        <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <span className="modal-badge modal-badge-danger">Hủy trận đấu</span>
+              <h2 className="modal-title">Xác nhận hủy trận</h2>
+              <p className="modal-subtitle">Ghi chú này sẽ được hiển thị cho tất cả thành viên.</p>
+            </div>
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowCancelModal(false)}
+              disabled={actionLoading === 'cancel'}
+              type="button"
+              aria-label="Đóng"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleConfirmCancel} className="modal-form">
+            <div className="form-group">
+              <label className="form-label" htmlFor="cancellation-note">
+                Lý do hủy trận <span className="text-danger">*</span>
+              </label>
+              <textarea
+                id="cancellation-note"
+                className="form-input form-textarea"
+                rows="4"
+                maxLength="500"
+                placeholder="VD: Sân đóng cửa do thời tiết xấu..."
+                value={cancellationNote}
+                onChange={(e) => setCancellationNote(e.target.value)}
+                autoFocus
+                required
+              />
+              <span className="form-character-count">{cancellationNote.length}/500</span>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setShowCancelModal(false)}
+                disabled={actionLoading === 'cancel'}
+              >
+                Giữ trận đấu
+              </button>
+              <button
+                type="submit"
+                className="btn btn-danger"
+                disabled={actionLoading === 'cancel' || !cancellationNote.trim()}
+                id="btn-confirm-cancel-session"
+              >
+                {actionLoading === 'cancel' ? 'Đang hủy...' : 'Xác nhận hủy trận'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
       <Modal isOpen={showEditModal} onClose={() => !editLoading && setShowEditModal(false)}>
         <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1408,6 +1503,25 @@ export default function SessionDetail() {
                     <option value="CANCELLED">Đã hủy trận</option>
                   </select>
                 </div>
+
+                {editForm.status === 'CANCELLED' && (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-cancellation-note">
+                      Lý do hủy trận <span className="text-danger">*</span>
+                    </label>
+                    <textarea
+                      id="edit-cancellation-note"
+                      className="form-input form-textarea"
+                      rows="3"
+                      maxLength="500"
+                      placeholder="VD: Sân đóng cửa do thời tiết xấu..."
+                      value={editForm.cancellationNote}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, cancellationNote: e.target.value }))}
+                      required
+                    />
+                    <span className="form-character-count">{editForm.cancellationNote.length}/500</span>
+                  </div>
+                )}
               </div>
 
               {/* Section 2: Thời gian & Địa điểm */}

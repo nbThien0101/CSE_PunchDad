@@ -92,6 +92,7 @@ model Session {
   totalCost     Decimal?      @map("total_cost") @db.Decimal(10, 2)
   splitCount    Int?          @map("split_count")
   status        SessionStatus @default(VOTING)
+  cancellationNote String?    @map("cancellation_note") @db.Text
   teams         Json?         @map("teams")
 
   voteDeadline DateTime? @map("vote_deadline")

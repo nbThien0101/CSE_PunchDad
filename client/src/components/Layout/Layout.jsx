@@ -255,7 +255,7 @@ export default function Layout() {
 
       <footer className="footer">
         <div className="container">
-          <p>v1.2.2 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
+          <p>v1.2.3 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
         </div>
       </footer>
     </div>

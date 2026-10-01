@@ -234,7 +234,7 @@ const updateSession = async (req, res, next) => {
     let normalizedTimeSlots;
     const existingSession = await prisma.session.findUnique({
       where: { id },
-      select: { id: true, status: true },
+      select: { id: true, status: true, cancellationNote: true },
     });
     if (!existingSession) {
       return res.status(404).json({ error: 'Session not found' });
@@ -244,7 +244,7 @@ const updateSession = async (req, res, next) => {
     const allowedFields = [
       'title', 'playDate', 'startTime', 'endTime',
       'location', 'googleMapsUrl', 'minPlayers', 'maxPlayers', 'totalCost',
-      'payerId', 'status', 'voteDeadline', 'splitCount',
+      'payerId', 'status', 'voteDeadline', 'splitCount', 'cancellationNote',
     ];
 
     for (const field of allowedFields) {
@@ -263,6 +263,27 @@ const updateSession = async (req, res, next) => {
           updateData[field] = req.body[field];
         }
       }
+    }
+
+    if (updateData.cancellationNote !== undefined) {
+      updateData.cancellationNote = updateData.cancellationNote === null
+        ? null
+        : String(updateData.cancellationNote).trim() || null;
+      if (updateData.cancellationNote?.length > 500) {
+        return res.status(400).json({ error: 'Ghi chú hủy trận tối đa 500 ký tự' });
+      }
+    }
+
+    const resultingStatus = updateData.status || existingSession.status;
+    const resultingCancellationNote = updateData.cancellationNote !== undefined
+      ? updateData.cancellationNote
+      : existingSession.cancellationNote;
+    if (resultingStatus === 'CANCELLED' && !resultingCancellationNote) {
+      return res.status(400).json({ error: 'Vui lòng nhập lý do hủy trận đấu' });
+    }
+
+    if (updateData.status && updateData.status !== 'CANCELLED') {
+      updateData.cancellationNote = null;
     }
 
     if (!isGoogleMapsUrl(updateData.googleMapsUrl)) {
@@ -388,12 +409,20 @@ const updateSession = async (req, res, next) => {
  */
 const deleteSession = async (req, res, next) => {
   try {
-    await prisma.session.update({
+    const cancellationNote = String(req.body?.cancellationNote || '').trim();
+    if (!cancellationNote) {
+      return res.status(400).json({ error: 'Vui lòng nhập lý do hủy trận đấu' });
+    }
+    if (cancellationNote.length > 500) {
+      return res.status(400).json({ error: 'Ghi chú hủy trận tối đa 500 ký tự' });
+    }
+
+    const session = await prisma.session.update({
       where: { id: req.params.id },
-      data: { status: 'CANCELLED' },
+      data: { status: 'CANCELLED', cancellationNote },
     });
 
-    res.json({ message: 'Session cancelled' });
+    res.json({ message: 'Session cancelled', session });
   } catch (error) {
     next(error);
   }

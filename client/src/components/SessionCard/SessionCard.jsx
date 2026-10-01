@@ -67,6 +67,13 @@ export default function SessionCard({ session, currentUser, onVote }) {
         </div>
       </div>
 
+      {session.status === 'CANCELLED' && session.cancellationNote && (
+        <div className="session-cancellation-note">
+          <span className="session-cancellation-note-label">Lý do hủy</span>
+          <span>{session.cancellationNote}</span>
+        </div>
+      )}
+
       {/* Progress bar */}
       {session.status === 'VOTING' && (
         <div className="progress-section">

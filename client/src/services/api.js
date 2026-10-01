@@ -161,9 +161,10 @@ export const sessionsAPI = {
     return res.json();
   },
 
-  delete: async (id) => {
+  delete: async (id, cancellationNote) => {
     const res = await fetchWithAuth(`/sessions/${id}`, {
       method: 'DELETE',
+      body: JSON.stringify({ cancellationNote }),
     });
     return res.json();
   },
@@ -421,4 +422,3 @@ export const usersAPI = {
     return res.json();
   },
 };
-
