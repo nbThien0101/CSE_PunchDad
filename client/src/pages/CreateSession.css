@@ -25,6 +25,65 @@
   gap: var(--space-4);
 }
 
+.time-slots-field {
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.time-slots-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.time-slots-heading .form-hint {
+  display: block;
+}
+
+.time-slots-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.time-slot-editor-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr 34px;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+}
+
+.time-slot-editor-row .form-group {
+  margin: 0;
+}
+
+.time-slot-number {
+  align-self: center;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-50);
+  color: var(--primary-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.time-slot-remove {
+  height: 40px;
+  color: var(--danger-600);
+}
+
 @media (max-width: 640px) {
   .form-row-3 {
     grid-template-columns: 1fr;
@@ -32,5 +91,26 @@
 
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .time-slots-heading {
+    flex-direction: column;
+  }
+
+  .time-slot-editor-row {
+    grid-template-columns: 24px 1fr 32px;
+  }
+
+  .time-slot-editor-row .form-group:first-of-type {
+    grid-column: 2;
+  }
+
+  .time-slot-editor-row .form-group:nth-of-type(2) {
+    grid-column: 2;
+  }
+
+  .time-slot-remove {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
 }

@@ -5,6 +5,27 @@ const { checkUnpaidPreviousPayment } = require('./vote.controller');
 
 const prisma = new PrismaClient();
 
+const normalizeTimeSlots = (timeSlots, fallbackStartTime, fallbackEndTime) => {
+  const slots = Array.isArray(timeSlots) && timeSlots.length
+    ? timeSlots
+    : [{ startTime: fallbackStartTime, endTime: fallbackEndTime }];
+
+  const normalized = slots.map(slot => ({
+    startTime: String(slot.startTime || '').trim(),
+    endTime: String(slot.endTime || '').trim(),
+  }));
+  const validTime = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const hasInvalid = normalized.some(slot => (
+    !validTime.test(slot.startTime)
+    || !validTime.test(slot.endTime)
+    || slot.startTime >= slot.endTime
+  ));
+  const uniqueKeys = new Set(normalized.map(slot => `${slot.startTime}-${slot.endTime}`));
+
+  if (hasInvalid || uniqueKeys.size !== normalized.length || normalized.length > 20) return null;
+  return normalized;
+};
+
 const isGoogleMapsUrl = (value) => {
   if (!value) return true;
 
@@ -52,6 +73,12 @@ const getSessions = async (req, res, next) => {
             },
           },
         },
+        timeSlots: {
+          include: {
+            _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
+          },
+          orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+        },
         _count: {
           select: {
             votes: { where: { status: 'JOIN' } },
@@ -87,8 +114,24 @@ const getSession = async (req, res, next) => {
             user: {
               select: { id: true, displayName: true, avatar: true, tier: true, isGoalkeeper: true },
             },
+            timeSlotVotes: { select: { timeSlotId: true } },
           },
           orderBy: { votedAt: 'asc' },
+        },
+        timeSlots: {
+          include: {
+            votes: {
+              where: { vote: { status: 'JOIN' } },
+              include: {
+                vote: {
+                  include: {
+                    user: { select: { id: true, displayName: true, avatar: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
         },
         guests: {
           orderBy: { addedAt: 'asc' },
@@ -140,30 +183,37 @@ const createSession = async (req, res, next) => {
 
     const {
       title, playDate, startTime, endTime,
-      location, googleMapsUrl, minPlayers, maxPlayers, voteDeadline,
+      location, googleMapsUrl, minPlayers, maxPlayers, voteDeadline, timeSlots,
     } = req.body;
 
     if (!isGoogleMapsUrl(googleMapsUrl)) {
       return res.status(400).json({ error: 'Vui lòng nhập link Google Maps hợp lệ' });
     }
 
+    const normalizedTimeSlots = normalizeTimeSlots(timeSlots, startTime, endTime);
+    if (!normalizedTimeSlots) {
+      return res.status(400).json({ error: 'Danh sách khung giờ không hợp lệ hoặc bị trùng' });
+    }
+
     const session = await prisma.session.create({
       data: {
         title,
         playDate: new Date(playDate),
-        startTime,
-        endTime,
+        startTime: normalizedTimeSlots[0].startTime,
+        endTime: normalizedTimeSlots[0].endTime,
         location,
         googleMapsUrl: googleMapsUrl || null,
         minPlayers: parseInt(minPlayers),
         maxPlayers: parseInt(maxPlayers),
         voteDeadline: voteDeadline ? new Date(voteDeadline) : null,
         createdById: req.user.id,
+        timeSlots: { create: normalizedTimeSlots },
       },
       include: {
         createdBy: {
           select: { id: true, displayName: true },
         },
+        timeSlots: true,
       },
     });
 
@@ -181,6 +231,14 @@ const updateSession = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = {};
+    let normalizedTimeSlots;
+    const existingSession = await prisma.session.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+    if (!existingSession) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
 
     // Chỉ cho phép update các field hợp lệ
     const allowedFields = [
@@ -211,9 +269,71 @@ const updateSession = async (req, res, next) => {
       return res.status(400).json({ error: 'Vui lòng nhập link Google Maps hợp lệ' });
     }
 
-    const session = await prisma.session.update({
+
+    if (req.body.timeSlots !== undefined) {
+      const candidateTimeSlots = normalizeTimeSlots(req.body.timeSlots, req.body.startTime, req.body.endTime);
+      if (!candidateTimeSlots) {
+        return res.status(400).json({ error: 'Danh sách khung giờ không hợp lệ hoặc bị trùng' });
+      }
+      const existingTimeSlots = await prisma.sessionTimeSlot.findMany({
+        where: { sessionId: id },
+        select: { startTime: true, endTime: true },
+        orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+      });
+      const slotKey = slots => slots
+        .map(slot => `${slot.startTime}-${slot.endTime}`)
+        .sort()
+        .join('|');
+      if (slotKey(candidateTimeSlots) !== slotKey(existingTimeSlots)) {
+        normalizedTimeSlots = candidateTimeSlots;
+        if (['BOOKED', 'COMPLETED'].includes(existingSession.status)
+          || ['BOOKED', 'COMPLETED'].includes(updateData.status)) {
+          return res.status(400).json({ error: 'Không thể thay đổi các khung giờ sau khi đã chốt sân' });
+        }
+        updateData.startTime = normalizedTimeSlots[0].startTime;
+        updateData.endTime = normalizedTimeSlots[0].endTime;
+        updateData.selectedTimeSlotId = null;
+      } else {
+        delete updateData.startTime;
+        delete updateData.endTime;
+      }
+    }
+
+    if (updateData.status === 'BOOKED') {
+      const rankedSlots = await prisma.sessionTimeSlot.findMany({
+        where: { sessionId: id },
+        include: {
+          _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
+        },
+        orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+      });
+      const requestedSlot = req.body.selectedTimeSlotId
+        ? rankedSlots.find(slot => slot.id === req.body.selectedTimeSlotId)
+        : null;
+      const selectedSlot = requestedSlot || rankedSlots.reduce((best, slot) => (
+        !best || slot._count.votes > best._count.votes ? slot : best
+      ), null);
+
+      if (req.body.selectedTimeSlotId && !requestedSlot) {
+        return res.status(400).json({ error: 'Khung giờ được chọn không thuộc trận đấu này' });
+      }
+      if (selectedSlot) {
+        updateData.selectedTimeSlotId = selectedSlot.id;
+        updateData.startTime = selectedSlot.startTime;
+        updateData.endTime = selectedSlot.endTime;
+      }
+    }
+
+    const session = await prisma.$transaction(async tx => {
+      if (normalizedTimeSlots) {
+        await tx.sessionTimeSlot.deleteMany({ where: { sessionId: id } });
+      }
+      return tx.session.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(normalizedTimeSlots ? { timeSlots: { create: normalizedTimeSlots } } : {}),
+      },
       include: {
         createdBy: {
           select: { id: true, displayName: true, avatar: true },
@@ -221,7 +341,14 @@ const updateSession = async (req, res, next) => {
         payer: {
           select: { id: true, displayName: true, bankInfo: true, avatar: true },
         },
+        timeSlots: {
+          include: {
+            _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
+          },
+          orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+        },
       },
+      });
     });
 
     // Nếu session chuyển sang BOOKED và có totalCost, tạo payment records

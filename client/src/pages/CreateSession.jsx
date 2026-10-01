@@ -8,14 +8,15 @@ export default function CreateSession() {
   const [form, setForm] = useState({
     title: '',
     playDate: '',
-    startTime: '17:00',
-    endTime: '19:00',
     location: '',
     googleMapsUrl: '',
     minPlayers: 6,
     maxPlayers: 14,
     voteDeadline: '',
   });
+  const [timeSlots, setTimeSlots] = useState([
+    { startTime: '17:00', endTime: '19:00' },
+  ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,6 +33,9 @@ export default function CreateSession() {
     try {
       const data = {
         ...form,
+        startTime: timeSlots[0].startTime,
+        endTime: timeSlots[0].endTime,
+        timeSlots,
         minPlayers: parseInt(form.minPlayers),
         maxPlayers: parseInt(form.maxPlayers),
         voteDeadline: form.voteDeadline || undefined,
@@ -48,6 +52,22 @@ export default function CreateSession() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateTimeSlot = (index, field, value) => {
+    setTimeSlots(prev => prev.map((slot, slotIndex) => (
+      slotIndex === index ? { ...slot, [field]: value } : slot
+    )));
+  };
+
+  const addTimeSlot = () => {
+    const previous = timeSlots[timeSlots.length - 1];
+    setTimeSlots(prev => [...prev, { startTime: previous?.endTime || '', endTime: '' }]);
+  };
+
+  const removeTimeSlot = (index) => {
+    if (timeSlots.length === 1) return;
+    setTimeSlots(prev => prev.filter((_, slotIndex) => slotIndex !== index));
   };
 
   // Generate today's date in local time as minDate (allows creating session for today or future dates)
@@ -99,43 +119,67 @@ export default function CreateSession() {
           />
         </div>
 
-        <div className="form-row-3">
-          <div className="form-group">
-            <label className="form-label" htmlFor="play-date">Ngày thi đấu</label>
-            <input
-              id="play-date"
-              name="playDate"
-              type="date"
-              className="form-input"
-              min={minDate}
-              value={form.playDate}
-              onChange={handleChange}
-              required
-            />
+        <div className="form-group">
+          <label className="form-label" htmlFor="play-date">Ngày thi đấu</label>
+          <input
+            id="play-date"
+            name="playDate"
+            type="date"
+            className="form-input"
+            min={minDate}
+            value={form.playDate}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group time-slots-field">
+          <div className="time-slots-heading">
+            <div>
+              <label className="form-label">Các khung giờ để bình chọn</label>
+              <span className="form-hint">Thành viên có thể chọn một hoặc nhiều khung giờ phù hợp.</span>
+            </div>
+            <button type="button" className="btn btn-outline btn-sm" onClick={addTimeSlot}>
+              + Thêm khung giờ
+            </button>
           </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="start-time">Giờ bắt đầu</label>
-            <input
-              id="start-time"
-              name="startTime"
-              type="time"
-              className="form-input"
-              value={form.startTime}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="end-time">Giờ kết thúc</label>
-            <input
-              id="end-time"
-              name="endTime"
-              type="time"
-              className="form-input"
-              value={form.endTime}
-              onChange={handleChange}
-              required
-            />
+          <div className="time-slots-editor">
+            {timeSlots.map((slot, index) => (
+              <div className="time-slot-editor-row" key={index}>
+                <span className="time-slot-number">{index + 1}</span>
+                <div className="form-group">
+                  <label className="form-label" htmlFor={`start-time-${index}`}>Bắt đầu</label>
+                  <input
+                    id={`start-time-${index}`}
+                    type="time"
+                    className="form-input"
+                    value={slot.startTime}
+                    onChange={(e) => updateTimeSlot(index, 'startTime', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor={`end-time-${index}`}>Kết thúc</label>
+                  <input
+                    id={`end-time-${index}`}
+                    type="time"
+                    className="form-input"
+                    value={slot.endTime}
+                    onChange={(e) => updateTimeSlot(index, 'endTime', e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm time-slot-remove"
+                  onClick={() => removeTimeSlot(index)}
+                  disabled={timeSlots.length === 1}
+                  aria-label={`Xóa khung giờ ${index + 1}`}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 

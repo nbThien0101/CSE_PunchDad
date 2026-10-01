@@ -176,6 +176,91 @@
   font-weight: 600;
 }
 
+.time-slot-voting {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid #dbeafe;
+  border-radius: var(--radius-md);
+  background: #f8fbff;
+}
+
+.time-slot-voting-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.time-slot-voting-header h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.time-slot-voting-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.time-slot-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: var(--space-3);
+}
+
+.time-slot-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.time-slot-option.is-selected {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  box-shadow: 0 0 0 2px rgba(59, 91, 255, 0.08);
+}
+
+.time-slot-option.is-top {
+  padding-top: 24px;
+}
+
+.time-slot-option input {
+  grid-row: 1 / span 2;
+  accent-color: var(--primary-600);
+}
+
+.time-slot-option-time {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.time-slot-option-count {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.time-slot-top-badge {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 /* Vote Groups */
 .vote-group {
   margin-bottom: var(--space-5);
@@ -631,6 +716,27 @@
   gap: var(--space-3);
 }
 
+.edit-time-slots-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.edit-time-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-time-slot-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr 36px;
+  align-items: center;
+  gap: 8px;
+}
+
 .modal-actions {
   display: flex;
   align-items: center;
@@ -729,6 +835,14 @@
   .venue-map-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .time-slot-voting-header {
+    flex-direction: column;
+  }
+
+  .time-slot-voting-header .btn {
+    width: 100%;
   }
 
   .venue-map-link {

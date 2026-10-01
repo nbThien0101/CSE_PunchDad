@@ -54,6 +54,18 @@ const createSessionValidation = [
   body('endTime')
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
     .withMessage('End time must be in HH:mm format'),
+  body('timeSlots')
+    .optional()
+    .isArray({ min: 1, max: 20 })
+    .withMessage('Time slots must contain between 1 and 20 options'),
+  body('timeSlots.*.startTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('Time slot start time must be in HH:mm format'),
+  body('timeSlots.*.endTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('Time slot end time must be in HH:mm format'),
   body('location')
     .trim()
     .notEmpty()

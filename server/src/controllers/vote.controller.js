@@ -84,7 +84,7 @@ const checkUnpaidPreviousPayment = async (userId, session, dbClient = prisma) =>
  */
 const castVote = async (req, res, next) => {
   try {
-    const { sessionId, status, reason } = req.body;
+    const { sessionId, status, reason, timeSlotIds = [] } = req.body;
 
     if (!sessionId || !status) {
       return res.status(400).json({ error: 'sessionId and status are required' });
@@ -97,10 +97,23 @@ const castVote = async (req, res, next) => {
     // Kiểm tra session tồn tại
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
+      include: { timeSlots: { select: { id: true } } },
     });
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const availableTimeSlots = session.timeSlots || [];
+    let selectedTimeSlotIds = [...new Set(Array.isArray(timeSlotIds) ? timeSlotIds : [])];
+    if (status === 'JOIN' && availableTimeSlots.length === 1 && selectedTimeSlotIds.length === 0) {
+      selectedTimeSlotIds = [availableTimeSlots[0].id];
+    }
+    if (status === 'JOIN' && availableTimeSlots.length > 0) {
+      const validIds = new Set(availableTimeSlots.map(slot => slot.id));
+      if (selectedTimeSlotIds.length === 0 || selectedTimeSlotIds.some(id => !validIds.has(id))) {
+        return res.status(400).json({ error: 'Vui lòng chọn ít nhất một khung giờ hợp lệ' });
+      }
     }
 
     // Chỉ cho phép vote khi session đang ở VOTING hoặc CONFIRMED (chưa book / completed / cancelled)
@@ -185,8 +198,21 @@ const castVote = async (req, res, next) => {
         user: {
           select: { id: true, displayName: true, avatar: true },
         },
+        timeSlotVotes: { select: { timeSlotId: true } },
       },
     });
+
+    await prisma.$transaction(async tx => {
+      await tx.timeSlotVote.deleteMany({ where: { voteId: vote.id } });
+      if (status === 'JOIN' && selectedTimeSlotIds.length > 0) {
+        await tx.timeSlotVote.createMany({
+          data: selectedTimeSlotIds.map(timeSlotId => ({ voteId: vote.id, timeSlotId })),
+        });
+      }
+    });
+    vote.timeSlotVotes = status === 'JOIN'
+      ? selectedTimeSlotIds.map(timeSlotId => ({ timeSlotId }))
+      : [];
 
     // Kiểm tra đủ số lượng không
     if (status === 'JOIN') {
@@ -243,7 +269,7 @@ const castVote = async (req, res, next) => {
 const updateVote = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, reason } = req.body;
+    const { status, reason, timeSlotIds = [] } = req.body;
 
     if (!['JOIN', 'DECLINE'].includes(status)) {
       return res.status(400).json({ error: 'Status must be JOIN or DECLINE' });
@@ -252,7 +278,7 @@ const updateVote = async (req, res, next) => {
     // Kiểm tra vote thuộc về user hiện tại
     const existingVote = await prisma.vote.findUnique({
       where: { id },
-      include: { session: true },
+      include: { session: { include: { timeSlots: { select: { id: true } } } } },
     });
 
     if (!existingVote) {
@@ -264,6 +290,18 @@ const updateVote = async (req, res, next) => {
     }
 
     const session = existingVote.session;
+
+    const availableTimeSlots = session.timeSlots || [];
+    let selectedTimeSlotIds = [...new Set(Array.isArray(timeSlotIds) ? timeSlotIds : [])];
+    if (status === 'JOIN' && availableTimeSlots.length === 1 && selectedTimeSlotIds.length === 0) {
+      selectedTimeSlotIds = [availableTimeSlots[0].id];
+    }
+    if (status === 'JOIN' && availableTimeSlots.length > 0) {
+      const validIds = new Set(availableTimeSlots.map(slot => slot.id));
+      if (selectedTimeSlotIds.length === 0 || selectedTimeSlotIds.some(slotId => !validIds.has(slotId))) {
+        return res.status(400).json({ error: 'Vui lòng chọn ít nhất một khung giờ hợp lệ' });
+      }
+    }
 
     if (!['VOTING', 'CONFIRMED'].includes(session.status)) {
       return res.status(400).json({ error: 'Trận đấu không còn nhận bình chọn' });
@@ -321,8 +359,21 @@ const updateVote = async (req, res, next) => {
         user: {
           select: { id: true, displayName: true, avatar: true },
         },
+        timeSlotVotes: { select: { timeSlotId: true } },
       },
     });
+
+    await prisma.$transaction(async tx => {
+      await tx.timeSlotVote.deleteMany({ where: { voteId: vote.id } });
+      if (status === 'JOIN' && selectedTimeSlotIds.length > 0) {
+        await tx.timeSlotVote.createMany({
+          data: selectedTimeSlotIds.map(timeSlotId => ({ voteId: vote.id, timeSlotId })),
+        });
+      }
+    });
+    vote.timeSlotVotes = status === 'JOIN'
+      ? selectedTimeSlotIds.map(timeSlotId => ({ timeSlotId }))
+      : [];
 
     let message = 'Cập nhật bình chọn thành công';
     if (status === 'DECLINE') {
@@ -353,6 +404,7 @@ const getSessionVotes = async (req, res, next) => {
         user: {
           select: { id: true, displayName: true, avatar: true },
         },
+        timeSlotVotes: { select: { timeSlotId: true } },
       },
       orderBy: { votedAt: 'asc' },
     });
@@ -477,6 +529,10 @@ const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
           },
         },
       });
+
+      if (dbClient.timeSlotVote) {
+        await dbClient.timeSlotVote.deleteMany({ where: { voteId: vote.id } });
+      }
 
       const joinCount = await dbClient.vote.count({
         where: { sessionId, status: 'JOIN' },

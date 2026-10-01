@@ -103,6 +103,8 @@
   transition: all var(--duration-fast) var(--ease-out);
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
+  text-align: center;
 }
 
 .vote-btn:hover {

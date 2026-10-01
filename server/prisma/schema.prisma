@@ -59,8 +59,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  createdSessions Session[] @relation("SessionCreator")
-  paidSessions    Session[] @relation("SessionPayer")
+  createdSessions Session[]    @relation("SessionCreator")
+  paidSessions    Session[]    @relation("SessionPayer")
   votes           Vote[]
   payments        Payment[]
   absenceLogs     AbsenceLog[]
@@ -80,19 +80,19 @@ model OtpVerification {
 }
 
 model Session {
-  id         String        @id @default(uuid())
-  title      String
-  playDate   DateTime      @map("play_date")
-  startTime  String        @map("start_time")
-  endTime    String        @map("end_time")
-  location   String
-  googleMapsUrl String?    @map("google_maps_url")
-  minPlayers Int           @map("min_players")
-  maxPlayers Int           @map("max_players")
-  totalCost  Decimal?      @map("total_cost") @db.Decimal(10, 2)
-  splitCount Int?          @map("split_count")
-  status     SessionStatus @default(VOTING)
-  teams      Json?         @map("teams")
+  id            String        @id @default(uuid())
+  title         String
+  playDate      DateTime      @map("play_date")
+  startTime     String        @map("start_time")
+  endTime       String        @map("end_time")
+  location      String
+  googleMapsUrl String?       @map("google_maps_url")
+  minPlayers    Int           @map("min_players")
+  maxPlayers    Int           @map("max_players")
+  totalCost     Decimal?      @map("total_cost") @db.Decimal(10, 2)
+  splitCount    Int?          @map("split_count")
+  status        SessionStatus @default(VOTING)
+  teams         Json?         @map("teams")
 
   voteDeadline DateTime? @map("vote_deadline")
   isVoteLocked Boolean   @default(false) @map("is_vote_locked")
@@ -103,12 +103,15 @@ model Session {
   payerId     String? @map("payer_id")
 
   // Relations
-  createdBy   User          @relation("SessionCreator", fields: [createdById], references: [id])
-  payer       User?         @relation("SessionPayer", fields: [payerId], references: [id])
+  createdBy   User              @relation("SessionCreator", fields: [createdById], references: [id])
+  payer       User?             @relation("SessionPayer", fields: [payerId], references: [id])
   votes       Vote[]
   payments    Payment[]
   absenceLogs AbsenceLog[]
   guests      GuestPlayer[]
+  timeSlots   SessionTimeSlot[]
+
+  selectedTimeSlotId String? @map("selected_time_slot_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -129,12 +132,40 @@ model Vote {
   userId    String @map("user_id")
 
   // Relations
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id])
+  session       Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id])
+  timeSlotVotes TimeSlotVote[]
 
   // Mỗi user chỉ vote 1 lần cho mỗi session
   @@unique([sessionId, userId])
   @@map("votes")
+}
+
+model SessionTimeSlot {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  votes   TimeSlotVote[]
+
+  @@unique([sessionId, startTime, endTime])
+  @@map("session_time_slots")
+}
+
+model TimeSlotVote {
+  id         String   @id @default(uuid())
+  voteId     String   @map("vote_id")
+  timeSlotId String   @map("time_slot_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  vote     Vote            @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  timeSlot SessionTimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+
+  @@unique([voteId, timeSlotId])
+  @@map("time_slot_votes")
 }
 
 model AbsenceLog {
@@ -174,8 +205,8 @@ model GuestPlayer {
 }
 
 model Payment {
-  id          String        @id @default(uuid())
-  amount      Decimal       @db.Decimal(10, 2)
+  id            String        @id @default(uuid())
+  amount        Decimal       @db.Decimal(10, 2)
   status        PaymentStatus @default(PENDING)
   orderCode     BigInt?       @unique @map("order_code")
   checkoutUrl   String?       @map("checkout_url")

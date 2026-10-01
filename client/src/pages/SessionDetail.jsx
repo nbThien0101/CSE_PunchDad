@@ -31,6 +31,7 @@ export default function SessionDetail() {
   const [payerQR, setPayerQR] = useState(null);
   const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
+  const [selectedTimeSlotIds, setSelectedTimeSlotIds] = useState([]);
 
   // Attendance & Matchday states
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -49,6 +50,7 @@ export default function SessionDetail() {
     totalCost: '',
     payerId: '',
     splitCount: '',
+    selectedTimeSlotId: '',
   });
 
   // Admin edit session state
@@ -59,8 +61,6 @@ export default function SessionDetail() {
   const [editForm, setEditForm] = useState({
     title: '',
     playDate: '',
-    startTime: '',
-    endTime: '',
     location: '',
     googleMapsUrl: '',
     minPlayers: 6,
@@ -68,6 +68,7 @@ export default function SessionDetail() {
     status: 'VOTING',
     totalCost: '',
     voteDeadline: '',
+    timeSlots: [{ startTime: '17:00', endTime: '19:00' }],
   });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -86,6 +87,24 @@ export default function SessionDetail() {
     try {
       const sessionData = await sessionsAPI.getById(id);
       setSession(sessionData.session);
+      const currentVote = sessionData.session?.votes?.find(v => v.user?.id === user?.id);
+      const currentTimeSlotIds = currentVote?.timeSlotVotes?.map(item => item.timeSlotId) || [];
+      setSelectedTimeSlotIds(
+        currentTimeSlotIds.length === 0 && sessionData.session?.timeSlots?.length === 1
+          ? [sessionData.session.timeSlots[0].id]
+          : currentTimeSlotIds,
+      );
+
+      const rankedSlots = [...(sessionData.session?.timeSlots || [])].sort((a, b) => {
+        const voteDifference = (b.votes?.length || b._count?.votes || 0) - (a.votes?.length || a._count?.votes || 0);
+        return voteDifference || a.startTime.localeCompare(b.startTime);
+      });
+      setBookForm(prev => ({
+        ...prev,
+        selectedTimeSlotId: rankedSlots.some(slot => slot.id === prev.selectedTimeSlotId)
+          ? prev.selectedTimeSlotId
+          : rankedSlots[0]?.id || '',
+      }));
 
       if (['BOOKED', 'COMPLETED'].includes(sessionData.session?.status)) {
         const paymentData = await paymentsAPI.getBySession(id);
@@ -139,9 +158,18 @@ export default function SessionDetail() {
   };
 
   const submitVote = async (status, reason = '') => {
+    if (status === 'JOIN' && session?.timeSlots?.length && selectedTimeSlotIds.length === 0) {
+      setError('Vui lòng chọn ít nhất một khung giờ bạn có thể tham gia');
+      return;
+    }
     setActionLoading('vote');
     try {
-      const result = await votesAPI.cast({ sessionId: id, status, reason });
+      const result = await votesAPI.cast({
+        sessionId: id,
+        status,
+        reason,
+        timeSlotIds: status === 'JOIN' ? selectedTimeSlotIds : [],
+      });
       if (result.error) {
         setError(result.error);
       } else {
@@ -172,7 +200,7 @@ export default function SessionDetail() {
 
   const handleBook = async (e) => {
     e.preventDefault();
-    if (!bookForm.totalCost || !bookForm.payerId) {
+    if (!bookForm.totalCost || !bookForm.payerId || (session.timeSlots?.length && !bookForm.selectedTimeSlotId)) {
       setError('Vui lòng điền đầy đủ thông tin');
       return;
     }
@@ -182,11 +210,16 @@ export default function SessionDetail() {
         status: 'BOOKED',
         totalCost: parseFloat(bookForm.totalCost),
         payerId: bookForm.payerId,
+        selectedTimeSlotId: bookForm.selectedTimeSlotId,
       };
       if (bookForm.splitCount) {
         payload.splitCount = parseInt(bookForm.splitCount);
       }
-      await sessionsAPI.update(id, payload);
+      const result = await sessionsAPI.update(id, payload);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
       setSuccess('Đặt sân thành công!');
       await fetchData();
     } catch {
@@ -291,8 +324,6 @@ export default function SessionDetail() {
     setEditForm({
       title: session.title || '',
       playDate: playDateStr,
-      startTime: session.startTime || '17:00',
-      endTime: session.endTime || '19:00',
       location: session.location || '',
       googleMapsUrl: session.googleMapsUrl || '',
       minPlayers: session.minPlayers ?? 6,
@@ -300,6 +331,9 @@ export default function SessionDetail() {
       status: session.status || 'VOTING',
       totalCost: session.totalCost ? String(session.totalCost) : '',
       voteDeadline: voteDeadlineStr,
+      timeSlots: session.timeSlots?.length
+        ? session.timeSlots.map(slot => ({ startTime: slot.startTime, endTime: slot.endTime }))
+        : [{ startTime: session.startTime || '17:00', endTime: session.endTime || '19:00' }],
     });
     setShowEditModal(true);
   };
@@ -313,8 +347,9 @@ export default function SessionDetail() {
       const payload = {
         title: editForm.title.trim(),
         playDate: editForm.playDate,
-        startTime: editForm.startTime,
-        endTime: editForm.endTime,
+        startTime: editForm.timeSlots[0].startTime,
+        endTime: editForm.timeSlots[0].endTime,
+        timeSlots: editForm.timeSlots,
         location: editForm.location.trim(),
         googleMapsUrl: editForm.googleMapsUrl.trim() || null,
         minPlayers: parseInt(editForm.minPlayers, 10),
@@ -343,6 +378,47 @@ export default function SessionDetail() {
     }
   };
 
+  const toggleTimeSlot = (timeSlotId) => {
+    setSelectedTimeSlotIds(prev => (
+      prev.includes(timeSlotId)
+        ? prev.filter(idValue => idValue !== timeSlotId)
+        : [...prev, timeSlotId]
+    ));
+  };
+
+  const toggleAllTimeSlots = () => {
+    const allIds = session?.timeSlots?.map(slot => slot.id) || [];
+    setSelectedTimeSlotIds(prev => prev.length === allIds.length ? [] : allIds);
+  };
+
+  const updateEditTimeSlot = (index, field, value) => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: prev.timeSlots.map((slot, slotIndex) => (
+        slotIndex === index ? { ...slot, [field]: value } : slot
+      )),
+    }));
+  };
+
+  const addEditTimeSlot = () => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: [
+        ...prev.timeSlots,
+        { startTime: prev.timeSlots[prev.timeSlots.length - 1]?.endTime || '', endTime: '' },
+      ],
+    }));
+  };
+
+  const removeEditTimeSlot = (index) => {
+    setEditForm(prev => ({
+      ...prev,
+      timeSlots: prev.timeSlots.length === 1
+        ? prev.timeSlots
+        : prev.timeSlots.filter((_, slotIndex) => slotIndex !== index),
+    }));
+  };
+
   const mapLinks = getGoogleMapsLinks(session?.location, session?.googleMapsUrl);
 
   if (loading) {
@@ -359,6 +435,11 @@ export default function SessionDetail() {
   const userVote = session.votes?.find(v => v.user?.id === user?.id);
   const isAdmin = user?.role === 'ADMIN';
   const isPayer = session.payer?.id === user?.id;
+  const timeSlots = session.timeSlots || [];
+  const maxTimeSlotVotes = Math.max(0, ...timeSlots.map(slot => slot.votes?.length || slot._count?.votes || 0));
+  const topTimeSlotIds = new Set(timeSlots
+    .filter(slot => (slot.votes?.length || slot._count?.votes || 0) === maxTimeSlotVotes)
+    .map(slot => slot.id));
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
@@ -511,7 +592,11 @@ export default function SessionDetail() {
           </span>
           <div>
             <span className="info-block-label">Khung giờ</span>
-            <span className="info-block-value">{session.startTime} - {session.endTime}</span>
+            <span className="info-block-value">
+              {['BOOKED', 'COMPLETED'].includes(session.status)
+                ? `${session.startTime} - ${session.endTime}`
+                : `${timeSlots.length || 1} khung giờ đang bình chọn`}
+            </span>
           </div>
         </div>
         <div className="info-block">
@@ -619,6 +704,44 @@ export default function SessionDetail() {
                   💳 Xem & Thanh toán ngay ↗
                 </Link>
               )}
+            </div>
+          )}
+
+          {timeSlots.length > 0 && (
+            <div className="time-slot-voting">
+              <div className="time-slot-voting-header">
+                <div>
+                  <h3>Chọn khung giờ bạn có thể tham gia</h3>
+                  <p>Có thể chọn nhiều khung giờ. Số vote được cập nhật sau khi bấm “Tham gia”.</p>
+                </div>
+                {!session.isVoteLocked && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={toggleAllTimeSlots}>
+                    {selectedTimeSlotIds.length === timeSlots.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả khung giờ'}
+                  </button>
+                )}
+              </div>
+              <div className="time-slot-options">
+                {timeSlots.map(slot => {
+                  const voteCount = slot.votes?.length || slot._count?.votes || 0;
+                  const isTop = maxTimeSlotVotes > 0 && topTimeSlotIds.has(slot.id);
+                  return (
+                    <label
+                      key={slot.id}
+                      className={`time-slot-option ${selectedTimeSlotIds.includes(slot.id) ? 'is-selected' : ''} ${isTop ? 'is-top' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTimeSlotIds.includes(slot.id)}
+                        onChange={() => toggleTimeSlot(slot.id)}
+                        disabled={session.isVoteLocked}
+                      />
+                      <span className="time-slot-option-time">{slot.startTime} - {slot.endTime}</span>
+                      <span className="time-slot-option-count">{voteCount} vote</span>
+                      {isTop && <span className="time-slot-top-badge">Nhiều nhất</span>}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -941,6 +1064,28 @@ export default function SessionDetail() {
         <div className="detail-section">
           <h2 className="section-title">Xác nhận đặt sân (Admin)</h2>
           <form className="book-form" onSubmit={handleBook}>
+            {timeSlots.length > 0 && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="book-time-slot">Khung giờ chốt sân</label>
+                <select
+                  id="book-time-slot"
+                  className="form-input"
+                  value={bookForm.selectedTimeSlotId}
+                  onChange={(e) => setBookForm(prev => ({ ...prev, selectedTimeSlotId: e.target.value }))}
+                  required
+                >
+                  {timeSlots.map(slot => {
+                    const voteCount = slot.votes?.length || slot._count?.votes || 0;
+                    return (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.startTime} - {slot.endTime} · {voteCount} vote{topTimeSlotIds.has(slot.id) && maxTimeSlotVotes > 0 ? ' · Cao nhất' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="form-hint">Hệ thống đã đề xuất khung giờ có nhiều lượt chọn nhất. Admin vẫn có thể đổi trước khi xác nhận.</span>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label" htmlFor="total-cost">Tổng tiền sân (VNĐ)</label>
               <input
@@ -1280,30 +1425,44 @@ export default function SessionDetail() {
                   />
                 </div>
 
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-startTime">Giờ bắt đầu <span className="text-danger">*</span></label>
-                    <input
-                      id="edit-startTime"
-                      type="time"
-                      className="form-input"
-                      value={editForm.startTime}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, startTime: e.target.value }))}
-                      required
-                    />
+                <div className="form-group">
+                  <div className="edit-time-slots-header">
+                    <label className="form-label">Các khung giờ bình chọn <span className="text-danger">*</span></label>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={addEditTimeSlot}>+ Thêm</button>
                   </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-endTime">Giờ kết thúc <span className="text-danger">*</span></label>
-                    <input
-                      id="edit-endTime"
-                      type="time"
-                      className="form-input"
-                      value={editForm.endTime}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, endTime: e.target.value }))}
-                      required
-                    />
+                  <div className="edit-time-slots">
+                    {editForm.timeSlots.map((slot, index) => (
+                      <div className="edit-time-slot-row" key={index}>
+                        <input
+                          type="time"
+                          className="form-input"
+                          value={slot.startTime}
+                          onChange={(e) => updateEditTimeSlot(index, 'startTime', e.target.value)}
+                          aria-label={`Giờ bắt đầu khung ${index + 1}`}
+                          required
+                        />
+                        <span>đến</span>
+                        <input
+                          type="time"
+                          className="form-input"
+                          value={slot.endTime}
+                          onChange={(e) => updateEditTimeSlot(index, 'endTime', e.target.value)}
+                          aria-label={`Giờ kết thúc khung ${index + 1}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => removeEditTimeSlot(index)}
+                          disabled={editForm.timeSlots.length === 1}
+                          aria-label={`Xóa khung giờ ${index + 1}`}
+                        >✕</button>
+                      </div>
+                    ))}
                   </div>
+                  {session.votes?.some(v => v.timeSlotVotes?.length) && (
+                    <span className="form-hint text-danger">Lưu thay đổi khung giờ sẽ xóa các lựa chọn giờ hiện tại; thành viên cần chọn lại.</span>
+                  )}
                 </div>
 
                 <div className="form-group">
