@@ -2,6 +2,7 @@ const router = require('express').Router();
 const {
   getSessions,
   getSession,
+  addTimeSlot,
   createSession,
   updateSession,
   deleteSession,
@@ -31,6 +32,7 @@ router.use(authenticate);
 router.get('/', getSessions);
 router.get('/:id', getSession);
 router.post('/', requireAdmin, createSessionValidation, createSession);
+router.post('/:id/time-slots', addTimeSlot);
 router.put('/:id', requireAdmin, updateSession);
 router.delete('/:id/force', requireAdmin, adminDeleteSession);
 router.delete('/:id', requireAdmin, deleteSession);

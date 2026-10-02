@@ -1198,3 +1198,77 @@
     justify-content: space-between;
   }
 }
+.add-time-slot {
+  margin: 12px 0 20px;
+}
+
+.add-time-slot-form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.add-time-slot-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  flex: 1 1 140px;
+}
+
+.add-time-slot-form input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+}
+
+.add-time-slot-form p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.registration-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
+.registration-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: left;
+  font: inherit;
+  color: #475569;
+  cursor: pointer;
+}
+
+.registration-slot:hover,
+.registration-slot.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.registration-slot.is-active {
+  box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.registration-slot strong { color: #0f172a; }
+.registration-slot small { color: #2563eb; }
+.registration-slot-bar { height: 5px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+.registration-slot-bar > span { display: block; height: 100%; background: #2563eb; }

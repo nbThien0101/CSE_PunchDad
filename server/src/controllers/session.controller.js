@@ -44,6 +44,52 @@ const isGoogleMapsUrl = (value) => {
   }
 };
 
+// Members can propose additional slots while voting is open.
+const addTimeSlot = async (req, res, next, dbClient = prisma) => {
+  try {
+    const slots = normalizeTimeSlots([req.body], '', '');
+    if (!slots) {
+      return res.status(400).json({ error: 'Khung giờ không hợp lệ. Giờ kết thúc phải sau giờ bắt đầu.' });
+    }
+    const result = await dbClient.$transaction(async tx => {
+      const session = await tx.session.findUnique({
+        where: { id: req.params.id },
+        include: { timeSlots: true },
+      });
+      if (!session) return { code: 404, error: 'Không tìm thấy trận đấu' };
+      if (!['VOTING', 'CONFIRMED'].includes(session.status) || session.isVoteLocked
+        || (session.voteDeadline && new Date() > session.voteDeadline)) {
+        return { code: 400, error: 'Bình chọn đã đóng, không thể thêm khung giờ' };
+      }
+      const existingSlots = session.timeSlots;
+      const legacySlot = existingSlots.length === 0
+        ? normalizeTimeSlots([], session.startTime, session.endTime)?.[0]
+        : null;
+      const allSlots = legacySlot ? [legacySlot] : existingSlots;
+      if (allSlots.some(slot => slot.startTime === slots[0].startTime && slot.endTime === slots[0].endTime)) {
+        return { code: 409, error: 'Khung giờ này đã có trong danh sách' };
+      }
+      if (allSlots.length >= 20) return { code: 400, error: 'Mỗi trận đấu có tối đa 20 khung giờ' };
+      // Preserve registrations in sessions created before time-slot voting existed.
+      if (legacySlot) {
+        const original = await tx.sessionTimeSlot.create({ data: { sessionId: session.id, ...legacySlot } });
+        const votes = await tx.vote.findMany({ where: { sessionId: session.id, status: 'JOIN' } });
+        if (votes.length) {
+          await tx.timeSlotVote.createMany({ data: votes.map(vote => ({ voteId: vote.id, timeSlotId: original.id })) });
+        }
+      }
+      const timeSlot = await tx.sessionTimeSlot.create({ data: { sessionId: session.id, ...slots[0] } });
+      return { timeSlot };
+    }, { isolationLevel: 'Serializable' });
+    if (result.error) return res.status(result.code).json({ error: result.error });
+    return res.status(201).json({ message: 'Đã thêm khung giờ. Chọn giờ và bấm Tham gia để đăng ký.', timeSlot: result.timeSlot });
+  } catch (error) {
+    if (error.code === 'P2002') return res.status(409).json({ error: 'Khung giờ này đã có trong danh sách' });
+    if (error.code === 'P2034') return res.status(409).json({ error: 'Danh sách khung giờ vừa thay đổi. Vui lòng thử lại.' });
+    next(error);
+  }
+};
+
 /**
  * GET /api/sessions
  * Lấy danh sách tất cả sessions
@@ -643,6 +689,7 @@ const deleteTeams = async (req, res, next) => {
 };
 
 module.exports = {
+  addTimeSlot,
   getSessions,
   getSession,
   createSession,

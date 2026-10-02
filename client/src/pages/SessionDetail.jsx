@@ -8,6 +8,7 @@ import AdminAdjustVoteModal from '../components/Vote/AdminAdjustVoteModal';
 import PayOSModal from '../components/Payment/PayOSModal';
 import Modal from '../components/Modal/Modal';
 import { getGoogleMapsLinks } from '../utils/googleMaps';
+import { rankTimeSlots, getSlotRegistrations } from '../utils/timeSlots';
 import './SessionDetail.css';
 
 const STATUS_CONFIG = {
@@ -32,6 +33,10 @@ export default function SessionDetail() {
   const [qrExpanded, setQrExpanded] = useState(false);
   const [success, setSuccess] = useState('');
   const [selectedTimeSlotIds, setSelectedTimeSlotIds] = useState([]);
+  const [registrationSlotId, setRegistrationSlotId] = useState(null);
+  const [showAddTimeSlot, setShowAddTimeSlot] = useState(false);
+  const [newTimeSlot, setNewTimeSlot] = useState({ startTime: '', endTime: '' });
+  const [timeSlotError, setTimeSlotError] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationNote, setCancellationNote] = useState('');
 
@@ -76,6 +81,8 @@ export default function SessionDetail() {
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
+    setRegistrationSlotId(null);
+    setShowAddTimeSlot(false);
     fetchData();
 
     // Kiểm tra redirect từ PayOS (payment_status=success)
@@ -86,22 +93,19 @@ export default function SessionDetail() {
     }
   }, [id]);
 
-  const fetchData = async () => {
+  const fetchData = async (preserveSlotSelection = false) => {
     try {
       const sessionData = await sessionsAPI.getById(id);
       setSession(sessionData.session);
       const currentVote = sessionData.session?.votes?.find(v => v.user?.id === user?.id);
       const currentTimeSlotIds = currentVote?.timeSlotVotes?.map(item => item.timeSlotId) || [];
-      setSelectedTimeSlotIds(
+      if (!preserveSlotSelection) setSelectedTimeSlotIds(
         currentTimeSlotIds.length === 0 && sessionData.session?.timeSlots?.length === 1
           ? [sessionData.session.timeSlots[0].id]
           : currentTimeSlotIds,
       );
 
-      const rankedSlots = [...(sessionData.session?.timeSlots || [])].sort((a, b) => {
-        const voteDifference = (b.votes?.length || b._count?.votes || 0) - (a.votes?.length || a._count?.votes || 0);
-        return voteDifference || a.startTime.localeCompare(b.startTime);
-      });
+      const rankedSlots = rankTimeSlots(sessionData.session?.timeSlots || []);
       setBookForm(prev => ({
         ...prev,
         selectedTimeSlotId: rankedSlots.some(slot => slot.id === prev.selectedTimeSlotId)
@@ -129,6 +133,33 @@ export default function SessionDetail() {
       setError('Không thể tải session');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddTimeSlot = async (e) => {
+    e.preventDefault();
+    setTimeSlotError('');
+    if (!newTimeSlot.startTime || !newTimeSlot.endTime || newTimeSlot.startTime >= newTimeSlot.endTime) {
+      setTimeSlotError('Giờ kết thúc phải sau giờ bắt đầu.');
+      return;
+    }
+    setActionLoading('addTimeSlot');
+    try {
+      const result = await sessionsAPI.addTimeSlot(id, newTimeSlot);
+      if (result.error) {
+        setTimeSlotError(result.error);
+        return;
+      }
+      await fetchData(true);
+      setSelectedTimeSlotIds(prev => [...new Set([...prev, result.timeSlot.id])]);
+      setNewTimeSlot({ startTime: '', endTime: '' });
+      setShowAddTimeSlot(false);
+      setError('');
+      setSuccess(result.message);
+    } catch {
+      setTimeSlotError('Không thể thêm khung giờ. Vui lòng thử lại.');
+    } finally {
+      setActionLoading('');
     }
   };
 
@@ -462,6 +493,17 @@ export default function SessionDetail() {
   const topTimeSlotIds = new Set(timeSlots
     .filter(slot => (slot.votes?.length || slot._count?.votes || 0) === maxTimeSlotVotes)
     .map(slot => slot.id));
+  const rankedRegistrationSlots = rankTimeSlots(timeSlots);
+  const activeRegistrationSlot = timeSlots.find(slot => slot.id === registrationSlotId)
+    || rankedRegistrationSlots[0];
+  const unassignedVotes = getSlotRegistrations(joinedVotes, 'unassigned');
+  const visibleJoinedVotes = registrationSlotId === 'unassigned'
+    ? unassignedVotes
+    : activeRegistrationSlot
+      ? getSlotRegistrations(joinedVotes, activeRegistrationSlot.id)
+      : joinedVotes;
+  const canAddTimeSlot = ['VOTING', 'CONFIRMED'].includes(session.status)
+    && !session.isVoteLocked && (!session.voteDeadline || new Date() <= new Date(session.voteDeadline));
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
@@ -777,6 +819,25 @@ export default function SessionDetail() {
             </div>
           )}
 
+          {canAddTimeSlot && (
+            <div className="add-time-slot">
+              {!showAddTimeSlot ? (
+                <button type="button" className="btn btn-outline btn-sm" disabled={timeSlots.length >= 20 || Boolean(actionLoading)} onClick={() => { setTimeSlotError(''); setShowAddTimeSlot(true); }}>
+                  + Thêm khung giờ
+                </button>
+              ) : (
+                <form className="add-time-slot-form" onSubmit={handleAddTimeSlot}>
+                  <label>Giờ bắt đầu<input type="time" required value={newTimeSlot.startTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, startTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
+                  <label>Giờ kết thúc<input type="time" required value={newTimeSlot.endTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, endTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={Boolean(actionLoading)}>{actionLoading === 'addTimeSlot' ? 'Đang thêm...' : 'Thêm khung giờ'}</button>
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={Boolean(actionLoading)} onClick={() => setShowAddTimeSlot(false)}>Hủy</button>
+                  {timeSlotError && <p className="alert alert-error" role="alert">{timeSlotError}</p>}
+                  <p className="text-muted">Khung giờ mới sẽ xuất hiện cho mọi người. Bấm “Tham gia” để lưu các giờ bạn đã chọn.</p>
+                </form>
+              )}
+            </div>
+          )}
+
           {session.isVoteLocked ? (
             <div className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -979,7 +1040,7 @@ export default function SessionDetail() {
       <div className="detail-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>
-            Danh sách đăng ký ({joinedVotes.length + (session.guests?.length || 0)})
+            Danh sách đăng ký theo khung giờ
           </h2>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {isAdmin && (
@@ -1009,19 +1070,44 @@ export default function SessionDetail() {
             )}
           </div>
         </div>
+        {timeSlots.length > 0 && (
+          <div className="registration-dashboard">
+            <p className="text-muted">{joinedVotes.length} thành viên đăng ký · Mỗi người có thể chọn nhiều giờ. Mặc định hiển thị giờ có nhiều người đăng ký nhất.</p>
+            <div className="registration-slot-grid" aria-label="Danh sách khung giờ">
+              {rankedRegistrationSlots.map(slot => {
+                const count = slot.votes?.length ?? slot._count?.votes ?? 0;
+                const active = registrationSlotId !== 'unassigned' && activeRegistrationSlot?.id === slot.id;
+                return (
+                  <button key={slot.id} type="button" className={`registration-slot ${active ? 'is-active' : ''}`} aria-pressed={active} onClick={() => setRegistrationSlotId(slot.id)}>
+                    <strong>{slot.startTime} – {slot.endTime}</strong>
+                    <span>{count} người đăng ký</span>
+                    <span className="registration-slot-bar"><span style={{ width: `${maxTimeSlotVotes ? count / maxTimeSlotVotes * 100 : 0}%` }} /></span>
+                    {maxTimeSlotVotes > 0 && topTimeSlotIds.has(slot.id) && <small>Nhiều đăng ký nhất</small>}
+                  </button>
+                );
+              })}
+              {unassignedVotes.length > 0 && (
+                <button type="button" className={`registration-slot ${registrationSlotId === 'unassigned' ? 'is-active' : ''}`} aria-pressed={registrationSlotId === 'unassigned'} onClick={() => setRegistrationSlotId('unassigned')}>
+                  <strong>Chưa chọn khung giờ</strong><span>{unassignedVotes.length} người</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div className="votes-table">
-          {joinedVotes.length > 0 && (
+          {visibleJoinedVotes.length === 0 && <p className="text-muted">{timeSlots.length ? 'Chưa có ai đăng ký khung giờ này.' : 'Chưa có ai đăng ký.'}</p>}
+          {visibleJoinedVotes.length > 0 && (
             <div className="vote-group">
               <h3 className="vote-group-title">
-                Tham gia ({joinedVotes.length})
-                {joinedVotes.filter(v => v.isCheckedIn).length > 0 && (
+                {registrationSlotId === 'unassigned' ? 'Chưa chọn khung giờ' : activeRegistrationSlot ? `${activeRegistrationSlot.startTime} – ${activeRegistrationSlot.endTime}` : 'Tham gia'} ({visibleJoinedVotes.length})
+                {visibleJoinedVotes.filter(v => v.isCheckedIn).length > 0 && (
                   <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600, marginLeft: '6px' }}>
-                    · {joinedVotes.filter(v => v.isCheckedIn).length} đã đến sân
+                    · {visibleJoinedVotes.filter(v => v.isCheckedIn).length} đã đến sân
                   </span>
                 )}
               </h3>
               <div className="vote-list">
-                {joinedVotes.map(v => (
+                {visibleJoinedVotes.map(v => (
                   <span
                     key={v.id}
                     className={`vote-chip vote-chip-join ${isAdmin ? 'vote-chip-admin-editable' : ''}`}
@@ -1043,7 +1129,7 @@ export default function SessionDetail() {
           {session.guests?.length > 0 && (
             <div className="vote-group">
               <h3 className="vote-group-title" style={{ color: '#ea580c' }}>
-                Khách mời ({session.guests.length})
+                Khách mời của trận đấu ({session.guests.length})
               </h3>
               <div className="vote-list">
                 {session.guests.map(g => (

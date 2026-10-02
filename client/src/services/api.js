@@ -134,6 +134,13 @@ export const authAPI = {
 // Sessions API
 // ==========================================
 export const sessionsAPI = {
+  addTimeSlot: async (id, data) => {
+    const res = await fetchWithAuth(`/sessions/${id}/time-slots`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
   getAll: async (status) => {
     const query = status ? `?status=${status}` : '';
     const res = await fetchWithAuth(`/sessions${query}`);
