@@ -1,0 +1,71 @@
+.feedback-fab {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(59, 91, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--primary-600);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(12px);
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+
+.feedback-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(59, 91, 255, 0.2); }
+.feedback-fab svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.feedback-modal-shell { max-width: 640px !important; }
+.feedback-modal { position: relative; width: 100%; overflow: hidden; border-radius: 22px; background: #fff; box-shadow: 0 28px 70px rgba(15, 23, 42, 0.3); }
+.feedback-modal form { padding: 30px; }
+.feedback-close { position: absolute; top: 16px; right: 16px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--gray-100); color: var(--gray-500); }
+.feedback-close:hover { background: var(--gray-200); color: var(--gray-800); }
+.feedback-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.feedback-heading { display: flex; gap: 14px; padding-right: 30px; margin-bottom: 24px; }
+.feedback-heading-icon { display: grid; place-items: center; flex: 0 0 48px; height: 48px; border-radius: 15px; background: linear-gradient(135deg, var(--primary-500), #7c3aed); color: #fff; font-size: 1.3rem; box-shadow: 0 8px 20px rgba(59, 91, 255, 0.25); }
+.feedback-eyebrow { display: block; color: var(--primary-600); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.feedback-heading h2, .feedback-success h2 { margin: 2px 0 3px; color: var(--gray-900); font-size: 1.45rem; line-height: 1.25; }
+.feedback-heading p, .feedback-success p { margin: 0; color: var(--gray-500); font-size: 0.86rem; }
+.feedback-fieldset { margin: 0 0 20px; border: 0; }
+.feedback-fieldset legend, .feedback-message-label { display: block; margin-bottom: 9px; color: var(--gray-700); font-size: 0.82rem; font-weight: 700; }
+.feedback-fieldset legend span { color: var(--gray-400); font-weight: 500; }
+.feedback-category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.feedback-category { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border: 1px solid var(--gray-200); border-radius: 11px; background: #fff; color: var(--gray-600); font-size: 0.78rem; font-weight: 600; transition: all 160ms ease; }
+.feedback-category:hover { border-color: var(--primary-200); background: var(--primary-50); }
+.feedback-category.active { border-color: var(--primary-400); background: var(--primary-50); color: var(--primary-700); box-shadow: 0 0 0 2px rgba(59, 91, 255, 0.08); }
+.feedback-rating { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.feedback-rating button { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 3px; padding: 8px 3px; border: 1px solid transparent; border-radius: 11px; background: var(--gray-50); transition: all 160ms ease; }
+.feedback-rating button:hover { transform: translateY(-2px); background: var(--primary-50); }
+.feedback-rating button.active { border-color: var(--primary-300); background: var(--primary-50); box-shadow: 0 3px 10px rgba(59, 91, 255, 0.1); }
+.feedback-rating button > span { font-size: 1.35rem; line-height: 1; }
+.feedback-rating small { max-width: 100%; overflow: hidden; color: var(--gray-500); font-size: 0.62rem; text-overflow: ellipsis; white-space: nowrap; }
+.feedback-message-label { position: relative; margin: 0 0 16px; }
+.feedback-message-label textarea { width: 100%; margin-top: 9px; padding: 13px 14px 28px; resize: vertical; border: 1px solid var(--gray-200); border-radius: 12px; outline: 0; color: var(--gray-800); font: inherit; font-size: 0.84rem; line-height: 1.55; transition: border-color 160ms, box-shadow 160ms; }
+.feedback-message-label textarea:focus { border-color: var(--primary-400); box-shadow: 0 0 0 3px rgba(59, 91, 255, 0.1); }
+.feedback-char-count { position: absolute; right: 11px; bottom: 8px; color: var(--gray-400); font-size: 0.67rem; font-weight: 500; }
+.feedback-error { margin: -4px 0 14px; padding: 10px 12px; border-radius: 10px; background: var(--danger-50); color: var(--danger-600); font-size: 0.78rem; }
+.feedback-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.feedback-actions > span { max-width: 260px; color: var(--gray-400); font-size: 0.68rem; line-height: 1.4; }
+.feedback-actions .btn { min-width: 138px; }
+.feedback-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+.feedback-success { display: flex; min-height: 420px; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+.feedback-success-icon { display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 18px; border-radius: 22px; background: linear-gradient(135deg, var(--success-500), var(--success-600)); color: #fff; box-shadow: 0 12px 28px rgba(16,185,129,.26); }
+.feedback-success-icon svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.feedback-success p { max-width: 360px; margin: 8px 0 24px; }
+
+@media (max-width: 560px) {
+  .feedback-fab { left: 16px; bottom: 16px; width: 44px; height: 44px; justify-content: center; padding: 0; }
+  .feedback-fab span { display: none; }
+  .feedback-modal form { padding: 24px 18px; }
+  .feedback-category-grid { grid-template-columns: repeat(2, 1fr); }
+  .feedback-rating small { display: none; }
+  .feedback-actions { align-items: stretch; flex-direction: column; }
+  .feedback-actions > span { max-width: none; }
+  .feedback-actions .btn { width: 100%; }
+}

@@ -9,6 +9,7 @@ import SessionDetail from './pages/SessionDetail';
 import CreateSession from './pages/CreateSession';
 import Profile from './pages/Profile';
 import Members from './pages/Members';
+import FeedbackAdmin from './pages/FeedbackAdmin';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ function App() {
           />
           <Route path="/profile" element={<Profile />} />
           <Route path="/members" element={<Members />} />
+          <Route path="/feedback" element={<AdminRoute><FeedbackAdmin /></AdminRoute>} />
         </Route>
 
         {/* Fallback */}

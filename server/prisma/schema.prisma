@@ -64,8 +64,28 @@ model User {
   votes           Vote[]
   payments        Payment[]
   absenceLogs     AbsenceLog[]
+  feedbacks       Feedback[]
 
   @@map("users")
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  category  String   @default("OTHER")
+  rating    Int?
+  message   String   @db.Text
+  pagePath  String?  @map("page_path")
+  status    String   @default("NEW")
+  adminNote String?  @map("admin_note") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("feedbacks")
 }
 
 model OtpVerification {

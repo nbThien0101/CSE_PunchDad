@@ -247,6 +247,96 @@ async function runTests() {
     });
   })();
 
+  // 9. Admin chọn khung giờ thay cho user quên vote
+  await (async () => {
+    const selectedSlots = ['slot-1', 'slot-2'];
+    let deletedForVoteId = null;
+    let createdTimeSlotVotes = [];
+    const sessionWithTimeSlots = {
+      ...sampleSession,
+      timeSlots: [{ id: 'slot-1' }, { id: 'slot-2' }, { id: 'slot-3' }],
+    };
+    const mockDb = {
+      session: { findUnique: async () => sessionWithTimeSlots },
+      user: { findUnique: async () => sampleUser },
+      vote: {
+        findUnique: async () => ({
+          id: 'vote-existing',
+          sessionId: 'session-123',
+          userId: 'user-456',
+          status: 'JOIN',
+        }),
+        upsert: async () => ({
+          id: 'vote-existing',
+          sessionId: 'session-123',
+          userId: 'user-456',
+          status: 'JOIN',
+          user: sampleUser,
+        }),
+        count: async () => 5,
+      },
+      timeSlotVote: {
+        deleteMany: async ({ where }) => {
+          deletedForVoteId = where.voteId;
+        },
+        createMany: async ({ data }) => {
+          createdTimeSlotVotes = data;
+        },
+      },
+    };
+
+    const req = {
+      body: {
+        sessionId: 'session-123',
+        userId: 'user-456',
+        status: 'JOIN',
+        timeSlotIds: selectedSlots,
+      },
+    };
+    const res = mockRes();
+    await adminAdjustVote(req, res, () => {}, mockDb);
+
+    it('9. Admin có thể cập nhật nhiều khung giờ cho user đang tham gia', () => {
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(deletedForVoteId, 'vote-existing');
+      assert.deepStrictEqual(createdTimeSlotVotes, [
+        { voteId: 'vote-existing', timeSlotId: 'slot-1' },
+        { voteId: 'vote-existing', timeSlotId: 'slot-2' },
+      ]);
+      assert.deepStrictEqual(res.data.vote.timeSlotVotes, [
+        { timeSlotId: 'slot-1' },
+        { timeSlotId: 'slot-2' },
+      ]);
+    });
+  })();
+
+  // 10. Không cho phép admin gửi khung giờ không thuộc session
+  await (async () => {
+    const mockDb = {
+      session: {
+        findUnique: async () => ({
+          ...sampleSession,
+          timeSlots: [{ id: 'slot-1' }, { id: 'slot-2' }],
+        }),
+      },
+    };
+    const req = {
+      body: {
+        sessionId: 'session-123',
+        userId: 'user-456',
+        status: 'JOIN',
+        timeSlotIds: ['slot-other-session'],
+      },
+    };
+    const res = mockRes();
+    await adminAdjustVote(req, res, () => {}, mockDb);
+
+    it('10. Trả về 400 khi khung giờ không hợp lệ', () => {
+      assert.strictEqual(res.statusCode, 400);
+      assert.strictEqual(res.data.error, 'Vui lòng chọn ít nhất một khung giờ hợp lệ');
+    });
+  })();
+
   console.log(`\n🏁 Kết quả: ${testsPassed} passed, ${testsFailed} failed\n`);
   if (testsFailed > 0) {
     process.exit(1);

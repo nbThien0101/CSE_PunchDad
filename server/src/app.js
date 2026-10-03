@@ -9,6 +9,7 @@ const sessionRoutes = require('./routes/session.routes');
 const voteRoutes = require('./routes/vote.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
+const feedbackRoutes = require('./routes/feedback.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const { globalLimiter, speedLimiter } = require('./middleware/security.middleware');
 
@@ -82,6 +83,7 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/votes', voteRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // ==========================================
 // Error Handling

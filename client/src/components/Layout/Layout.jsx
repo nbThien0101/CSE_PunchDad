@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import FeedbackModal from '../Feedback/FeedbackModal';
 import './Layout.css';
 
 export default function Layout() {
@@ -8,6 +9,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   
@@ -93,6 +95,15 @@ export default function Layout() {
               </svg>
               <span>Thành viên</span>
             </NavLink>
+            {user?.role === 'ADMIN' && (
+              <NavLink to="/feedback" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <svg className="nav-svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                  <path d="M8 9h8M8 13h5"></path>
+                </svg>
+                <span>Phản hồi</span>
+              </NavLink>
+            )}
           </nav>
 
           {/* User Profile & Corner Dropdown Menu */}
@@ -218,6 +229,26 @@ export default function Layout() {
                       <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                   </NavLink>
+
+                  {user?.role === 'ADMIN' && (
+                    <NavLink
+                      to="/feedback"
+                      className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+                      onClick={() => setIsMenuOpen(false)}
+                      id="menu-link-feedback"
+                    >
+                      <div className="menu-item-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                          <path d="M8 9h8M8 13h5"></path>
+                        </svg>
+                      </div>
+                      <span className="menu-item-text">Quản lý phản hồi</span>
+                      <svg className="menu-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </NavLink>
+                  )}
                 </div>
 
                 <div className="menu-divider" />
@@ -258,6 +289,15 @@ export default function Layout() {
           <p>v1.2.3 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
         </div>
       </footer>
+
+      <button className="feedback-fab" type="button" onClick={() => setIsFeedbackOpen(true)} aria-label="Gửi phản hồi" title="Gửi phản hồi">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+          <path d="M8 9h8M8 13h5"></path>
+        </svg>
+        <span>Góp ý</span>
+      </button>
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );
 }

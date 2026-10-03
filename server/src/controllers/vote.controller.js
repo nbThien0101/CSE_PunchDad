@@ -428,7 +428,7 @@ const getSessionVotes = async (req, res, next) => {
  */
 const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
   try {
-    const { sessionId, userId, status, reason } = req.body;
+    const { sessionId, userId, status, reason, timeSlotIds = [] } = req.body;
 
     if (!sessionId || !userId || !status) {
       return res.status(400).json({ error: 'sessionId, userId và status là bắt buộc' });
@@ -443,6 +443,7 @@ const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
     // Kiểm tra session tồn tại
     const session = await dbClient.session.findUnique({
       where: { id: sessionId },
+      include: { timeSlots: { select: { id: true } } },
     });
 
     if (!session) {
@@ -451,6 +452,18 @@ const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
 
     if (session.status === 'CANCELLED') {
       return res.status(400).json({ error: 'Không thể điều chỉnh bình chọn cho trận đấu đã hủy' });
+    }
+
+    const availableTimeSlots = session.timeSlots || [];
+    let selectedTimeSlotIds = [...new Set(Array.isArray(timeSlotIds) ? timeSlotIds : [])];
+    if (normalizedStatus === 'JOIN' && availableTimeSlots.length === 1 && selectedTimeSlotIds.length === 0) {
+      selectedTimeSlotIds = [availableTimeSlots[0].id];
+    }
+    if (normalizedStatus === 'JOIN' && availableTimeSlots.length > 0) {
+      const validIds = new Set(availableTimeSlots.map((slot) => slot.id));
+      if (selectedTimeSlotIds.length === 0 || selectedTimeSlotIds.some((id) => !validIds.has(id))) {
+        return res.status(400).json({ error: 'Vui lòng chọn ít nhất một khung giờ hợp lệ' });
+      }
     }
 
     // Kiểm tra user tồn tại
@@ -565,8 +578,21 @@ const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
         user: {
           select: { id: true, displayName: true, avatar: true },
         },
+        timeSlotVotes: { select: { timeSlotId: true } },
       },
     });
+
+    if (dbClient.timeSlotVote) {
+      await dbClient.timeSlotVote.deleteMany({ where: { voteId: vote.id } });
+      if (normalizedStatus === 'JOIN' && selectedTimeSlotIds.length > 0) {
+        await dbClient.timeSlotVote.createMany({
+          data: selectedTimeSlotIds.map((timeSlotId) => ({ voteId: vote.id, timeSlotId })),
+        });
+      }
+    }
+    vote.timeSlotVotes = normalizedStatus === 'JOIN'
+      ? selectedTimeSlotIds.map((timeSlotId) => ({ timeSlotId }))
+      : [];
 
     const joinCount = await dbClient.vote.count({
       where: { sessionId, status: 'JOIN' },
@@ -599,4 +625,3 @@ module.exports = {
   checkUnpaidPreviousPayment,
   adminAdjustVote,
 };
-

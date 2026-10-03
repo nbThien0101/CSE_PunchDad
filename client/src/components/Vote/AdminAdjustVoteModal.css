@@ -106,6 +106,70 @@
   color: var(--text-primary, #1e293b);
 }
 
+.admin-vote-time-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-vote-select-all {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-vote-select-all:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-vote-time-slot-help {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.admin-vote-time-slot-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-vote-time-slot-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-vote-time-slot-option.selected {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.admin-vote-time-slot-option input {
+  accent-color: #2563eb;
+}
+
+@media (max-width: 520px) {
+  .admin-vote-time-slot-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Search Box */
 .admin-vote-search-box {
   position: relative;

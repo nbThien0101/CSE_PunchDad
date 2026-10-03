@@ -13,6 +13,7 @@ export default function AdminAdjustVoteModal({
   const [members, setMembers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(preselectedUserId || '');
   const [targetStatus, setTargetStatus] = useState('JOIN'); // 'JOIN' | 'DECLINE' | 'NONE'
+  const [selectedTimeSlotIds, setSelectedTimeSlotIds] = useState([]);
   const [reason, setReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,20 +52,27 @@ export default function AdminAdjustVoteModal({
 
   // Cập nhật selectedUserId và trạng thái mặc định khi preselectedUserId thay đổi hoặc mở modal
   useEffect(() => {
+    const getInitialTimeSlotIds = (vote) => {
+      const currentIds = vote?.timeSlotVotes?.map((item) => item.timeSlotId) || [];
+      if (currentIds.length > 0) return currentIds;
+      return session?.timeSlots?.length === 1 ? [session.timeSlots[0].id] : [];
+    };
+
     if (preselectedUserId) {
       setSelectedUserId(preselectedUserId);
       const currentVote = session?.votes?.find(
         (v) => (v.user?.id || v.userId) === preselectedUserId
       );
       if (currentVote) {
-        // Gợi ý chuyển đổi trạng thái đối nghịch
-        setTargetStatus(currentVote.status === 'JOIN' ? 'DECLINE' : 'JOIN');
+        setTargetStatus(currentVote.status === 'JOIN' ? 'JOIN' : 'DECLINE');
       } else {
         setTargetStatus('JOIN');
       }
+      setSelectedTimeSlotIds(getInitialTimeSlotIds(currentVote));
     } else {
       setSelectedUserId('');
       setTargetStatus('JOIN');
+      setSelectedTimeSlotIds(getInitialTimeSlotIds(null));
     }
     setReason('');
     setError('');
@@ -107,10 +115,27 @@ export default function AdminAdjustVoteModal({
     setSelectedUserId(userId);
     const vote = currentVoteMap.get(userId);
     if (vote) {
-      setTargetStatus(vote.status === 'JOIN' ? 'DECLINE' : 'JOIN');
+      setTargetStatus(vote.status === 'JOIN' ? 'JOIN' : 'DECLINE');
     } else {
       setTargetStatus('JOIN');
     }
+    const currentIds = vote?.timeSlotVotes?.map((item) => item.timeSlotId) || [];
+    setSelectedTimeSlotIds(
+      currentIds.length > 0
+        ? currentIds
+        : session?.timeSlots?.length === 1
+          ? [session.timeSlots[0].id]
+          : []
+    );
+    setError('');
+  };
+
+  const toggleTimeSlot = (timeSlotId) => {
+    setSelectedTimeSlotIds((current) => (
+      current.includes(timeSlotId)
+        ? current.filter((id) => id !== timeSlotId)
+        : [...current, timeSlotId]
+    ));
     setError('');
   };
 
@@ -126,6 +151,11 @@ export default function AdminAdjustVoteModal({
       return;
     }
 
+    if (targetStatus === 'JOIN' && session?.timeSlots?.length > 0 && selectedTimeSlotIds.length === 0) {
+      setError('Vui lòng chọn ít nhất một khung giờ thành viên có thể tham gia');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
@@ -135,6 +165,7 @@ export default function AdminAdjustVoteModal({
         userId: selectedUserId,
         status: targetStatus,
         reason: reason.trim(),
+        timeSlotIds: targetStatus === 'JOIN' ? selectedTimeSlotIds : [],
       });
 
       if (res.error) {
@@ -360,6 +391,49 @@ export default function AdminAdjustVoteModal({
               </label>
             </div>
           </div>
+
+          {targetStatus === 'JOIN' && session?.timeSlots?.length > 0 && (
+            <div className="admin-vote-form-group">
+              <div className="admin-vote-time-slot-header">
+                <label className="admin-vote-form-label">
+                  Khung giờ có thể tham gia <span className="text-danger">*</span>
+                </label>
+                {session.timeSlots.length > 1 && (
+                  <button
+                    type="button"
+                    className="admin-vote-select-all"
+                    onClick={() => setSelectedTimeSlotIds(
+                      selectedTimeSlotIds.length === session.timeSlots.length
+                        ? []
+                        : session.timeSlots.map((slot) => slot.id)
+                    )}
+                    disabled={submitting}
+                  >
+                    {selectedTimeSlotIds.length === session.timeSlots.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                  </button>
+                )}
+              </div>
+              <p className="admin-vote-time-slot-help">
+                Chọn đúng các khung giờ thành viên đã xác nhận có thể đá.
+              </p>
+              <div className="admin-vote-time-slot-options">
+                {session.timeSlots.map((slot) => (
+                  <label
+                    key={slot.id}
+                    className={`admin-vote-time-slot-option ${selectedTimeSlotIds.includes(slot.id) ? 'selected' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTimeSlotIds.includes(slot.id)}
+                      onChange={() => toggleTimeSlot(slot.id)}
+                      disabled={submitting}
+                    />
+                    <span>{slot.startTime} - {slot.endTime}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Lý do / Ghi chú */}
           <div className="admin-vote-form-group">

@@ -237,10 +237,10 @@ export const votesAPI = {
     return res.json();
   },
 
-  adminAdjust: async ({ sessionId, userId, status, reason }) => {
+  adminAdjust: async ({ sessionId, userId, status, reason, timeSlotIds = [] }) => {
     const res = await fetchWithAuth('/votes/admin/adjust', {
       method: 'POST',
-      body: JSON.stringify({ sessionId, userId, status, reason }),
+      body: JSON.stringify({ sessionId, userId, status, reason, timeSlotIds }),
     });
     return res.json();
   },
@@ -425,6 +425,36 @@ export const usersAPI = {
   deleteAvatar: async () => {
     const res = await fetchWithAuth('/users/avatar', {
       method: 'DELETE',
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// Feedback API
+// ==========================================
+export const feedbackAPI = {
+  create: async (data) => {
+    const res = await fetchWithAuth('/feedback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  getAll: async ({ status = '', category = '' } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (category) params.set('category', category);
+    const query = params.toString();
+    const res = await fetchWithAuth(`/feedback${query ? `?${query}` : ''}`);
+    return res.json();
+  },
+
+  update: async (id, data) => {
+    const res = await fetchWithAuth(`/feedback/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
     return res.json();
   },
