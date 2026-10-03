@@ -8,6 +8,7 @@ const {
   checkPayOSStatus,
 } = require('../controllers/payment.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { deprecate } = require('../middleware/deprecation.middleware');
 
 // ==========================================
 // Public Webhook Routes (Không yêu cầu JWT)
@@ -20,12 +21,14 @@ router.post('/payos-webhook', handlePayOSWebhook);
 // ==========================================
 router.use(authenticate);
 
-router.get('/session/:sessionId', getSessionPayments);
-router.put('/:id/mark-paid', markAsPaid);
-router.put('/:id/confirm', confirmPayment);
+router.get('/session/:sessionId', deprecate('/api/sessions/:sessionId/payments'), getSessionPayments);
+router.post('/:paymentId/mark-paid', markAsPaid);
+router.post('/:paymentId/confirm', confirmPayment);
+router.put('/:paymentId/mark-paid', deprecate('/api/payments/:paymentId/mark-paid'), markAsPaid);
+router.put('/:paymentId/confirm', deprecate('/api/payments/:paymentId/confirm'), confirmPayment);
 
 // PayOS Endpoints
-router.post('/:id/payos-link', createPayOSLink);
-router.get('/:id/payos-status', checkPayOSStatus);
+router.post('/:paymentId/payos-link', createPayOSLink);
+router.get('/:paymentId/payos-status', checkPayOSStatus);
 
 module.exports = router;

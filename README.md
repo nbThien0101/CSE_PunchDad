@@ -259,6 +259,8 @@ Quy tắc toàn vẹn:
 
 ## Danh sách API Endpoints Chính
 
+Inventory đầy đủ 49 operations, bảng endpoint cũ → mới, quyền truy cập, migration client và **OPENAPI READINESS** nằm trong [Backend API audit](docs/api-audit.md). Các wire endpoint đã thay đổi vẫn được giữ dưới dạng alias deprecated (`X-API-Deprecated: true`); payload và status code được giữ tương thích. Backend tiếp tục dùng `/api`, chưa thêm `/v1`.
+
 ### Xác thực & Tài khoản (`/api/auth`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
@@ -266,32 +268,33 @@ Quy tắc toàn vẹn:
 | `POST` | `/api/auth/verify-otp` | `authLimiter (15/15m)` | Kiểm tra tính hợp lệ của mã OTP đăng ký |
 | `POST` | `/api/auth/register` | `authLimiter`, Validate | Đăng ký tài khoản thành viên mới |
 | `POST` | `/api/auth/login` | `authLimiter`, Validate | Đăng nhập hệ thống, cấp Access & Refresh Token |
-| `POST` | `/api/auth/forgot-password` | `otpLimiter (5/15m)` | Gửi mã OTP 6 số khôi phục mật khẩu qua email |
-| `POST` | `/api/auth/verify-reset-otp` | `authLimiter (15/15m)` | Xác thực OTP khôi phục và cấp `resetToken` (10 phút) |
-| `POST` | `/api/auth/reset-password` | `authLimiter`, Validate | Thiết lập mật khẩu mới bằng `resetToken` |
+| `POST` | `/api/auth/forgot-password/send-otp` | `otpLimiter (5/15m)` | Gửi mã OTP 6 số khôi phục mật khẩu qua email |
+| `POST` | `/api/auth/forgot-password/verify-otp` | `authLimiter (15/15m)` | Xác thực OTP khôi phục và cấp `resetToken` (10 phút) |
+| `POST` | `/api/auth/forgot-password/reset` | `authLimiter` | Thiết lập mật khẩu mới bằng `resetToken` |
+| `POST` | `/api/auth/refresh` | Refresh token trong body | Cấp cặp Access & Refresh Token mới |
 | `GET` | `/api/auth/me` | `authenticate` | Lấy thông tin tài khoản đang đăng nhập |
 
 ### Trận đấu & Đội hình (`/api/sessions`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/sessions` | `authenticate` | Lấy danh sách trận đấu (hỗ trợ bộ lọc tab) |
-| `GET` | `/api/sessions/:id` | `authenticate` | Lấy chi tiết trận, vote, lựa chọn khung giờ, đội hình và thông tin nợ tiền sân |
+| `GET` | `/api/sessions/:sessionId` | `authenticate` | Lấy chi tiết trận, vote, lựa chọn khung giờ, đội hình và thông tin nợ tiền sân |
 | `POST` | `/api/sessions` | `requireAdmin`, Validate | Tạo trận với `timeSlots` và `googleMapsUrl` tùy chọn |
-| `PUT` | `/api/sessions/:id` | `requireAdmin` | Chỉnh sửa trận, chốt `selectedTimeSlotId` hoặc cập nhật ghi chú hủy |
-| `DELETE` | `/api/sessions/:id` | `requireAdmin` | Hủy mềm trận đấu; body bắt buộc `{ "cancellationNote": "..." }` |
-| `DELETE` | `/api/sessions/:id/force` | `requireAdmin` | Xóa vĩnh viễn trận và dữ liệu liên quan |
-| `GET` | `/api/sessions/:id/teams/suggestions` | `authenticate` | Gợi ý số đội phù hợp và danh sách vote sớm nhất |
-| `POST` | `/api/sessions/:id/teams/generate` | `requireAdmin`, `computeLimiter` | Tự động cân bằng và xáo trộn đội hình ngẫu nhiên |
-| `PUT` | `/api/sessions/:id/teams` | `requireAdmin` | Lưu danh sách đội hình chính thức vào database |
-| `DELETE` | `/api/sessions/:id/teams` | `requireAdmin` | Hủy bảng chia đội hình của trận đấu |
+| `PATCH` | `/api/sessions/:sessionId` | `requireAdmin` | Chỉnh sửa trận, chốt `selectedTimeSlotId` hoặc cập nhật ghi chú hủy |
+| `POST` | `/api/sessions/:sessionId/cancel` | `requireAdmin` | Hủy mềm trận đấu; body bắt buộc `{ "cancellationNote": "..." }` |
+| `DELETE` | `/api/sessions/:sessionId/force` | `requireAdmin` | Xóa vĩnh viễn trận và dữ liệu liên quan |
+| `GET` | `/api/sessions/:sessionId/teams/suggestions` | `authenticate` | Gợi ý số đội phù hợp |
+| `POST` | `/api/sessions/:sessionId/teams/generate` | `requireAdmin`, `computeLimiter` | Tự động cân bằng và xáo trộn đội hình ngẫu nhiên |
+| `PUT` | `/api/sessions/:sessionId/teams` | `requireAdmin` | Lưu danh sách đội hình chính thức vào database |
+| `DELETE` | `/api/sessions/:sessionId/teams` | `requireAdmin` | Hủy bảng chia đội hình của trận đấu |
 
 ### Bình chọn (`/api/votes`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/votes` | `authenticate` | Bình chọn `JOIN`/`DECLINE`; `JOIN` nhận thêm `timeSlotIds` và áp dụng kiểm tra nợ |
-| `PUT` | `/api/votes/:id` | `authenticate` | Cập nhật trạng thái và danh sách `timeSlotIds` của chính người dùng |
+| `PATCH` | `/api/votes/:voteId` | `authenticate`, vote owner | Cập nhật trạng thái và danh sách `timeSlotIds` của chính người dùng |
 | `POST` | `/api/votes/admin/adjust` | `requireAdmin` | Admin thêm, đổi hoặc xóa vote (`JOIN`, `DECLINE`, `MAYBE`, `NONE`/`DELETE`) |
-| `GET` | `/api/votes/session/:sessionId` | `authenticate` | Lấy danh sách vote kèm các khung giờ đã chọn |
+| `GET` | `/api/sessions/:sessionId/votes` | `authenticate` | Lấy danh sách vote kèm các khung giờ đã chọn |
 
 Payload tiêu biểu của `v1.2.3`.
 
@@ -335,17 +338,26 @@ Hủy mềm trận đấu:
 ### Quản lý Chi phí & Thanh toán (`/api/payments`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/payments/calculate` | `requireAdmin` | Phân chia chi phí sân bóng cho các thành viên tham gia |
-| `PUT` | `/api/payments/:id/status` | `requireAdmin` | Cập nhật thủ công trạng thái nộp tiền của thành viên |
-| `POST` | `/api/payments/payos/create-payment-link` | `authenticate` | Khởi tạo link thanh toán VietQR PayOS động cho trận đấu |
-| `POST` | `/api/payments/payos/webhook` | — | Webhook PayOS xác thực Checksum, tự động cập nhật trạng thái `PAID` |
+| `GET` | `/api/sessions/:sessionId/payments` | `authenticate` | Danh sách khoản thanh toán và thống kê của trận |
+| `POST` | `/api/sessions/:sessionId/recalculate-payments` | `requireAdmin` | Tính lại chi phí theo số người có mặt |
+| `POST` | `/api/payments/:paymentId/mark-paid` | `authenticate`, payment owner | Thành viên đánh dấu đã chuyển tiền |
+| `POST` | `/api/payments/:paymentId/confirm` | `authenticate`, payer hoặc Admin | Xác nhận nhận tiền; có thể hoàn tất trận |
+| `POST` | `/api/payments/:paymentId/payos-link` | `authenticate`, payment owner hoặc Admin | Tạo hoặc dùng lại link thanh toán PayOS |
+| `GET` | `/api/payments/:paymentId/payos-status` | `authenticate` | Poll và đồng bộ trạng thái thanh toán |
+| `POST` | `/api/payments/payos-webhook` | Public, xác thực chữ ký PayOS | Giao dịch thành công chuyển payment sang `CONFIRMED` |
 
 ### Người dùng & Hồ sơ (`/api/users`)
 | Phương thức | Endpoint | Middleware | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/users` | `authenticate` | Lấy danh sách toàn bộ thành viên câu lạc bộ |
-| `PUT` | `/api/users/profile` | `authenticate` | Cập nhật hồ sơ cá nhân (Avatar, mã VietQR, vai trò Thủ môn) |
-| `PUT` | `/api/users/:userId/goalkeeper` | `requireAdmin` | Admin gán hoặc hủy vai trò thủ môn cho thành viên |
+| `PATCH` | `/api/users/me` | `authenticate` | Cập nhật tên, số điện thoại, thông tin ngân hàng và vai trò thủ môn |
+| `PATCH` | `/api/users/:userId/tier` | `requireAdmin` | Admin cập nhật tier |
+| `PATCH` | `/api/users/:userId/goalkeeper` | `requireAdmin` | Admin gán hoặc hủy vai trò thủ môn cho thành viên |
+| `PUT` | `/api/users/me/password` | `authenticate`, mật khẩu hiện tại | Đổi mật khẩu |
+| `PUT` / `DELETE` | `/api/users/me/avatar` | `authenticate` | Thay thế / xóa avatar |
+| `PUT` / `DELETE` | `/api/users/me/qr-code` | `authenticate` | Thay thế / xóa QR cá nhân |
+| `GET` | `/api/users/:userId/qr-code` | `authenticate` | Lấy QR của thành viên |
+| `DELETE` | `/api/users/:userId` | `requireAdmin` | Xóa thành viên; không xóa chính mình hoặc Admin khác |
 
 ---
 

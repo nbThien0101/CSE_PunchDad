@@ -155,15 +155,15 @@ export const sessionsAPI = {
 
   update: async (id, data) => {
     const res = await fetchWithAuth(`/sessions/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
     return res.json();
   },
 
   delete: async (id, cancellationNote) => {
-    const res = await fetchWithAuth(`/sessions/${id}`, {
-      method: 'DELETE',
+    const res = await fetchWithAuth(`/sessions/${id}/cancel`, {
+      method: 'POST',
       body: JSON.stringify({ cancellationNote }),
     });
     return res.json();
@@ -219,14 +219,14 @@ export const votesAPI = {
 
   update: async (id, data) => {
     const res = await fetchWithAuth(`/votes/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
     return res.json();
   },
 
   getBySession: async (sessionId) => {
-    const res = await fetchWithAuth(`/votes/session/${sessionId}`);
+    const res = await fetchWithAuth(`/sessions/${sessionId}/votes`);
     return res.json();
   },
 
@@ -244,20 +244,20 @@ export const votesAPI = {
 // ==========================================
 export const paymentsAPI = {
   getBySession: async (sessionId) => {
-    const res = await fetchWithAuth(`/payments/session/${sessionId}`);
+    const res = await fetchWithAuth(`/sessions/${sessionId}/payments`);
     return res.json();
   },
 
   markAsPaid: async (id) => {
     const res = await fetchWithAuth(`/payments/${id}/mark-paid`, {
-      method: 'PUT',
+      method: 'POST',
     });
     return res.json();
   },
 
   confirm: async (id) => {
     const res = await fetchWithAuth(`/payments/${id}/confirm`, {
-      method: 'PUT',
+      method: 'POST',
     });
     return res.json();
   },
@@ -301,8 +301,8 @@ export const attendanceAPI = {
   },
 
   bulkCheckIn: async (sessionId, isCheckedIn) => {
-    const res = await fetchWithAuth(`/sessions/${sessionId}/attendance/bulk`, {
-      method: 'POST',
+    const res = await fetchWithAuth(`/sessions/${sessionId}/attendance`, {
+      method: 'PATCH',
       body: JSON.stringify({ isCheckedIn }),
     });
     return res.json();
@@ -318,7 +318,7 @@ export const attendanceAPI = {
 
   updateGuest: async (sessionId, guestId, guestData) => {
     const res = await fetchWithAuth(`/sessions/${sessionId}/guests/${guestId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(guestData),
     });
     return res.json();
@@ -344,13 +344,13 @@ export const attendanceAPI = {
 // ==========================================
 export const usersAPI = {
   getMembers: async () => {
-    const res = await fetchWithAuth('/users/members');
+    const res = await fetchWithAuth('/users');
     return res.json();
   },
 
   updateTier: async (userId, tier) => {
     const res = await fetchWithAuth(`/users/${userId}/tier`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ tier }),
     });
     return res.json();
@@ -358,7 +358,7 @@ export const usersAPI = {
 
   updateGoalkeeper: async (userId, isGoalkeeper) => {
     const res = await fetchWithAuth(`/users/${userId}/goalkeeper`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ isGoalkeeper }),
     });
     return res.json();
@@ -372,15 +372,15 @@ export const usersAPI = {
   },
 
   updateProfile: async (data) => {
-    const res = await fetchWithAuth('/users/profile', {
-      method: 'PUT',
+    const res = await fetchWithAuth('/users/me', {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
     return res.json();
   },
 
   changePassword: async ({ currentPassword, newPassword }) => {
-    const res = await fetchWithAuth('/users/change-password', {
+    const res = await fetchWithAuth('/users/me/password', {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
@@ -388,7 +388,7 @@ export const usersAPI = {
   },
 
   uploadQRCode: async (qrCodeImage) => {
-    const res = await fetchWithAuth('/users/qr-code', {
+    const res = await fetchWithAuth('/users/me/qr-code', {
       method: 'PUT',
       body: JSON.stringify({ qrCodeImage }),
     });
@@ -401,14 +401,14 @@ export const usersAPI = {
   },
 
   deleteQRCode: async () => {
-    const res = await fetchWithAuth('/users/qr-code', {
+    const res = await fetchWithAuth('/users/me/qr-code', {
       method: 'DELETE',
     });
     return res.json();
   },
 
   uploadAvatar: async (avatar) => {
-    const res = await fetchWithAuth('/users/avatar', {
+    const res = await fetchWithAuth('/users/me/avatar', {
       method: 'PUT',
       body: JSON.stringify({ avatar }),
     });
@@ -416,7 +416,7 @@ export const usersAPI = {
   },
 
   deleteAvatar: async () => {
-    const res = await fetchWithAuth('/users/avatar', {
+    const res = await fetchWithAuth('/users/me/avatar', {
       method: 'DELETE',
     });
     return res.json();
