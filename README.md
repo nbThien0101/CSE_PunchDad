@@ -61,17 +61,20 @@
 - **Cơ chế phân bổ Thủ môn thông minh**:
   - *Số GK > Số đội*: Các thủ môn dư sẽ tự động được điều chuyển sang thi đấu như cầu thủ sân bình thường.
   - *Số GK < Số đội*: Các thủ môn sẵn có sẽ luân phiên bắt gôn cho các đội còn thiếu (gắn huy hiệu nổi bật `GK Luân phiên`).
+  - *Không có GK*: Chỉ định một người thật trong mỗi đội bắt gôn luân phiên; không tạo thành viên giả.
+  - Khi dùng chung GK, số người đá chính thực tế là tối đa `4 × số đội + số GK riêng`. Cầu thủ sân vượt chỉ tiêu được đưa vào dự bị theo thứ tự đăng ký, không bị bỏ khỏi kết quả.
 - **Ưu tiên thời gian vote sớm nhất (`votedAt ASC`)**:
   - Người vote sớm nhất được ưu tiên vào danh sách đá chính.
   - Người vote vượt quá chỉ tiêu slot sẽ tự động vào danh sách **Dự bị (Reserves)**.
   - *Ví dụ 21 người vote*: Chia 4 đội (20 người đá chính, 1 người dự bị).
-  - *Ví dụ 24 người vote*: Chia 5 đội (24 người thực tế, slot thứ 25 dùng thủ môn luân phiên).
+  - *Ví dụ 24 người vote, có 4 GK*: Chia 5 đội (24 người thực tế, slot thứ 25 dùng thủ môn luân phiên). Nếu chỉ có 1 GK: 21 người đá chính, 3 người dự bị.
 - **Cân bằng sức mạnh theo Tier**:
   - Thang điểm: **Tier S (5đ)**, **Tier A (4đ)**, **Tier B (3đ)**, **Tier C (2đ)**, **Tier D (1đ)**, **Chưa xếp hạng (2đ)**.
-  - Kết hợp giải thuật **Greedy Snake Draft** và thuật toán tối ưu cục bộ **2-Opt Local Search Swap** để san bằng tổng điểm và điểm trung bình giữa các đội (phương sai $\approx 0$).
+  - Thử tối đa 32 phương án Greedy với thứ tự ngẫu nhiên, rồi chọn hoán đổi cặp cầu thủ có cải thiện tốt nhất. Điểm được lưu tạm để đánh giá mỗi cặp hoán đổi trong O(1); giữ phương án có phương sai tổng điểm thấp nhất.
+  - Khi thiếu cầu thủ sân, quân số giữa các đội chênh tối đa 1 người và hiển thị số người còn thiếu. Số đội phải là số nguyên từ 2 đến 6 và phù hợp quân số hiện tại.
 - **Xáo trộn Ngẫu nhiên cùng Tier (Fisher-Yates Same-Tier Shuffle)**:
   - Các cầu thủ trong cùng một nhóm Tier được xáo trộn vị trí ngẫu nhiên mỗi lần chia đội, kết hợp giải thuật phá vỡ thế hòa điểm (Random Tie-Breaking).
-  - Nút **"Xáo trộn & Chia lại"** cho phép tạo ra phương án đội hình hoàn toàn mới mẻ trên mỗi lần nhấp chuột mà vẫn đảm bảo tính công bằng và cân bằng sức mạnh tuyệt đối.
+  - Nút **"Xáo trộn & Chia lại"** tạo phương án ngẫu nhiên và tối ưu độ cân bằng; đây là tìm kiếm có giới hạn, không bảo đảm tối ưu toàn cục hoặc luôn có phương sai bằng 0.
 - **Modal React Portal Đỉnh cao**:
   - Gắn trực tiếp vào thẻ `<body>` qua `createPortal`, thoát khỏi mọi bẫy CSS transform.
   - Phủ kín 100% viewport (`100vw x 100vh`), làm mờ sâu toàn màn hình (`backdrop-filter: blur(12px)`) che phủ cả thanh điều hướng và lề trang.

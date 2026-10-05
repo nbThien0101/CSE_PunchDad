@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
-import { sessionsAPI, usersAPI } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { sessionsAPI } from '../../services/api';
+import { swapFieldPlayers } from '../../utils/teamBalance';
 import Modal from '../Modal/Modal';
 import './TeamGeneratorModal.css';
-
-const TIER_WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
 
 export default function TeamGeneratorModal({
   session,
@@ -23,48 +22,75 @@ export default function TeamGeneratorModal({
   const [goalkeeperOverrides, setGoalkeeperOverrides] = useState({});
   const [generatedData, setGeneratedData] = useState(autoRebalance ? null : (session?.teams || null));
   const [selectedSwapPlayer, setSelectedSwapPlayer] = useState(null);
+  const requestVersion = useRef(0);
 
   const joinVotes = (session?.votes || [])
-    .filter(v => v.status === 'JOIN')
+    .filter(v => v.status === 'JOIN' && (!onlyAttended || v.isCheckedIn))
     .sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
 
   useEffect(() => {
+    let cancelled = false;
     const init = async () => {
       try {
-        const data = await sessionsAPI.getTeamSuggestions(session.id);
+        const data = await sessionsAPI.getTeamSuggestions(session.id, onlyAttended);
+        if (cancelled) return;
         setSuggestions(data.suggestions);
-        const defaultCount = session?.teams ? (session.teams.teamCount || 2) : (data.suggestions?.recommended || 2);
+        const savedCount = session?.teams?.teamCount;
+        const defaultCount = data.suggestions?.available?.includes(savedCount)
+          ? savedCount : (data.suggestions?.recommended || 2);
         setTeamCount(defaultCount);
 
         if (autoRebalance) {
           handleRunBalance(defaultCount, onlyAttended);
         }
       } catch {
-        if (autoRebalance) handleRunBalance(teamCount, onlyAttended);
+        if (!cancelled && autoRebalance) handleRunBalance(teamCount, onlyAttended);
       }
     };
     init();
+    return () => {
+      cancelled = true;
+      requestVersion.current++;
+    };
   }, [session?.id, autoRebalance]);
 
   const handleToggleGK = (userId, defaultIsGK) => {
+    if (loading || saving) return;
     const current = goalkeeperOverrides[userId] !== undefined ? goalkeeperOverrides[userId] : defaultIsGK;
     setGoalkeeperOverrides(prev => ({
       ...prev,
       [userId]: !current,
     }));
+    setGeneratedData(null);
+    setSelectedSwapPlayer(null);
+    setSuccess('');
   };
 
   const handleRunBalance = async (targetCount = teamCount, attendedOnly = onlyAttended) => {
+    const version = ++requestVersion.current;
     setLoading(true);
     setError('');
+    setSuccess('');
+    setGeneratedData(null);
     setSelectedSwapPlayer(null);
 
     try {
+      const data = await sessionsAPI.getTeamSuggestions(session.id, attendedOnly);
+      if (version !== requestVersion.current) return;
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      setSuggestions(data.suggestions);
+      const validCount = data.suggestions.available.includes(targetCount)
+        ? targetCount : data.suggestions.recommended;
+      setTeamCount(validCount);
       const res = await sessionsAPI.generateTeams(session.id, {
-        teamCount: targetCount,
+        teamCount: validCount,
         goalkeeperOverrides,
         useAttendedOnly: attendedOnly,
       });
+      if (version !== requestVersion.current) return;
 
       if (res.error) {
         setError(res.error);
@@ -74,14 +100,14 @@ export default function TeamGeneratorModal({
         setTimeout(() => setSuccess(''), 3000);
       }
     } catch {
-      setError('Chia đội thất bại, vui lòng thử lại');
+      if (version === requestVersion.current) setError('Chia đội thất bại, vui lòng thử lại');
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   };
 
   const handleSaveTeams = async () => {
-    if (!generatedData) return;
+    if (!generatedData || loading || saving) return;
     setSaving(true);
     setError('');
 
@@ -102,7 +128,7 @@ export default function TeamGeneratorModal({
 
   // Hoán đổi cầu thủ giữa các đội thủ công
   const handleSelectForSwap = (teamId, player, isGK = false) => {
-    if (isGK) return; // Không hoán đổi vị trí thủ môn
+    if (isGK || saving) return; // Không hoán đổi vị trí thủ môn
 
     if (!selectedSwapPlayer) {
       setSelectedSwapPlayer({ teamId, player });
@@ -112,29 +138,9 @@ export default function TeamGeneratorModal({
         return;
       }
 
-      // Thực hiện hoán đổi
-      const updatedTeams = generatedData.teams.map(t => {
-        let players = [...t.players];
-        if (t.id === selectedSwapPlayer.teamId) {
-          players = players.map(p => p.userId === selectedSwapPlayer.player.userId ? player : p);
-        } else if (t.id === teamId) {
-          players = players.map(p => p.userId === player.userId ? selectedSwapPlayer.player : p);
-        }
-
-        // Tính lại điểm
-        const gkScore = t.goalkeeper ? (TIER_WEIGHTS[t.goalkeeper.tier] || 2) : 2;
-        const totalTierScore = gkScore + players.reduce((sum, p) => sum + (TIER_WEIGHTS[p.tier] || 2), 0);
-        const totalCount = 1 + players.length;
-
-        return {
-          ...t,
-          players,
-          totalTierScore,
-          averageTierScore: Number((totalTierScore / totalCount).toFixed(1)),
-        };
-      });
-
-      setGeneratedData(prev => ({ ...prev, teams: updatedTeams }));
+      setGeneratedData(prev => swapFieldPlayers(prev,
+        { teamId: selectedSwapPlayer.teamId, userId: selectedSwapPlayer.player.userId },
+        { teamId, userId: player.userId }));
       setSelectedSwapPlayer(null);
       setSuccess('Đã hoán đổi vị trí cầu thủ!');
       setTimeout(() => setSuccess(''), 2000);
@@ -173,7 +179,14 @@ export default function TeamGeneratorModal({
                       key={count}
                       type="button"
                       className={`team-pill ${teamCount === count ? 'active' : ''}`}
-                      onClick={() => setTeamCount(count)}
+                      onClick={() => {
+                        if (count === teamCount) return;
+                        setTeamCount(count);
+                        setGeneratedData(null);
+                        setSelectedSwapPlayer(null);
+                        setSuccess('');
+                      }}
+                      disabled={loading || saving}
                     >
                       {count} đội
                       {isRec && <span className="pill-rec-tag">Gợi ý</span>}
@@ -188,6 +201,7 @@ export default function TeamGeneratorModal({
                 <input
                   type="checkbox"
                   checked={onlyAttended}
+                  disabled={loading || saving}
                   onChange={(e) => {
                     const next = e.target.checked;
                     setOnlyAttended(next);
@@ -202,7 +216,7 @@ export default function TeamGeneratorModal({
               type="button"
               className="btn-run-balance"
               onClick={() => handleRunBalance(teamCount, onlyAttended)}
-              disabled={loading || (joinVotes.length + (onlyAttended ? (session.guests || []).filter(g => g.isCheckedIn).length : (session.guests || []).filter(g => g.status === 'PLAYING').length)) < 4}
+              disabled={loading || saving || (joinVotes.length + (onlyAttended ? (session.guests || []).filter(g => g.isCheckedIn).length : (session.guests || []).filter(g => g.status === 'PLAYING').length)) < 4}
               id="btn-run-balance"
             >
               {loading ? (
@@ -330,6 +344,9 @@ export default function TeamGeneratorModal({
                     </div>
 
                     <div className="team-players-list">
+                      {team.missingPlayersCount > 0 && (
+                        <div className="alert alert-error">Còn thiếu {team.missingPlayersCount} cầu thủ sân</div>
+                      )}
                       {/* Goalkeeper */}
                       {team.goalkeeper && (
                         <div className="player-row is-gk">
@@ -349,9 +366,10 @@ export default function TeamGeneratorModal({
                                 {team.goalkeeper.tier}
                               </span>
                             )}
-                            {team.goalkeeper.isShared ? (
-                              <span className="role-badge-shared-gk" title={`Luân phiên từ ${team.goalkeeper.sharedFrom || ''}`}>
-                                GK Luân phiên
+                            {team.goalkeeper.isShared || team.goalkeeper.isRotating || team.goalkeeper.isPlaceholder ? (
+                              <span className="role-badge-shared-gk" title={team.goalkeeper.isShared
+                                ? `Dùng chung với ${team.goalkeeper.sharedFrom}` : 'Các thành viên trong đội luân phiên bắt gôn'}>
+                                {team.goalkeeper.isShared ? 'GK dùng chung' : 'GK luân phiên trong đội'}
                               </span>
                             ) : (
                               <span className="role-badge-gk">Thủ môn</span>
@@ -364,7 +382,7 @@ export default function TeamGeneratorModal({
                       {team.players?.map((p) => {
                         const isSelectedForSwap = selectedSwapPlayer?.player.userId === p.userId;
                         return (
-                          <div
+                        <div
                             key={p.userId}
                             className={`player-row ${isSelectedForSwap ? 'selected-for-swap' : ''}`}
                             onClick={() => handleSelectForSwap(team.id, p, false)}
@@ -433,7 +451,7 @@ export default function TeamGeneratorModal({
             type="button"
             className="btn-modal-submit"
             onClick={handleSaveTeams}
-            disabled={saving || !generatedData}
+            disabled={saving || loading || !generatedData}
             id="btn-save-teams-confirm"
           >
             {saving ? (
