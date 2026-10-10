@@ -13,6 +13,7 @@ const getAllMembers = async (req, res, next) => {
       select: {
         id: true,
         username: true,
+        email: req.user.role === 'ADMIN',
         displayName: true,
         role: true,
         tier: true,

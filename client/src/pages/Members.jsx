@@ -294,6 +294,17 @@ export default function Members() {
                   </span>
                   <span>{member._count?.votes || 0} trận đã tham gia</span>
                 </div>
+                {isAdmin && (
+                  <div className="member-detail">
+                    <span className="member-detail-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                        <polyline points="3 7 12 13 21 7"></polyline>
+                      </svg>
+                    </span>
+                    <span className="member-email">Email: {member.email || 'Chưa cập nhật'}</span>
+                  </div>
+                )}
                 {member.phone && (
                   <div className="member-detail">
                     <span className="member-detail-icon">

@@ -1,398 +1,168 @@
-/**
- * Team Balancer Service
- * Chia team cân bằng dựa theo Tier và ràng buộc Thủ môn (GK)
- * Mỗi đội đúng 5 người (1 Thủ môn + 4 Cầu thủ sân).
- */
-
-const TIER_WEIGHTS = {
-  S: 5,
-  A: 4,
-  B: 3,
-  C: 2,
-  D: 1,
-};
-
-const DEFAULT_TIER_WEIGHT = 2; // Unranked / null
-
-const TEAM_CONFIGS = [
-  { name: 'Team 1', color: '#2563eb', bg: '#eff6ff' },
-  { name: 'Team 2', color: '#ea580c', bg: '#fff7ed' },
-  { name: 'Team 3', color: '#16a34a', bg: '#f0fdf4' },
-  { name: 'Team 4', color: '#dc2626', bg: '#fef2f2' },
-  { name: 'Team 5', color: '#9333ea', bg: '#faf5ff' },
-  { name: 'Team 6', color: '#ca8a04', bg: '#fefce8' },
-  { name: 'Team 7', color: '#475569', bg: '#f8fafc' },
-  { name: 'Team 8', color: '#db2777', bg: '#fdf2f8' },
+/** Balance five-a-side rosters, preserving vote priority and every participant. */
+const TIER_WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const MAX_TEAMS = 6;
+const TEAM_COLORS = [
+  ['#2563eb', '#eff6ff'], ['#ea580c', '#fff7ed'], ['#16a34a', '#f0fdf4'],
+  ['#dc2626', '#fef2f2'], ['#9333ea', '#faf5ff'], ['#ca8a04', '#fefce8'],
 ];
 
-/**
- * Lấy điểm số của 1 tier
- */
+function invalidInput(message) {
+  return Object.assign(new Error(message), { statusCode: 400 });
+}
+
 function getTierScore(tier) {
-  if (!tier) return DEFAULT_TIER_WEIGHT;
-  const normalized = String(tier).trim().toUpperCase();
-  return TIER_WEIGHTS[normalized] || DEFAULT_TIER_WEIGHT;
+  return TIER_WEIGHTS[String(tier || '').trim().toUpperCase()] || 2;
 }
 
-/**
- * Tính tổng điểm của một đội
- */
-function calculateTeamScore(team) {
-  let score = 0;
-  if (team.goalkeeper && !team.goalkeeper.isPlaceholder) {
-    score += getTierScore(team.goalkeeper.tier);
-  }
-  if (Array.isArray(team.players)) {
-    for (const p of team.players) {
-      score += getTierScore(p.tier);
-    }
-  }
-  return score;
-}
-
-/**
- * Tính phương sai của các đội
- */
-function calculateVariance(teams) {
-  const scores = teams.map(calculateTeamScore);
-  const mean = scores.reduce((sum, s) => sum + s, 0) / (scores.length || 1);
-  return scores.reduce((acc, s) => acc + Math.pow(s - mean, 2), 0) / (scores.length || 1);
-}
-
-/**
- * Fisher-Yates shuffle an array
- */
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-/**
- * Xáo trộn ngẫu nhiên các cầu thủ có CÙNG tierScore,
- * nhưng vẫn giữ nguyên thứ tự ưu tiên giảm dần giữa các Tier khác nhau:
- * Tier S -> Tier A -> Tier B -> Tier C -> Tier D -> Unranked
- */
-function sortAndRandomizeByTier(players) {
-  // Nhóm theo tierScore
-  const groups = {};
-  for (const p of players) {
-    const score = p.tierScore;
-    if (!groups[score]) groups[score] = [];
-    groups[score].push(p);
-  }
-
-  // Lấy danh sách tierScore giảm dần (5 -> 4 -> 3 -> 2 -> 1)
-  const sortedScores = Object.keys(groups)
-    .map(Number)
-    .sort((a, b) => b - a);
-
-  // Với mỗi mức điểm Tier, xáo trộn ngẫu nhiên danh sách cầu thủ thuộc tier đó
-  const randomizedList = [];
-  for (const score of sortedScores) {
-    const shuffledGroup = shuffleArray(groups[score]);
-    randomizedList.push(...shuffledGroup);
-  }
-
-  return randomizedList;
-}
-
-/**
- * Gợi ý số lượng đội dựa trên số người vote
- */
 function getSuggestedTeamCounts(joinCount) {
-  if (joinCount < 10) return [2];
-
-  const standard = Math.floor(joinCount / 5);
-  const options = [];
-
-  // Ví dụ 24 người -> có thể chia 4 đội (dư 4 dự bị) hoặc 5 đội (xoay tua 1 GK)
-  // 21 người -> 4 đội (dư 1 dự bị)
-  // 20 người -> 4 đội
-  if (standard >= 2) {
-    options.push(standard);
-  }
-
-  // Nếu dư 4 người (vd: 14, 19, 24, 29), có thể chia thêm 1 team dùng lại GK
-  if (joinCount % 5 === 4) {
-    const extended = Math.ceil(joinCount / 5);
-    if (!options.includes(extended)) {
-      options.push(extended);
-    }
-  }
-
-  // Luôn cho phép admin linh hoạt chọn từ 2 đến Math.max(standard, Math.ceil(joinCount/5))
-  const maxPossible = Math.max(2, Math.ceil(joinCount / 5));
-  const fullRange = [];
-  for (let i = 2; i <= Math.min(maxPossible, 6); i++) {
-    fullRange.push(i);
-  }
-
-  return {
-    recommended: joinCount % 5 === 4 ? Math.ceil(joinCount / 5) : Math.floor(joinCount / 5),
-    available: fullRange,
-  };
+  const max = Math.min(MAX_TEAMS, Math.max(2, Math.ceil(joinCount / 5)));
+  const recommended = Math.max(2, Math.min(max,
+    joinCount % 5 === 4 ? Math.ceil(joinCount / 5) : Math.floor(joinCount / 5)));
+  return { recommended, available: Array.from({ length: max - 1 }, (_, i) => i + 2) };
 }
 
-/**
- * Thuật toán chia team
- * @param {Array} voters - Danh sách votes (status = JOIN), sắp xếp theo votedAt ASC
- * @param {Object} options - { teamCount?: number, goalkeeperOverrides?: { [userId]: boolean } }
- */
-function balanceTeams(voters, options = {}) {
-  // Lọc chỉ lấy những người JOIN
-  const joinVotes = voters
-    .filter(v => v.status === 'JOIN')
-    .sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
-
-  const totalJoin = joinVotes.length;
-  if (totalJoin < 4) {
-    throw new Error('Cần ít nhất 4 người tham gia để chia đội');
+function shuffleArray(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
+  return result;
+}
 
-  // Xác định số đội
-  let teamCount = options.teamCount;
-  if (!teamCount || teamCount < 2) {
-    const suggestions = getSuggestedTeamCounts(totalJoin);
-    teamCount = suggestions.recommended || 2;
-  }
+function calculateTeamScore(team) {
+  const gkScore = team.goalkeeper && !team.goalkeeper.isPlaceholder
+    ? getTierScore(team.goalkeeper.tier) : 0;
+  return gkScore + team.players.reduce((sum, p) => sum + getTierScore(p.tier), 0);
+}
 
-  // Mỗi đội 5 người -> Tổng số slot cầu thủ
-  const totalSlotsNeeded = teamCount * 5;
-
-  // Lấy các ứng viên theo thứ tự vote sớm nhất
-  // Nếu totalJoin >= totalSlotsNeeded: lấy đúng totalSlotsNeeded người sớm nhất
-  // Nếu totalJoin < totalSlotsNeeded: lấy toàn bộ người hiện có, phần thiếu sẽ dùng lại GK luân phiên
-  const selectedCount = Math.min(totalJoin, totalSlotsNeeded);
-  const selectedVotes = joinVotes.slice(0, selectedCount);
-  const reserveVotes = joinVotes.slice(selectedCount);
-
-  // Chuẩn bị danh sách cầu thủ được chọn
-  const players = selectedVotes.map((v, index) => {
-    const user = v.user || {};
-    // Kiểm tra override GK từ options nếu có
-    const isGK = options.goalkeeperOverrides && options.goalkeeperOverrides[user.id] !== undefined
-      ? Boolean(options.goalkeeperOverrides[user.id])
-      : Boolean(user.isGoalkeeper);
-
-    return {
-      userId: user.id,
-      displayName: user.displayName,
-      avatar: user.avatar || null,
-      tier: user.tier || null,
-      tierScore: getTierScore(user.tier),
-      isGoalkeeper: isGK,
-      votedAt: v.votedAt,
-      voteOrder: index + 1,
-    };
-  });
-
-  // Tách thủ môn và cầu thủ sân
-  const gkList = players.filter(p => p.isGoalkeeper);
-  let fieldList = players.filter(p => !p.isGoalkeeper);
-
-  // Khởi tạo các đội
-  const teams = [];
-  for (let i = 0; i < teamCount; i++) {
-    const cfg = TEAM_CONFIGS[i % TEAM_CONFIGS.length];
-    teams.push({
-      id: `team-${i + 1}`,
-      name: `Team ${i + 1}`,
-      color: cfg.color,
-      bg: cfg.bg,
-      goalkeeper: null,
-      players: [],
-      totalTierScore: 0,
-      averageTierScore: 0,
-    });
-  }
-
-  // ==========================================
-  // BƯỚC 1: Phân bổ Thủ môn (Goalkeeper)
-  // ==========================================
-  // BƯỚC 1: Phân bổ Thủ môn (Goalkeeper)
-  // ==========================================
-  // Sắp xếp và xáo trộn ngẫu nhiên thủ môn có CÙNG tier
-  const randomizedGKs = sortAndRandomizeByTier(gkList);
-
-  if (randomizedGKs.length >= teamCount) {
-    // Trường hợp 1: Số GK >= số đội
-    // Lấy teamCount GK đầu và phân bổ vào các đội
-    const selectedGKs = randomizedGKs.slice(0, teamCount);
-    for (let i = 0; i < teamCount; i++) {
-      teams[i].goalkeeper = {
-        ...selectedGKs[i],
-        role: 'GK',
-        isShared: false,
-      };
-    }
-    // Các thủ môn dư sẽ thi đấu như cầu thủ sân bình thường!
-    const surplusGKs = randomizedGKs.slice(teamCount).map(gk => ({
-      ...gk,
-      role: 'FIELD',
-      isGoalkeeperOriginal: true,
-    }));
-    fieldList = [...fieldList, ...surplusGKs];
-  } else if (randomizedGKs.length > 0) {
-    // Trường hợp 2: Số GK < số đội (nhưng có ít nhất 1 GK)
-    // Xáo trộn ngẫu nhiên thứ tự các GK sẵn có để mỗi lần chia, đội nhận GK luân phiên khác nhau
-    const shuffledGKs = shuffleArray(randomizedGKs);
-    for (let i = 0; i < shuffledGKs.length; i++) {
-      teams[i].goalkeeper = {
-        ...shuffledGKs[i],
-        role: 'GK',
-        isShared: false,
-      };
-    }
-    // Các đội còn lại dùng lại / luân phiên thủ môn từ danh sách GK sẵn có
-    for (let i = shuffledGKs.length; i < teamCount; i++) {
-      const rotatingGK = shuffledGKs[i % shuffledGKs.length];
-      teams[i].goalkeeper = {
-        ...rotatingGK,
-        role: 'GK',
-        isShared: true,
-        sharedFrom: teams[i % shuffledGKs.length].name,
-      };
-    }
-  } else {
-    // Trường hợp 3: Không có ai đăng ký GK
-    // Đánh dấu luân phiên bắt gôn
-    for (let i = 0; i < teamCount; i++) {
-      teams[i].goalkeeper = {
-        userId: `rotating-gk-${i + 1}`,
-        displayName: 'Thủ môn luân phiên',
-        avatar: null,
-        tier: null,
-        tierScore: DEFAULT_TIER_WEIGHT,
-        isGoalkeeper: true,
-        isPlaceholder: true,
-        role: 'GK',
-      };
-    }
-  }
-
-  // ==========================================
-  // BƯỚC 2: Phân bổ Cầu thủ sân (Field Players)
-  // ==========================================
-  // XÁO TRỘN NGẪU NHIÊN giữa các cầu thủ có CÙNG tier,
-  // nhưng vẫn bảo toàn thứ tự giảm dần giữa các Tier (S -> A -> B -> C -> D)
-  fieldList = sortAndRandomizeByTier(fieldList);
-
-  // Mỗi đội cần 4 cầu thủ sân
-  const slotsPerTeam = 4;
-
-  // Thuật toán Greedy Snake Draft với Random Tie-Breaking (ngẫu nhiên hóa khi các đội bằng điểm)
-  for (const player of fieldList) {
-    // Tìm điểm số thấp nhất hiện tại trong số các đội còn slot
-    let minScore = Infinity;
-    for (const t of teams) {
-      if (t.players.length < slotsPerTeam) {
-        const currentScore = calculateTeamScore(t);
-        if (currentScore < minScore) {
-          minScore = currentScore;
-        }
-      }
-    }
-
-    // Lọc tất cả các đội có cùng minScore (hòa điểm) và còn slot
-    const tiedCandidateTeams = teams.filter(
-      t => t.players.length < slotsPerTeam && calculateTeamScore(t) === minScore
-    );
-
-    // Chọn ngẫu nhiên 1 đội trong số các đội có cùng minScore để phá vỡ tính rập khuôn
-    if (tiedCandidateTeams.length > 0) {
-      const selectedTeam = tiedCandidateTeams[Math.floor(Math.random() * tiedCandidateTeams.length)];
-      selectedTeam.players.push({
-        ...player,
-        role: 'FIELD',
-      });
-    }
-  }
-
-  // Nếu số lượng cầu thủ sân bị thiếu (ví dụ: trường hợp 24 người chia 5 đội, mỗi đội 5 slot = 25, thiếu 1 người)
-  // Nhưng slot thiếu đã được giải quyết bằng việc 1 GK được dùng lại (isShared) ở Bước 1!
-  // Đảm bảo mỗi đội đủ 4 cầu thủ sân nếu tổng số fieldList đủ 4 * teamCount.
-  // Nếu fieldList < 4 * teamCount (do thiếu người), đội nào thiếu sẽ có ghi chú rõ ràng.
-
-  // ==========================================
-  // BƯỚC 3: Tối ưu hóa cân bằng (2-Opt Swap)
-  // ==========================================
-  let improved = true;
-  let iterations = 0;
-  const maxIterations = 50;
-
-  while (improved && iterations < maxIterations) {
-    improved = false;
-    iterations++;
-
-    let currentVar = calculateVariance(teams);
-
+// Cached scores make evaluation of a pair swap O(1).
+function optimizeSwaps(teams, scores) {
+  for (let iteration = 0; iteration < 50; iteration++) {
+    let best = null;
+    let bestDelta = 0;
     for (let i = 0; i < teams.length; i++) {
       for (let j = i + 1; j < teams.length; j++) {
-        const teamA = teams[i];
-        const teamB = teams[j];
-
-        // Thử hoán đổi từng cặp cầu thủ sân giữa teamA và teamB
-        for (let pA = 0; pA < teamA.players.length; pA++) {
-          for (let pB = 0; pB < teamB.players.length; pB++) {
-            // Hoán đổi tạm thời
-            const temp = teamA.players[pA];
-            teamA.players[pA] = teamB.players[pB];
-            teamB.players[pB] = temp;
-
-            const newVar = calculateVariance(teams);
-            if (newVar < currentVar - 0.001) {
-              currentVar = newVar;
-              improved = true;
-            } else {
-              // Hoàn trả nếu không cải thiện
-              teamB.players[pB] = teamA.players[pA];
-              teamA.players[pA] = temp;
+        for (let a = 0; a < teams[i].players.length; a++) {
+          for (let b = 0; b < teams[j].players.length; b++) {
+            const diff = teams[j].players[b].tierScore - teams[i].players[a].tierScore;
+            const delta = 2 * diff * (scores[i] - scores[j] + diff);
+            if (delta < bestDelta) {
+              bestDelta = delta;
+              best = { i, j, a, b, diff };
             }
           }
         }
       }
     }
+    if (!best) break;
+    const { i, j, a, b, diff } = best;
+    [teams[i].players[a], teams[j].players[b]] = [teams[j].players[b], teams[i].players[a]];
+    scores[i] += diff;
+    scores[j] -= diff;
   }
+}
 
-  // Cập nhật lại tổng điểm và điểm trung bình cho từng đội
-  for (const team of teams) {
-    team.totalTierScore = calculateTeamScore(team);
-    const totalMembers = (team.goalkeeper && !team.goalkeeper.isPlaceholder ? 1 : 0) + team.players.length;
-    team.averageTierScore = totalMembers > 0 ? Number((team.totalTierScore / totalMembers).toFixed(1)) : 0;
+function createDraft(players, teamCount) {
+  const teams = Array.from({ length: teamCount }, (_, i) => ({
+    id: `team-${i + 1}`, name: `Team ${i + 1}`,
+    color: TEAM_COLORS[i][0], bg: TEAM_COLORS[i][1], goalkeeper: null, players: [],
+  }));
+  let goalkeepers = shuffleArray(players.filter(p => p.isGoalkeeper))
+    .sort((a, b) => b.tierScore - a.tierScore).slice(0, teamCount);
+  const rotating = goalkeepers.length === 0;
+  // Without a registered GK, nominate real participants to rotate within their own teams.
+  if (rotating) goalkeepers = shuffleArray(players).slice(0, teamCount);
+  goalkeepers = shuffleArray(goalkeepers);
+  const goalkeeperIds = new Set(goalkeepers.map(p => p.userId));
+  for (let i = 0; i < teamCount; i++) {
+    const source = i % goalkeepers.length;
+    teams[i].goalkeeper = {
+      ...goalkeepers[source], role: 'GK', isShared: i >= goalkeepers.length,
+      ...(rotating ? { isRotating: true } : {}),
+      ...(i >= goalkeepers.length ? { sharedFrom: teams[source].name } : {}),
+    };
   }
+  const fields = shuffleArray(players.filter(p => !goalkeeperIds.has(p.userId)))
+    .sort((a, b) => b.tierScore - a.tierScore);
+  // Fixed quotas keep partial teams within one outfield player of each other.
+  const base = Math.floor(fields.length / teamCount);
+  const extra = new Set(shuffleArray(teams.map((_, i) => i)).slice(0, fields.length % teamCount));
+  const quotas = teams.map((_, i) => base + (extra.has(i) ? 1 : 0));
+  const scores = teams.map(calculateTeamScore);
+  for (const player of fields) {
+    const eligible = shuffleArray(teams.map((_, i) => i))
+      .filter(i => teams[i].players.length < quotas[i]);
+    const target = eligible.reduce((best, i) => scores[i] < scores[best] ? i : best);
+    teams[target].players.push({ ...player, role: 'FIELD',
+      ...(player.isGoalkeeper ? { isGoalkeeperOriginal: true } : {}) });
+    scores[target] += player.tierScore;
+  }
+  optimizeSwaps(teams, scores);
+  const sum = scores.reduce((acc, score) => acc + score, 0);
+  return { teams, scores,
+    objective: scores.reduce((acc, score) => acc + score * score, 0) - sum * sum / teamCount };
+}
 
-  // Chuẩn bị danh sách dự bị (Reserves)
-  const reserves = reserveVotes.map((v, index) => {
+function balanceTeams(voters, options = {}) {
+  if (!Array.isArray(voters)) throw invalidInput('Danh sách người tham gia không hợp lệ');
+  const overrides = options.goalkeeperOverrides || {};
+  if (typeof overrides !== 'object' || Array.isArray(overrides)
+    || Object.values(overrides).some(value => typeof value !== 'boolean')) {
+    throw invalidInput('Cấu hình thủ môn không hợp lệ');
+  }
+  const joinVotes = voters.filter(v => v.status === 'JOIN')
+    .sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
+  const ids = new Set();
+  const players = joinVotes.map((v, i) => {
     const user = v.user || {};
+    if (!user.id || ids.has(user.id)) throw invalidInput('Danh sách có người thiếu ID hoặc bị trùng');
+    ids.add(user.id);
     return {
-      userId: user.id,
-      displayName: user.displayName,
-      avatar: user.avatar || null,
-      tier: user.tier || null,
-      isGoalkeeper: Boolean(user.isGoalkeeper),
-      votedAt: v.votedAt,
-      reserveOrder: index + 1,
+      userId: user.id, displayName: user.displayName, avatar: user.avatar || null,
+      tier: user.tier || null, tierScore: getTierScore(user.tier),
+      isGoalkeeper: Object.hasOwn(overrides, user.id) ? overrides[user.id] : Boolean(user.isGoalkeeper),
+      votedAt: v.votedAt, voteOrder: i + 1,
     };
   });
-
+  if (players.length < 4) throw invalidInput('Cần ít nhất 4 người tham gia để chia đội');
+  const suggestions = getSuggestedTeamCounts(players.length);
+  const teamCount = options.teamCount === undefined ? suggestions.recommended : options.teamCount;
+  if (!Number.isInteger(teamCount) || !suggestions.available.includes(teamCount)) {
+    throw invalidInput(`Số đội phải là số nguyên từ 2 đến ${suggestions.available.at(-1)}`);
+  }
+  let selected = players.slice(0, teamCount * 5);
+  const gkCount = Math.min(teamCount, selected.filter(p => p.isGoalkeeper).length);
+  if (gkCount > 0 && gkCount < teamCount) {
+    // Shared GKs fill slots but are only one distinct person. Keep excess fields as reserves.
+    const gkIds = new Set(selected.filter(p => p.isGoalkeeper).map(p => p.userId));
+    const fieldIds = new Set(selected.filter(p => !gkIds.has(p.userId))
+      .slice(0, teamCount * 4).map(p => p.userId));
+    selected = selected.filter(p => gkIds.has(p.userId) || fieldIds.has(p.userId));
+  }
+  // Bounded multi-start varies same-tier order, GK placement and partial-team quotas.
+  // Compare variance: shared GK placement can change the total score between drafts.
+  let best = null;
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const draft = createDraft(selected, teamCount);
+    if (!best || draft.objective < best.objective) best = draft;
+    if (best.objective < 1e-9) break;
+  }
+  for (const team of best.teams) {
+    team.totalTierScore = calculateTeamScore(team);
+    team.averageTierScore = Number((team.totalTierScore / (1 + team.players.length)).toFixed(1));
+    team.missingPlayersCount = 4 - team.players.length;
+  }
+  const selectedIds = new Set(selected.map(p => p.userId));
+  const reserves = players.filter(p => !selectedIds.has(p.userId))
+    .map((p, i) => ({ ...p, reserveOrder: i + 1 }));
+  const mean = best.scores.reduce((sum, score) => sum + score, 0) / teamCount;
   return {
-    generatedAt: new Date().toISOString(),
-    teamCount,
-    totalVoters: totalJoin,
-    activePlayersCount: selectedCount,
-    reservesCount: reserves.length,
-    teams,
-    reserves,
-    variance: Number(calculateVariance(teams).toFixed(2)),
+    generatedAt: new Date().toISOString(), teamCount, totalVoters: players.length,
+    activePlayersCount: selected.length, reservesCount: reserves.length,
+    teams: best.teams, reserves,
+    variance: Number((best.scores.reduce((sum, score) => sum + (score - mean) ** 2, 0) / teamCount).toFixed(2)),
   };
 }
 
-module.exports = {
-  getTierScore,
-  getSuggestedTeamCounts,
-  balanceTeams,
-};
+module.exports = { getTierScore, getSuggestedTeamCounts, balanceTeams };

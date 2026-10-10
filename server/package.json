@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "node --test tests/team-balancer.test.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",
