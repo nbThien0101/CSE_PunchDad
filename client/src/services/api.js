@@ -350,6 +350,24 @@ export const attendanceAPI = {
 // Users API
 // ==========================================
 export const usersAPI = {
+  getMembershipRequests: async () => {
+    const res = await fetchWithAuth('/users/membership-requests');
+    return res.json();
+  },
+
+  getMembershipRequestCount: async () => {
+    const res = await fetchWithAuth('/users/membership-requests/count');
+    return res.json();
+  },
+
+  reviewMembershipRequest: async (userId, decision) => {
+    const res = await fetchWithAuth(`/users/membership-requests/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ decision }),
+    });
+    return res.json();
+  },
+
   getMembers: async () => {
     const res = await fetchWithAuth('/users/members');
     return res.json();

@@ -1,32 +1,35 @@
-const TIER_WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const score = tier => WEIGHTS[String(tier || '').trim().toUpperCase()] || 2;
 
-function tierScore(player) {
-  return TIER_WEIGHTS[String(player?.tier || '').trim().toUpperCase()] || 2;
+export function recalculateTeams(data) {
+  const teams = data.teams.map(team => {
+    const hasGK = Boolean(team.goalkeeper && !team.goalkeeper.isPlaceholder);
+    const totalTierScore = (hasGK ? score(team.goalkeeper.tier) : 0)
+      + team.players.reduce((sum, p) => sum + score(p.tier), 0);
+    const count = team.players.length + (hasGK ? 1 : 0);
+    return { ...team, totalTierScore,
+      averageTierScore: count ? Number((totalTierScore / count).toFixed(1)) : 0 };
+  });
+  const mean = teams.reduce((sum, team) => sum + team.totalTierScore, 0) / (teams.length || 1);
+  const variance = teams.reduce((sum, team) => sum + (team.totalTierScore - mean) ** 2, 0)
+    / (teams.length || 1);
+  return { ...data, teams, variance: Number(variance.toFixed(2)) };
 }
 
 export function swapFieldPlayers(data, first, second) {
-  if (!data?.teams || !first || !second || first.teamId === second.teamId) return data;
+  if (!Array.isArray(data?.teams) || !first || !second) return data;
   const firstTeam = data.teams.find(team => team.id === first.teamId);
   const secondTeam = data.teams.find(team => team.id === second.teamId);
-  const firstPlayer = firstTeam?.players?.find(player => player.userId === first.userId);
-  const secondPlayer = secondTeam?.players?.find(player => player.userId === second.userId);
-  if (!firstPlayer || !secondPlayer) return data;
-
-  const teams = data.teams.map(team => {
-    const players = team.players.map(player => {
-      if (team.id === first.teamId && player.userId === first.userId) return secondPlayer;
-      if (team.id === second.teamId && player.userId === second.userId) return firstPlayer;
-      return player;
-    });
-    const hasGoalkeeper = team.goalkeeper && !team.goalkeeper.isPlaceholder;
-    const totalTierScore = (hasGoalkeeper ? tierScore(team.goalkeeper) : 0)
-      + players.reduce((sum, player) => sum + tierScore(player), 0);
-    const count = players.length + (hasGoalkeeper ? 1 : 0);
-    return { ...team, players, totalTierScore,
-      averageTierScore: count ? Number((totalTierScore / count).toFixed(1)) : 0 };
-  });
-  const mean = teams.reduce((sum, team) => sum + team.totalTierScore, 0) / teams.length;
-  const variance = Number((teams.reduce((sum, team) => sum + (team.totalTierScore - mean) ** 2, 0)
-    / teams.length).toFixed(2));
-  return { ...data, teams, variance };
+  const a = firstTeam?.players?.find(p => p.userId === first.userId);
+  const b = secondTeam?.players?.find(p => p.userId === second.userId);
+  if (!a || !b || a.userId === b.userId) return data;
+  const teams = data.teams.map(team => ({
+    ...team,
+    players: team.players.map(p => {
+      if (team.id === first.teamId && p.userId === a.userId) return b;
+      if (team.id === second.teamId && p.userId === b.userId) return a;
+      return p;
+    }),
+  }));
+  return recalculateTeams({ ...data, teams });
 }

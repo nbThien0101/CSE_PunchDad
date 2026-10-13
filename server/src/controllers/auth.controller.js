@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
+const { membershipAccessError } = require('../utils/membership');
 
 const prisma = new PrismaClient();
 
@@ -59,44 +60,49 @@ const register = async (req, res, next) => {
       return res.status(400).json({ error: 'Token xác thực không hợp lệ hoặc đã hết hạn. Vui lòng xác thực lại.' });
     }
 
-    // Đánh dấu token đã sử dụng
-    await prisma.otpVerification.update({
-      where: { id: tokenRecord.id },
-      data: { used: true },
-    });
-
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        username: username.trim(),
-        passwordHash,
-        displayName: displayName.trim(),
-        phone: phone ? phone.trim() : null,
-        email: normalizedEmail,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        displayName: true,
-        phone: true,
-        bankInfo: true,
-        role: true,
-        tier: true,
-        isGoalkeeper: true,
-        avatar: true,
-        createdAt: true,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const consumed = await tx.otpVerification.updateMany({
+        where: { id: tokenRecord.id, used: false, expiresAt: { gte: new Date() } },
+        data: { used: true },
+      });
+      if (consumed.count !== 1) {
+        const error = new Error('Token xác thực không hợp lệ hoặc đã hết hạn. Vui lòng xác thực lại.');
+        error.statusCode = 400;
+        throw error;
+      }
+      return tx.user.create({
+        data: {
+          username: username.trim(),
+          passwordHash,
+          displayName: displayName.trim(),
+          phone: phone ? phone.trim() : null,
+          email: normalizedEmail,
+          role: 'MEMBER',
+          membershipStatus: 'PENDING',
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          displayName: true,
+          phone: true,
+          bankInfo: true,
+          role: true,
+          membershipStatus: true,
+          tier: true,
+          isGoalkeeper: true,
+          avatar: true,
+          createdAt: true,
+        },
+      });
     });
 
-    const tokens = generateTokens(user.id);
-
     res.status(201).json({
-      message: 'Registration successful',
+      message: 'Đăng ký thành công. Yêu cầu tham gia CLB đã được gửi đến admin và đang chờ duyệt.',
       user,
-      ...tokens,
     });
   } catch (error) {
     next(error);
@@ -135,6 +141,9 @@ const login = async (req, res, next) => {
       return res.status(401).json({ error: 'Tên đăng nhập / email hoặc mật khẩu không đúng' });
     }
 
+    const accessError = membershipAccessError(user);
+    if (accessError) return res.status(403).json(accessError);
+
     const tokens = generateTokens(user.id);
 
     res.json({
@@ -147,6 +156,7 @@ const login = async (req, res, next) => {
         phone: user.phone,
         bankInfo: user.bankInfo,
         role: user.role,
+        membershipStatus: user.membershipStatus,
         tier: user.tier,
         isGoalkeeper: user.isGoalkeeper,
         avatar: user.avatar,
@@ -171,6 +181,13 @@ const refresh = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, membershipStatus: true },
+    });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    const accessError = membershipAccessError(user);
+    if (accessError) return res.status(403).json(accessError);
     const tokens = generateTokens(decoded.userId);
 
     res.json(tokens);

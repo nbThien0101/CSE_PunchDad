@@ -309,3 +309,13 @@
     flex-wrap: wrap;
   }
 }
+.membership-requests { padding: 24px; margin-bottom: 24px; scroll-margin-top: 100px; }
+.membership-requests h2 { font-size: 1.2rem; margin-bottom: 8px; }
+.membership-requests > p { color: var(--text-secondary); }
+.membership-request { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 20px 0; border-top: 1px solid var(--border-color); margin-top: 16px; }
+.membership-request h3 { font-size: 1rem; margin-bottom: 8px; }
+.membership-request dl { margin: 0; }
+.membership-request dl > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-size: 0.9rem; }
+.membership-request dt { color: var(--text-secondary); min-width: 100px; }
+.membership-request dd { margin: 0; overflow-wrap: anywhere; }
+.membership-request-actions { display: flex; flex-wrap: wrap; gap: 8px; }

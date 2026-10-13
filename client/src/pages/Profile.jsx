@@ -1,3 +1,4 @@
+import { Alert, Badge, Button, Card, Input } from '../components/ui/index.jsx';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
@@ -366,26 +367,26 @@ export default function Profile() {
       <p className="page-subtitle">Quản lý thông tin tài khoản và phương thức nhận tiền</p>
 
       {success && (
-        <div className="alert alert-success">
+        <Alert className="alert alert-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
           <span>{success}</span>
-        </div>
+        </Alert>
       )}
       {error && (
-        <div className="alert alert-error">
+        <Alert className="alert alert-error">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <span>{error}</span>
-        </div>
+        </Alert>
       )}
 
       {/* ====== Profile Info Card ====== */}
-      <div className="profile-card card">
+      <Card className="profile-card card">
         <div className="profile-header">
           <div className="profile-avatar-wrapper">
             <div
@@ -410,7 +411,7 @@ export default function Profile() {
               </div>
             </div>
 
-            <input
+            <Input
               ref={avatarInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
@@ -423,11 +424,11 @@ export default function Profile() {
           <div className="profile-header-info">
             <h2 className="profile-name">{user?.displayName}</h2>
             <span className="profile-username">@{user?.username}</span>
-            {user?.role === 'ADMIN' && <span className="badge badge-admin" style={{ marginLeft: 8 }}>Admin</span>}
+            {user?.role === 'ADMIN' && <Badge className="badge badge-admin" style={{ marginLeft: 8 }}>Admin</Badge>}
 
             {avatarPreview && (
               <div className="avatar-preview-actions animate-fade-in">
-                <button
+                <Button
                   type="button"
                   className="btn btn-primary btn-sm"
                   onClick={handleUploadAvatar}
@@ -439,8 +440,8 @@ export default function Profile() {
                   ) : (
                     'Lưu ảnh'
                   )}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className="btn btn-ghost btn-sm"
                   onClick={handleCancelAvatar}
@@ -448,13 +449,13 @@ export default function Profile() {
                   id="btn-cancel-avatar"
                 >
                   Hủy
-                </button>
+                </Button>
               </div>
             )}
 
             {!avatarPreview && user?.avatar && editing && (
               <div className="avatar-delete-link">
-                <button
+                <Button
                   type="button"
                   className="btn-text-danger"
                   onClick={handleDeleteAvatar}
@@ -465,13 +466,13 @@ export default function Profile() {
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                   </svg>
                   Xóa ảnh đại diện
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           {!editing && (
-            <button
+            <Button
               className="btn btn-outline btn-sm profile-edit-btn"
               onClick={handleStartEdit}
               id="btn-edit-profile"
@@ -481,7 +482,7 @@ export default function Profile() {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
               Chỉnh sửa
-            </button>
+            </Button>
           )}
         </div>
 
@@ -489,7 +490,7 @@ export default function Profile() {
           <form onSubmit={handleSaveProfile} className="profile-edit-form animate-fade-in">
             <div className="form-group">
               <label className="form-label">Tên hiển thị <span className="required">*</span></label>
-              <input
+              <Input
                 type="text"
                 name="displayName"
                 value={form.displayName}
@@ -504,7 +505,7 @@ export default function Profile() {
 
             <div className="form-group">
               <label className="form-label">Số điện thoại</label>
-              <input
+              <Input
                 type="tel"
                 name="phone"
                 value={form.phone}
@@ -517,7 +518,7 @@ export default function Profile() {
 
             <div className="form-group">
               <label className="form-label">Thông tin ngân hàng</label>
-              <input
+              <Input
                 type="text"
                 name="bankInfo"
                 value={form.bankInfo}
@@ -530,7 +531,7 @@ export default function Profile() {
             </div>
 
             <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <input
+              <Input
                 type="checkbox"
                 id="input-is-goalkeeper"
                 name="isGoalkeeper"
@@ -544,7 +545,7 @@ export default function Profile() {
             </div>
 
             <div className="profile-edit-actions">
-              <button
+              <Button
                 type="submit"
                 className="btn btn-primary"
                 disabled={saving}
@@ -555,8 +556,8 @@ export default function Profile() {
                 ) : (
                   'Lưu thay đổi'
                 )}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 className="btn btn-ghost"
                 onClick={handleCancel}
@@ -564,7 +565,7 @@ export default function Profile() {
                 id="btn-cancel-edit"
               >
                 Hủy
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -589,10 +590,10 @@ export default function Profile() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ====== Account & Security Card ====== */}
-      <div className="profile-security-card card">
+      <Card className="profile-security-card card">
         <div className="profile-card-header">
           <div className="profile-card-title-group">
             <h3>Tài khoản & Bảo mật</h3>
@@ -613,14 +614,14 @@ export default function Profile() {
               <span className="credential-label">Tên đăng nhập (Username)</span>
               <div className="credential-val-box">
                 <span className="credential-val-text font-mono">@{user?.username}</span>
-                <button
+                <Button
                   type="button"
                   className="btn-copy-tag"
                   onClick={handleCopyUsername}
                   title="Sao chép tên đăng nhập"
                 >
                   {copiedUsername ? 'Đã chép ✓' : 'Sao chép'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -637,7 +638,7 @@ export default function Profile() {
               <span className="credential-label">Email đăng nhập</span>
               <div className="credential-val-box">
                 <span className="credential-val-text">{user?.email || 'Chưa cập nhật email'}</span>
-                {user?.email && <span className="badge badge-success badge-sm">Đã xác thực</span>}
+                {user?.email && <Badge className="badge badge-success badge-sm">Đã xác thực</Badge>}
               </div>
               <span className="credential-note">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }}>
@@ -662,11 +663,11 @@ export default function Profile() {
               <span className="credential-label">Mật khẩu</span>
               <div className="credential-val-box">
                 <span className="credential-val-text credential-pwd-mask">••••••••••••</span>
-                <span className="badge badge-neutral badge-sm">Bảo mật Bcrypt</span>
+                <Badge className="badge badge-neutral badge-sm">Bảo mật Bcrypt</Badge>
               </div>
               <span className="credential-note">Mật khẩu được mã hóa an toàn 1 chiều và bảo vệ tuyệt đối</span>
             </div>
-            <button
+            <Button
               type="button"
               className="btn btn-outline btn-sm credential-change-btn"
               onClick={() => {
@@ -681,13 +682,13 @@ export default function Profile() {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
               Đổi mật khẩu
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* ====== QR Code Card ====== */}
-      <div className="profile-qr-card card">
+      <Card className="profile-qr-card card">
         <div className="profile-qr-header">
           <h3>Mã QR thanh toán</h3>
           <p className="text-muted">Hình ảnh mã QR ngân hàng để các thành viên quét chuyển tiền</p>
@@ -732,7 +733,7 @@ export default function Profile() {
               </div>
             )}
 
-            <input
+            <Input
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
@@ -745,7 +746,7 @@ export default function Profile() {
             <div className="qr-actions">
               {qrPreview ? (
                 <>
-                  <button
+                  <Button
                     className="btn btn-primary"
                     onClick={handleUploadQR}
                     disabled={qrUploading}
@@ -756,49 +757,49 @@ export default function Profile() {
                     ) : (
                       'Xác nhận lưu QR'
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="btn btn-ghost"
                     onClick={handleCancelPreview}
                     disabled={qrUploading}
                     id="btn-cancel-qr"
                   >
                     Hủy
-                  </button>
+                  </Button>
                 </>
               ) : qrImage ? (
                 <>
-                  <button
+                  <Button
                     className="btn btn-outline btn-sm"
                     onClick={() => fileInputRef.current?.click()}
                     id="btn-change-qr"
                   >
                     Đổi ảnh khác
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className="btn btn-danger btn-sm"
                     onClick={handleDeleteQR}
                     id="btn-delete-qr"
                   >
                     Xóa mã QR
-                  </button>
+                  </Button>
                 </>
               ) : null}
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ====== Danger Zone ====== */}
-      <div className="profile-danger card">
+      <Card className="profile-danger card">
         <h3>Phiên làm việc</h3>
         <p className="text-muted" style={{ marginBottom: 'var(--space-4)', fontSize: '0.85rem' }}>
           Đăng xuất khỏi tài khoản trên thiết bị này
         </p>
-        <button className="btn btn-danger btn-sm" onClick={logout} id="btn-logout-profile">
+        <Button className="btn btn-danger btn-sm" onClick={logout} id="btn-logout-profile">
           Đăng xuất
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* ====== Change Password Modal ====== */}
       <Modal
@@ -806,7 +807,7 @@ export default function Profile() {
         onClose={() => !changingPassword && setShowPasswordModal(false)}
         className="modal-change-password"
       >
-        <div className="modal-card cpw-card">
+        <Card className="modal-card cpw-card">
           <div className="modal-header">
             <div className="modal-title-with-icon">
               <div className="modal-header-icon-box">
@@ -820,27 +821,27 @@ export default function Profile() {
                 <p className="modal-subtitle">Cập nhật mật khẩu mới để bảo mật tài khoản</p>
               </div>
             </div>
-            <button
+            <Button
               type="button"
               className="modal-close-btn"
               onClick={() => !changingPassword && setShowPasswordModal(false)}
               aria-label="Đóng"
             >
               ✕
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={handleChangePassword}>
             <div className="cpw-body">
               {passwordError && (
-                <div className="alert alert-error" style={{ marginBottom: 'var(--space-4)' }}>
+                <Alert className="alert alert-error" style={{ marginBottom: 'var(--space-4)' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="12"></line>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                   </svg>
                   <span>{passwordError}</span>
-                </div>
+                </Alert>
               )}
 
               <div className="form-group">
@@ -848,7 +849,7 @@ export default function Profile() {
                   Mật khẩu hiện tại <span className="required">*</span>
                 </label>
                 <div className="password-input-wrapper">
-                  <input
+                  <Input
                     id="input-current-password"
                     type={showCurrentPw ? 'text' : 'password'}
                     className="form-input password-input"
@@ -858,7 +859,7 @@ export default function Profile() {
                     required
                     autoFocus
                   />
-                  <button
+                  <Button
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowCurrentPw(!showCurrentPw)}
@@ -876,7 +877,7 @@ export default function Profile() {
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -885,7 +886,7 @@ export default function Profile() {
                   Mật khẩu mới <span className="required">*</span>
                 </label>
                 <div className="password-input-wrapper">
-                  <input
+                  <Input
                     id="input-new-password"
                     type={showNewPw ? 'text' : 'password'}
                     className="form-input password-input"
@@ -895,7 +896,7 @@ export default function Profile() {
                     required
                     minLength={6}
                   />
-                  <button
+                  <Button
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowNewPw(!showNewPw)}
@@ -913,7 +914,7 @@ export default function Profile() {
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
                 <span className="form-hint">Mật khẩu mới phải có tối thiểu 6 ký tự</span>
               </div>
@@ -923,7 +924,7 @@ export default function Profile() {
                   Xác nhận mật khẩu mới <span className="required">*</span>
                 </label>
                 <div className="password-input-wrapper">
-                  <input
+                  <Input
                     id="input-confirm-password"
                     type={showConfirmPw ? 'text' : 'password'}
                     className="form-input password-input"
@@ -933,7 +934,7 @@ export default function Profile() {
                     required
                     minLength={6}
                   />
-                  <button
+                  <Button
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowConfirmPw(!showConfirmPw)}
@@ -951,13 +952,13 @@ export default function Profile() {
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             <div className="cpw-footer">
-              <button
+              <Button
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => setShowPasswordModal(false)}
@@ -965,8 +966,8 @@ export default function Profile() {
                 id="btn-cancel-change-password"
               >
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="btn btn-primary"
                 disabled={changingPassword}
@@ -977,10 +978,10 @@ export default function Profile() {
                 ) : (
                   'Lưu mật khẩu mới'
                 )}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </Modal>
     </div>
   );

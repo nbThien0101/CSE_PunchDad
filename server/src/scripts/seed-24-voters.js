@@ -55,6 +55,7 @@ async function seed() {
         tier: p.tier,
         isGoalkeeper: p.isGoalkeeper,
         role: 'MEMBER',
+        membershipStatus: 'APPROVED',
       },
     });
 

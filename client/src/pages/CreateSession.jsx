@@ -1,3 +1,4 @@
+import { Alert, Button, Input } from '../components/ui/index.jsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsAPI } from '../services/api';
@@ -79,13 +80,13 @@ export default function CreateSession() {
 
   return (
     <div className="create-session animate-fade-in">
-      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} id="btn-back-create">
+      <Button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} id="btn-back-create">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
         Quay lại
-      </button>
+      </Button>
 
       <div className="create-header">
         <h1 className="page-title">Tạo trận đấu mới</h1>
@@ -93,20 +94,20 @@ export default function CreateSession() {
       </div>
 
       {error && (
-        <div className="alert alert-error">
+        <Alert className="alert alert-error">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <span>{error}</span>
-        </div>
+        </Alert>
       )}
 
       <form className="create-form card" onSubmit={handleSubmit}>
         <div className="form-group">
           <label className="form-label" htmlFor="session-title">Tiêu đề trận đấu</label>
-          <input
+          <Input
             id="session-title"
             name="title"
             type="text"
@@ -121,7 +122,7 @@ export default function CreateSession() {
 
         <div className="form-group">
           <label className="form-label" htmlFor="play-date">Ngày thi đấu</label>
-          <input
+          <Input
             id="play-date"
             name="playDate"
             type="date"
@@ -139,9 +140,9 @@ export default function CreateSession() {
               <label className="form-label">Các khung giờ để bình chọn</label>
               <span className="form-hint">Thành viên có thể chọn một hoặc nhiều khung giờ phù hợp.</span>
             </div>
-            <button type="button" className="btn btn-outline btn-sm" onClick={addTimeSlot}>
+            <Button type="button" className="btn btn-outline btn-sm" onClick={addTimeSlot}>
               + Thêm khung giờ
-            </button>
+            </Button>
           </div>
           <div className="time-slots-editor">
             {timeSlots.map((slot, index) => (
@@ -149,7 +150,7 @@ export default function CreateSession() {
                 <span className="time-slot-number">{index + 1}</span>
                 <div className="form-group">
                   <label className="form-label" htmlFor={`start-time-${index}`}>Bắt đầu</label>
-                  <input
+                  <Input
                     id={`start-time-${index}`}
                     type="time"
                     className="form-input"
@@ -160,7 +161,7 @@ export default function CreateSession() {
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor={`end-time-${index}`}>Kết thúc</label>
-                  <input
+                  <Input
                     id={`end-time-${index}`}
                     type="time"
                     className="form-input"
@@ -169,7 +170,7 @@ export default function CreateSession() {
                     required
                   />
                 </div>
-                <button
+                <Button
                   type="button"
                   className="btn btn-ghost btn-sm time-slot-remove"
                   onClick={() => removeTimeSlot(index)}
@@ -177,7 +178,7 @@ export default function CreateSession() {
                   aria-label={`Xóa khung giờ ${index + 1}`}
                 >
                   ✕
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -185,7 +186,7 @@ export default function CreateSession() {
 
         <div className="form-group">
           <label className="form-label" htmlFor="location">Địa điểm sân</label>
-          <input
+          <Input
             id="location"
             name="location"
             type="text"
@@ -201,7 +202,7 @@ export default function CreateSession() {
           <label className="form-label" htmlFor="google-maps-url">
             Link Google Maps <span className="text-muted">(tùy chọn)</span>
           </label>
-          <input
+          <Input
             id="google-maps-url"
             name="googleMapsUrl"
             type="url"
@@ -216,7 +217,7 @@ export default function CreateSession() {
         <div className="form-row">
           <div className="form-group">
             <label className="form-label" htmlFor="min-players">Số người tối thiểu</label>
-            <input
+            <Input
               id="min-players"
               name="minPlayers"
               type="number"
@@ -231,7 +232,7 @@ export default function CreateSession() {
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="max-players">Số người tối đa</label>
-            <input
+            <Input
               id="max-players"
               name="maxPlayers"
               type="number"
@@ -247,7 +248,7 @@ export default function CreateSession() {
 
         <div className="form-group">
           <label className="form-label" htmlFor="vote-deadline">Hạn chót bình chọn <span className="text-muted">(tùy chọn)</span></label>
-          <input
+          <Input
             id="vote-deadline"
             name="voteDeadline"
             type="datetime-local"
@@ -258,10 +259,10 @@ export default function CreateSession() {
           <span className="form-hint">Sau thời gian này, thành viên không thể thay đổi bình chọn</span>
         </div>
 
-        <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading} id="btn-create-session">
+        <Button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading} id="btn-create-session">
           {loading ? <span className="spinner spinner-sm"></span> : null}
           {loading ? 'Đang khởi tạo...' : 'Tạo trận đấu'}
-        </button>
+        </Button>
       </form>
     </div>
   );

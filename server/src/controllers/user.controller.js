@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 const getAllMembers = async (req, res, next) => {
   try {
     const members = await prisma.user.findMany({
+      where: { membershipStatus: 'APPROVED' },
       select: {
         id: true,
         username: true,
@@ -23,7 +24,14 @@ const getAllMembers = async (req, res, next) => {
         createdAt: true,
         _count: {
           select: {
-            votes: { where: { status: 'JOIN' } },
+            // Registration alone is not attendance; cancelled sessions never count.
+            votes: {
+              where: {
+                status: 'JOIN',
+                isCheckedIn: true,
+                session: { status: 'COMPLETED' },
+              },
+            },
           },
         },
       },
@@ -31,6 +39,55 @@ const getAllMembers = async (req, res, next) => {
     });
 
     res.json({ members });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Admin inbox: persisted pending accounts also act as unread join notifications. */
+const getMembershipRequests = async (req, res, next) => {
+  try {
+    const requests = await prisma.user.findMany({
+      where: { membershipStatus: 'PENDING', role: 'MEMBER' },
+      select: {
+        id: true, username: true, displayName: true, email: true, phone: true,
+        createdAt: true, membershipStatus: true,
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    res.json({ requests });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getMembershipRequestCount = async (req, res, next) => {
+  try {
+    const count = await prisma.user.count({ where: { membershipStatus: 'PENDING', role: 'MEMBER' } });
+    res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reviewMembershipRequest = async (req, res, next) => {
+  try {
+    const { decision } = req.body;
+    if (!['APPROVED', 'REJECTED'].includes(decision)) {
+      return res.status(400).json({ error: 'Quyết định duyệt không hợp lệ' });
+    }
+    const result = await prisma.user.updateMany({
+      where: { id: req.params.userId, membershipStatus: 'PENDING', role: 'MEMBER' },
+      data: {
+        membershipStatus: decision,
+        membershipReviewedAt: new Date(),
+        membershipReviewedBy: req.user.id,
+      },
+    });
+    if (result.count === 0) {
+      return res.status(409).json({ error: 'Yêu cầu không còn chờ duyệt hoặc không tồn tại. Vui lòng tải lại danh sách.' });
+    }
+    res.json({ message: decision === 'APPROVED' ? 'Đã duyệt thành viên vào CLB' : 'Đã từ chối yêu cầu tham gia CLB' });
   } catch (error) {
     next(error);
   }
@@ -432,6 +489,9 @@ const changePassword = async (req, res, next) => {
 };
 
 module.exports = {
+  getMembershipRequests,
+  getMembershipRequestCount,
+  reviewMembershipRequest,
   getAllMembers,
   updateUserTier,
   updateUserGoalkeeper,

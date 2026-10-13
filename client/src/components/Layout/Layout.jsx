@@ -1,7 +1,9 @@
+import { Badge, Button } from '../ui/index.jsx';
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import FeedbackModal from '../Feedback/FeedbackModal';
+import { usersAPI } from '../../services/api';
 import './Layout.css';
 
 export default function Layout() {
@@ -10,8 +12,30 @@ export default function Layout() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [pendingMembers, setPendingMembers] = useState(0);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const data = await usersAPI.getMembershipRequestCount();
+        if (active && !data.error) setPendingMembers(data.count || 0);
+      } catch { /* The persisted inbox remains available when connectivity returns. */ }
+    };
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('membership-requests-changed', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener('membership-requests-changed', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [user?.role]);
   
   // Close menu on route change
   useEffect(() => {
@@ -56,12 +80,17 @@ export default function Layout() {
 
   return (
     <div className="layout">
+      {user?.role === 'ADMIN' && pendingMembers > 0 && (
+        <NavLink to="/members#membership-requests" className="membership-notification" role="status">
+          Có {pendingMembers} người đăng ký tham gia CLB đang chờ duyệt · Xem thông tin và duyệt
+        </NavLink>
+      )}
       <header className="header">
         <div className="header-inner container">
           <NavLink to="/" className="header-brand" onClick={() => setIsMenuOpen(false)}>
             <img src="/logo.png" alt="CSE Football Club" className="brand-logo-img" />
             <div className="brand-info">
-              <h1 className="brand-name">PunchDad</h1>
+              <h1 className="brand-name">HitDad</h1>
               <span className="brand-tag">CSE FC · HCMUT</span>
             </div>
           </NavLink>
@@ -108,7 +137,7 @@ export default function Layout() {
 
           {/* User Profile & Corner Dropdown Menu */}
           <div className="header-user-wrapper" ref={menuRef}>
-            <button
+            <Button
               ref={buttonRef}
               type="button"
               className={`user-menu-trigger ${isMenuOpen ? 'active' : ''}`}
@@ -132,7 +161,7 @@ export default function Layout() {
                   </svg>
                 </span>
               </div>
-            </button>
+            </Button>
 
             {/* Floating Dropdown Card at Top-Right Corner */}
             {isMenuOpen && (
@@ -156,7 +185,7 @@ export default function Layout() {
                     <h4 className="menu-user-name">{user?.displayName}</h4>
                     <div className="menu-user-sub">
                       <span className="menu-user-tag">@{user?.username}</span>
-                      {user?.role === 'ADMIN' && <span className="badge badge-admin badge-xs">Admin</span>}
+                      {user?.role === 'ADMIN' && <Badge className="badge badge-admin badge-xs">Admin</Badge>}
                     </div>
                   </div>
                   <div className="menu-user-chevron">
@@ -254,7 +283,7 @@ export default function Layout() {
                 <div className="menu-divider" />
 
                 {/* Logout Button */}
-                <button
+                <Button
                   type="button"
                   className="menu-item menu-item-logout"
                   onClick={() => {
@@ -271,7 +300,7 @@ export default function Layout() {
                     </svg>
                   </div>
                   <span className="menu-item-text">Đăng xuất</span>
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -286,17 +315,36 @@ export default function Layout() {
 
       <footer className="footer">
         <div className="container">
-          <p>v1.2.3 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
+          <p>v1.2.3 · CSE HitDad © 2026 · Built with ❤️ for the club</p>
         </div>
       </footer>
 
-      <button className="feedback-fab" type="button" onClick={() => setIsFeedbackOpen(true)} aria-label="Gửi phản hồi" title="Gửi phản hồi">
+      <nav className="mobile-bottom-nav" aria-label="Điều hướng chính">
+        <NavLink to="/" end>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>
+          <span>Lịch đá</span>
+        </NavLink>
+        <NavLink to="/members">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6m1 3a5 5 0 0 1 3 5v2"/></svg>
+          <span>Thành viên</span>
+        </NavLink>
+        {user?.role === 'ADMIN' && <NavLink to="/sessions/new">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 7v10M7 12h10"/></svg>
+          <span>Tạo trận</span>
+        </NavLink>}
+        <NavLink to="/profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+          <span>Tài khoản</span>
+        </NavLink>
+      </nav>
+
+      <Button className="feedback-fab" type="button" onClick={() => setIsFeedbackOpen(true)} aria-label="Gửi phản hồi" title="Gửi phản hồi">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
           <path d="M8 9h8M8 13h5"></path>
         </svg>
         <span>Góp ý</span>
-      </button>
+      </Button>
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );

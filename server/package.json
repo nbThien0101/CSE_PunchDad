@@ -1,12 +1,12 @@
 {
-  "name": "cse-punchdad-server",
+  "name": "cse-hitdad-server",
   "version": "1.2.3",
-  "description": "CSE PunchDad Backend API",
+  "description": "CSE HitDad Backend API",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "node --test tests/team-balancer.test.js"
+    "test": "node --test tests/team-balancer.test.js tests/member-match-count.test.js tests/membership-approval.test.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",

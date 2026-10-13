@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8" />
+<title>Kiểm tra điểm danh mobile — dữ liệu mẫu</title>
+<style>
+  body { margin: 0; background: #e2e8f0; font: 14px system-ui; color: #0f172a; }
+  nav { padding: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  a { color: #1d4ed8; }
+  iframe { display: block; margin: 0 auto 24px; border: 0; box-shadow: 0 12px 40px #0f172a33; }
+</style>
+<nav><strong>Dữ liệu mẫu · Không kết nối database</strong>
+  <a href="?width=320">320px</a><a href="?width=390">390px</a><a href="?width=768">768px</a>
+  <a href="?width=390&height=450">Màn hình thấp / bàn phím</a>
+</nav>
+<iframe title="Giao diện điểm danh" src="./attendance-fixture.html"></iframe>
+<script>
+  const params = new URLSearchParams(location.search);
+  const frame = document.querySelector('iframe');
+  frame.width = Number(params.get('width')) || 390;
+  frame.height = Number(params.get('height')) || 760;
+</script>
+</html>

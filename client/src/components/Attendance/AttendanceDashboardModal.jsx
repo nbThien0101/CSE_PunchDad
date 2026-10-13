@@ -1,3 +1,4 @@
+import { Alert, Badge, Button, Card, Input, Select } from '../ui/index.jsx';
 import { useState, useEffect, useRef } from 'react';
 import { attendanceAPI, usersAPI } from '../../services/api';
 import Modal from '../Modal/Modal';
@@ -286,7 +287,7 @@ export default function AttendanceDashboardModal({
   return (
     <Modal isOpen={true} onClose={onClose} closeOnBackdrop={!busy && !showAdminVoteModal} closeOnEsc={!busy && !showAdminVoteModal}
       className="attendance-modal-wrapper" overlayClassName="attendance-overlay">
-      <div className="attendance-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+      <Card className="attendance-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="attendance-modal-header">
         <div className="attendance-header-top">
@@ -301,7 +302,7 @@ export default function AttendanceDashboardModal({
 
           <div className="attendance-header-actions">
             {/* Nút Chốt danh sách vote */}
-            <button
+            <Button
               className={`btn-lock-toggle ${isLocked ? 'is-locked' : 'is-unlocked'}`}
               onClick={handleToggleLockVote}
               disabled={busy || loading}
@@ -313,11 +314,11 @@ export default function AttendanceDashboardModal({
               ) : (
                 <>🔓 <span>Chốt vote</span></>
               )}
-            </button>
+            </Button>
 
-            <button className="attendance-close-btn" onClick={onClose} disabled={busy} id="btn-close-attendance-modal" aria-label="Đóng">
+            <Button className="attendance-close-btn" onClick={onClose} disabled={busy} id="btn-close-attendance-modal" aria-label="Đóng">
               ✕
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -358,46 +359,46 @@ export default function AttendanceDashboardModal({
 
       {/* Alerts */}
       {error && (
-        <div className="alert alert-error" role="alert" style={{ margin: '8px 18px 0' }}>
+        <Alert className="alert alert-error" role="alert" style={{ margin: '8px 18px 0' }}>
           <span>{error}</span>
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
-        </div>
+          <Button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</Button>
+        </Alert>
       )}
       {success && (
-        <div className="alert alert-success" role="status" style={{ margin: '8px 18px 0' }}>
+        <Alert className="alert alert-success" role="status" style={{ margin: '8px 18px 0' }}>
           <span>{success}</span>
-          <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
-        </div>
+          <Button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</Button>
+        </Alert>
       )}
 
       {/* Navigation Tabs */}
       <div className="attendance-nav-tabs">
-        <button
+        <Button
           className={`attendance-tab-btn ${activeTab === 'roster' ? 'active' : ''}`}
           onClick={() => { setActiveTab('roster'); setSearch(''); }}
           id="tab-btn-roster"
         >
           <span>👥 Điểm danh</span>
           <span className="tab-badge">{data?.joined?.length || 0}</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           className={`attendance-tab-btn ${activeTab === 'guests' ? 'active' : ''}`}
           onClick={() => { setActiveTab('guests'); setSearch(''); }}
           id="tab-btn-guests"
         >
           <span>🌟 Khách mời</span>
           <span className="tab-badge">{data?.guests?.length || 0}</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           className={`attendance-tab-btn ${activeTab === 'warnings' ? 'active' : ''}`}
           onClick={() => { setActiveTab('warnings'); setSearch(''); }}
           id="tab-btn-warnings"
         >
           <span>⚠️ Cảnh cáo</span>
           {totalWarnings > 0 && <span className="tab-badge tab-badge-warning">{totalWarnings}</span>}
-        </button>
+        </Button>
       </div>
 
       {/* Modal Body */}
@@ -414,44 +415,44 @@ export default function AttendanceDashboardModal({
                 <div className="roster-toolbar">
                   <div className="attendance-search">
                     <label className="sr-only" htmlFor="attendance-search-members">Tìm thành viên</label>
-                    <input id="attendance-search-members" type="search" placeholder="Tìm tên thành viên…"
+                    <Input id="attendance-search-members" type="search" placeholder="Tìm tên thành viên…"
                       value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
-                    {search && <button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</button>}
+                    {search && <Button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</Button>}
                   </div>
                   <div className="roster-filters">
-                    <button
+                    <Button
                       className={`roster-filter-btn ${rosterFilter === 'ALL' ? 'active' : ''}`}
                       onClick={() => setRosterFilter('ALL')}
                     >
                       Tất cả ({data?.joined?.length || 0})
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className={`roster-filter-btn ${rosterFilter === 'ATTENDED' ? 'active' : ''}`}
                       onClick={() => setRosterFilter('ATTENDED')}
                     >
                       Đã đến ({summary.attendedMembersCount || 0})
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className={`roster-filter-btn ${rosterFilter === 'UNATTENDED' ? 'active' : ''}`}
                       onClick={() => setRosterFilter('UNATTENDED')}
                     >
                       Chưa đến ({summary.unattendedMembersCount || 0})
-                    </button>
+                    </Button>
                     {data?.declined?.length > 0 && (
-                      <button
+                      <Button
                         className={`roster-filter-btn ${rosterFilter === 'DECLINED' ? 'active' : ''}`}
                         onClick={() => setRosterFilter('DECLINED')}
                         style={rosterFilter === 'DECLINED' ? { borderColor: '#ef4444', color: '#b91c1c' } : { color: '#ef4444' }}
                       >
                         Báo vắng ({data?.declined?.length || 0})
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   <details className="attendance-management">
                     <summary>Thao tác quản lý</summary>
                     <div className="roster-bulk-actions">
-                    <button
+                    <Button
                       className="btn btn-outline btn-sm"
                       onClick={() => {
                         setAdminVoteTargetUserId('');
@@ -462,30 +463,30 @@ export default function AttendanceDashboardModal({
                       title="Admin điều chỉnh hoặc đăng ký vote cho bất kỳ thành viên nào"
                     >
                       ⚙️ Điều chỉnh vote
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleBulkCheckIn(true)}
                       disabled={busy || loading}
                       id="btn-bulk-checkin"
                     >
                       Điểm danh tất cả
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="btn btn-ghost btn-sm"
                       onClick={() => handleBulkCheckIn(false)}
                       disabled={busy || loading}
                       id="btn-bulk-uncheckin"
                     >
                       Hủy điểm danh
-                    </button>
+                    </Button>
                   </div>
                   </details>
                 </div>
 
                 <div className="roster-grid">
                   {displayRoster.map((vote) => (
-                    <div
+                    <Card
                       key={vote.id}
                       className={`roster-card ${vote.isCheckedIn ? 'is-checked-in' : ''} ${vote.status === 'DECLINE' ? 'is-declined' : ''}`}
                     >
@@ -501,17 +502,17 @@ export default function AttendanceDashboardModal({
                           <span className="roster-player-name">{vote.user?.displayName}</span>
                           <div className="roster-tags">
                             {vote.user?.tier && (
-                              <span className={`badge member-tier-badge tier-${vote.user.tier.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
+                              <Badge className={`badge member-tier-badge tier-${vote.user.tier.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
                                 {vote.user.tier}
-                              </span>
+                              </Badge>
                             )}
                             <details className="attendance-player-options">
                               <summary>Tùy chọn</summary>
-                              <button type="button" className="attendance-edit-vote" disabled={busy} onClick={() => {
+                              <Button type="button" className="attendance-edit-vote" disabled={busy} onClick={() => {
                                 setAdminVoteTargetUserId(vote.userId); setShowAdminVoteModal(true);
-                              }}>Điều chỉnh vote</button>
+                              }}>Điều chỉnh vote</Button>
                             {vote.user?.isGoalkeeper ? (
-                              <button
+                              <Button
                                 type="button"
                                 className="badge-gk-mini badge-gk-clickable"
                                 onClick={() => handleToggleMemberGK(vote.userId, true)}
@@ -519,9 +520,9 @@ export default function AttendanceDashboardModal({
                                 title="Bấm để hủy chỉ định thủ môn"
                               >
                                 {actionLoading === `gk-${vote.userId}` ? '...' : '🧤 Thủ môn'}
-                              </button>
+                              </Button>
                             ) : (
-                              <button
+                              <Button
                                 type="button"
                                 className="badge-gk-mini badge-gk-add"
                                 onClick={() => handleToggleMemberGK(vote.userId, false)}
@@ -529,7 +530,7 @@ export default function AttendanceDashboardModal({
                                 title="Bấm để chỉ định làm thủ môn"
                               >
                                 {actionLoading === `gk-${vote.userId}` ? '...' : '+ GK'}
-                              </button>
+                              </Button>
                             )}
                             </details>
                             {vote.user?.isGoalkeeper && <span className="attendance-gk-label">🧤 GK</span>}
@@ -543,7 +544,7 @@ export default function AttendanceDashboardModal({
                       </div>
 
                       {vote.status === 'DECLINE' ? (
-                        <button
+                        <Button
                           className="btn btn-outline btn-sm"
                           style={{ borderColor: '#10b981', color: '#047857', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
                           disabled={busy}
@@ -553,9 +554,9 @@ export default function AttendanceDashboardModal({
                           }}
                         >
                           Đổi sang Tham gia
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
                           className={`btn-checkin-toggle ${vote.isCheckedIn ? 'active' : 'inactive'}`}
                           onClick={() => handleCheckIn(vote.userId, vote.isCheckedIn)}
                           disabled={Boolean(actionLoading) || pendingCheckIns[`member-${vote.userId}`]}
@@ -564,9 +565,9 @@ export default function AttendanceDashboardModal({
                           id={`btn-checkin-${vote.userId}`}
                         >
                           {pendingCheckIns[`member-${vote.userId}`] ? 'Đang lưu…' : vote.isCheckedIn ? '✓ Có mặt' : '+ Có mặt'}
-                        </button>
+                        </Button>
                       )}
-                    </div>
+                    </Card>
                   ))}
                   {displayRoster.length === 0 && (
                     <p style={{ color: '#64748b', fontSize: '0.9rem', gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0' }}>
@@ -584,23 +585,23 @@ export default function AttendanceDashboardModal({
                 <div className="attendance-guest-toolbar">
                   <div className="attendance-search">
                     <label className="sr-only" htmlFor="attendance-search-guests">Tìm khách mời</label>
-                    <input id="attendance-search-guests" type="search" placeholder="Tìm tên khách mời…"
+                    <Input id="attendance-search-guests" type="search" placeholder="Tìm tên khách mời…"
                       value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
-                    {search && <button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</button>}
+                    {search && <Button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</Button>}
                   </div>
-                  <button type="button" className="btn btn-outline" aria-expanded={showGuestForm}
+                  <Button type="button" className="btn btn-outline" aria-expanded={showGuestForm}
                     onClick={() => setShowGuestForm(prev => !prev)} disabled={busy}>
                     {showGuestForm ? 'Đóng biểu mẫu' : '+ Thêm khách'}
-                  </button>
+                  </Button>
                 </div>
                 {/* Form Thêm Guest */}
-                {showGuestForm && <div className="guest-form-card">
+                {showGuestForm && <Card className="guest-form-card">
                   <h3 className="guest-form-title">
                     <span>➕</span> Thêm khách mời mới (vào danh sách Dự bị)
                   </h3>
                   <form onSubmit={handleAddGuest} className="guest-form-clean">
                     <div className="guest-form-input-group">
-                      <input
+                      <Input
                         type="text"
                         className="form-input guest-name-input"
                         placeholder="Nhập tên khách mời (vd: Bạn Hùng, Minh Guest)..."
@@ -613,7 +614,7 @@ export default function AttendanceDashboardModal({
                     </div>
 
                     <div className="guest-form-controls-row">
-                      <select
+                      <Select
                         className="form-input guest-tier-select"
                         value={guestForm.tier}
                         onChange={(e) => setGuestForm((prev) => ({ ...prev, tier: e.target.value }))}
@@ -625,10 +626,10 @@ export default function AttendanceDashboardModal({
                         <option value="B">Tier B (Khá)</option>
                         <option value="C">Tier C (Trung bình)</option>
                         <option value="D">Tier D (Mới chơi)</option>
-                      </select>
+                      </Select>
 
                       <label className="guest-gk-checkbox-label">
-                        <input
+                        <Input
                           type="checkbox"
                           checked={guestForm.isGoalkeeper}
                           onChange={(e) => setGuestForm((prev) => ({ ...prev, isGoalkeeper: e.target.checked }))}
@@ -636,17 +637,17 @@ export default function AttendanceDashboardModal({
                         <span>Thủ môn (GK)</span>
                       </label>
 
-                      <button
+                      <Button
                         type="submit"
                         className="btn btn-primary btn-sm btn-add-guest-submit"
                         disabled={busy}
                         id="btn-submit-add-guest"
                       >
                         {actionLoading === 'add-guest' ? 'Đang thêm...' : '+ Thêm khách'}
-                      </button>
+                      </Button>
                     </div>
                   </form>
-                </div>}
+                </Card>}
 
                 {/* Danh sách Guest */}
                 <div className="guest-list-section">
@@ -655,7 +656,7 @@ export default function AttendanceDashboardModal({
                   </h4>
 
                   {displayGuests.map((guest) => (
-                    <div
+                    <Card
                       key={guest.id}
                       className={`guest-card ${guest.status === 'PLAYING' ? 'is-playing' : 'is-reserve'}`}
                     >
@@ -666,15 +667,15 @@ export default function AttendanceDashboardModal({
                         <div className="guest-card-meta">
                           <div className="guest-name-row">
                             <strong className="guest-display-name">{guest.name}</strong>
-                            <span className={`badge member-tier-badge tier-${guest.tier?.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
+                            <Badge className={`badge member-tier-badge tier-${guest.tier?.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
                               Tier {guest.tier}
-                            </span>
+                            </Badge>
                             {guest.isGoalkeeper && <span className="attendance-gk-label">🧤 GK</span>}
                           </div>
                           <details className="attendance-player-options">
                             <summary>Tùy chọn khách</summary>
                             {guest.isGoalkeeper ? (
-                              <button
+                              <Button
                                 type="button"
                                 className="badge-gk-mini badge-gk-clickable"
                                 onClick={() => handleToggleGuestGK(guest)}
@@ -682,9 +683,9 @@ export default function AttendanceDashboardModal({
                                 title="Bấm để hủy chỉ định thủ môn"
                               >
                                 {actionLoading === `guest-gk-${guest.id}` ? '...' : '🧤 Thủ môn'}
-                              </button>
+                              </Button>
                             ) : (
-                              <button
+                              <Button
                                 type="button"
                                 className="badge-gk-mini badge-gk-add"
                                 onClick={() => handleToggleGuestGK(guest)}
@@ -692,14 +693,14 @@ export default function AttendanceDashboardModal({
                                 title="Bấm để chỉ định khách làm thủ môn"
                               >
                                 {actionLoading === `guest-gk-${guest.id}` ? '...' : '+ GK'}
-                              </button>
+                              </Button>
                             )}
-                            <button className="btn btn-outline btn-sm" onClick={() => handleToggleGuestStatus(guest)}
+                            <Button className="btn btn-outline btn-sm" onClick={() => handleToggleGuestStatus(guest)}
                               disabled={busy} id={`btn-guest-toggle-status-${guest.id}`}>
                               {guest.status === 'RESERVE' ? '⬆ Đôn lên đá chính' : '⬇ Chuyển về dự bị'}
-                            </button>
-                            <button className="btn btn-ghost btn-sm btn-delete-guest" onClick={() => handleDeleteGuest(guest.id)}
-                              disabled={busy} id={`btn-guest-delete-${guest.id}`}>Xóa khách</button>
+                            </Button>
+                            <Button className="btn btn-ghost btn-sm btn-delete-guest" onClick={() => handleDeleteGuest(guest.id)}
+                              disabled={busy} id={`btn-guest-delete-${guest.id}`}>Xóa khách</Button>
                           </details>
                           <div className="guest-status-row">
                             {guest.status === 'PLAYING' ? (
@@ -717,7 +718,7 @@ export default function AttendanceDashboardModal({
                       </div>
 
                       <div className="guest-actions">
-                        <button
+                        <Button
                           className={`btn-checkin-toggle ${guest.isCheckedIn ? 'active' : 'inactive'}`}
                           onClick={() => handleToggleGuestAttendance(guest)}
                           disabled={Boolean(actionLoading) || pendingCheckIns[`guest-${guest.id}`]}
@@ -726,9 +727,9 @@ export default function AttendanceDashboardModal({
                           id={`btn-guest-checkin-${guest.id}`}
                         >
                           {pendingCheckIns[`guest-${guest.id}`] ? 'Đang lưu…' : guest.isCheckedIn ? '✓ Có mặt' : '+ Có mặt'}
-                        </button>
+                        </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))}
 
                   {(!data?.guests || data.guests.length === 0) && (
@@ -754,7 +755,7 @@ export default function AttendanceDashboardModal({
 
                   {lateWarnings.length > 0 ? (
                     lateWarnings.map((log) => (
-                      <div key={log.id} className="warning-card warning-card-late">
+                      <Card key={log.id} className="warning-card warning-card-late">
                         <div className="warning-card-left">
                           <div className="roster-avatar">{log.user?.displayName?.[0]}</div>
                           <div className="warning-user-meta">
@@ -774,7 +775,7 @@ export default function AttendanceDashboardModal({
                             {new Date(log.reportedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))
                   ) : (
                     <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
@@ -791,7 +792,7 @@ export default function AttendanceDashboardModal({
 
                   {noShowWarnings.length > 0 ? (
                     noShowWarnings.map((w) => (
-                      <div key={w.userId} className="warning-card warning-card-danger">
+                      <Card key={w.userId} className="warning-card warning-card-danger">
                         <div className="warning-card-left">
                           <div className="roster-avatar">{w.user?.displayName?.[0]}</div>
                           <div className="warning-user-meta">
@@ -804,7 +805,7 @@ export default function AttendanceDashboardModal({
                         <div className="warning-card-right">
                           <span className="warning-badge-tag danger">Chưa đến</span>
                         </div>
-                      </div>
+                      </Card>
                     ))
                   ) : (
                     <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
@@ -822,7 +823,7 @@ export default function AttendanceDashboardModal({
                     {data.absenceLogs
                       .filter((l) => !l.isLate)
                       .map((log) => (
-                        <div key={log.id} className="warning-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <Card key={log.id} className="warning-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                           <div>
                             <strong>{log.user?.displayName}</strong>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
@@ -832,7 +833,7 @@ export default function AttendanceDashboardModal({
                           <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#64748b' }}>
                             {new Date(log.reportedAt).toLocaleString('vi-VN')}
                           </div>
-                        </div>
+                        </Card>
                       ))}
                   </div>
                 )}
@@ -850,7 +851,7 @@ export default function AttendanceDashboardModal({
 
         <div className="attendance-footer-actions">
           {session.totalCost && (
-            <button
+            <Button
               className="btn-payment-recalc"
               onClick={handleRecalculatePayments}
               disabled={busy || loading}
@@ -858,11 +859,11 @@ export default function AttendanceDashboardModal({
               id="btn-recalc-payments-attendance"
             >
               💰 Chia tiền
-            </button>
+            </Button>
           )}
 
           {onOpenTeamGenerator && (
-            <button
+            <Button
               className="btn-team-rebalance"
               onClick={() => {
                 onClose();
@@ -872,15 +873,15 @@ export default function AttendanceDashboardModal({
               disabled={busy || loading || (summary.totalAttendedOnPitch || 0) < 4}
             >
               ⚽ Chia đội
-            </button>
+            </Button>
           )}
 
-          <button className="btn btn-outline btn-sm" disabled={busy} onClick={onClose} id="btn-close-attendance-footer">
+          <Button className="btn btn-outline btn-sm" disabled={busy} onClick={onClose} id="btn-close-attendance-footer">
             Đóng
-          </button>
+          </Button>
         </div>
       </div>
-      </div>
+      </Card>
 
       {showAdminVoteModal && (
         <AdminAdjustVoteModal

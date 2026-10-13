@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { balanceTeams, getTierScore, getSuggestedTeamCounts } = require('../src/services/team-balancer.service');
+const { balanceTeams, getSuggestedTeamCounts, getTierScore } = require('../src/services/team-balancer.service');
 
+{
 function voters(count, goalkeepers = 0) {
   return Array.from({ length: count }, (_, i) => ({ status: 'JOIN',
     votedAt: new Date(2026, 0, 1, 0, i).toISOString(),
@@ -84,3 +85,146 @@ test('rejects insufficient, duplicate and malformed rosters and invalid options 
     () => balanceTeams(voters(10), { goalkeeperOverrides: [] }),
   ]) assert.throws(run, error => error.statusCode === 400);
 });
+}
+
+{
+function votes(n, gks = 0) {
+  return Array.from({ length: n }, (_, i) => ({
+    status: 'JOIN', votedAt: new Date(i * 1000).toISOString(),
+    user: { id: `p${i}`, displayName: `Player ${i}`, tier: ['S', 'A', 'B', 'C', 'D'][i % 5],
+      isGoalkeeper: i < gks },
+  }));
+}
+
+function verifyRoster(input, result) {
+  const active = [];
+  const realGKIds = new Set(result.teams.filter(t => !t.goalkeeper.isShared).map(t => t.goalkeeper.userId));
+  for (const team of result.teams) {
+    assert.ok(team.goalkeeper.userId);
+    assert.ok(team.players.length <= 4);
+    assert.equal(team.missingPlayersCount, 4 - team.players.length);
+    if (!team.goalkeeper.isShared) active.push(team.goalkeeper.userId);
+    else {
+      assert.ok(realGKIds.has(team.goalkeeper.userId));
+      assert.equal(result.teams.find(t => t.name === team.goalkeeper.sharedFrom).goalkeeper.userId,
+        team.goalkeeper.userId);
+    }
+    active.push(...team.players.map(p => p.userId));
+    const score = getTierScore(team.goalkeeper.tier) + team.players.reduce((sum, p) => sum + getTierScore(p.tier), 0);
+    assert.equal(team.totalTierScore, score);
+    assert.equal(team.averageTierScore, Number((score / (team.players.length + 1)).toFixed(1)));
+  }
+  assert.equal(new Set(active).size, active.length, 'only shared GKs may occur in multiple teams');
+  assert.equal(result.activePlayersCount, active.length);
+  assert.equal(result.reservesCount, result.reserves.length);
+  assert.deepEqual([...active, ...result.reserves.map(p => p.userId)].sort(),
+    input.filter(v => v.status === 'JOIN').map(v => v.user.id).sort(), 'every participant appears exactly once');
+  const counts = result.teams.map(t => t.players.length);
+  assert.ok(Math.max(...counts) - Math.min(...counts) <= 1);
+  const mean = result.teams.reduce((sum, t) => sum + t.totalTierScore, 0) / result.teamCount;
+  assert.equal(result.variance, Number((result.teams.reduce((sum, t) => sum + (t.totalTierScore - mean) ** 2, 0)
+    / result.teamCount).toFixed(2)));
+}
+
+test('regressions: no GK and shared GK never lose participants', () => {
+  for (const [n, gks, count, active, reserves] of [
+    [10, 0, 2, 10, 0], [10, 1, 2, 9, 1], [24, 1, 5, 21, 3],
+    [24, 3, 5, 23, 1], [24, 4, 5, 24, 0], [4, 0, 2, 4, 0], [30, 10, 6, 30, 0],
+  ]) {
+    const input = votes(n, gks);
+    const result = balanceTeams(input, { teamCount: count });
+    verifyRoster(input, result);
+    assert.equal(result.activePlayersCount, active);
+    assert.equal(result.reservesCount, reserves);
+    if (!gks) assert.ok(result.teams.every(t => t.goalkeeper.isRotating && !t.goalkeeper.isPlaceholder));
+  }
+});
+
+test('all supported team counts preserve rosters over varying numbers of GKs', () => {
+  for (let n = 4; n <= 40; n++) {
+    for (const count of getSuggestedTeamCounts(n).available) {
+      for (const gks of new Set([0, 1, count - 1, count, Math.min(n, count + 2)])) {
+        const input = votes(n, gks);
+        verifyRoster(input, balanceTeams(input, { teamCount: count }));
+      }
+    }
+  }
+});
+
+test('vote priority, JOIN filter, overrides and immutable input', () => {
+  const input = votes(12, 2);
+  input.push({ status: 'DECLINE', user: { id: 'absent' } });
+  input.reverse();
+  const before = JSON.stringify(input);
+  const result = balanceTeams(input, { teamCount: 2, goalkeeperOverrides: { p0: false, p1: false } });
+  assert.deepEqual(result.reserves.map(p => p.userId), ['p10', 'p11']);
+  assert.ok(result.teams.every(t => t.goalkeeper.isRotating));
+  assert.equal(JSON.stringify(input), before);
+  const shared = balanceTeams(votes(12, 1), { teamCount: 2 });
+  assert.deepEqual(shared.reserves.map(p => p.userId), ['p9', 'p10', 'p11']);
+});
+
+test('invalid counts and malformed participants return client errors', () => {
+  for (const teamCount of [null, 0, 1, 2.5, '2', -1, NaN, Infinity, 7, 10000]) {
+    assert.throws(() => balanceTeams(votes(10, 2), { teamCount }), { statusCode: 400 });
+  }
+  assert.throws(() => balanceTeams(votes(3)), { statusCode: 400 });
+  const duplicate = votes(10);
+  duplicate[1].user.id = duplicate[0].user.id;
+  assert.throws(() => balanceTeams(duplicate), { statusCode: 400 });
+  assert.throws(() => balanceTeams(votes(10), { goalkeeperOverrides: { p0: 'false' } }), { statusCode: 400 });
+});
+
+test('suggestions always have one shape and include the recommendation', () => {
+  for (let n = 0; n <= 100; n++) {
+    const result = getSuggestedTeamCounts(n);
+    assert.ok(result.available.includes(result.recommended));
+    assert.ok(result.available.every(k => k >= 2 && k <= 6));
+  }
+});
+
+test('balanced feasible rosters reach the integer variance lower bound', () => {
+  for (let repeat = 0; repeat < 20; repeat++) {
+    const input = votes(20, 4).map(v => ({ ...v, user: { ...v.user, tier: 'C' } }));
+    const result = balanceTeams(input, { teamCount: 4 });
+    assert.equal(result.variance, 0);
+    verifyRoster(input, result);
+  }
+});
+
+test('two full teams match exhaustive partitioning on mixed-tier fixtures', () => {
+  let seed = 12345;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let trial = 0; trial < 40; trial++) {
+    const input = votes(10, 2);
+    for (const v of input) v.user.tier = ['S', 'A', 'B', 'C', 'D'][Math.floor(random() * 5)];
+    const weights = input.map(v => getTierScore(v.user.tier));
+    const total = weights.reduce((sum, score) => sum + score, 0);
+    let optimum = Infinity;
+    // Enumerate all 70 ways to assign four of the eight field players to the first GK.
+    for (let mask = 0; mask < 256; mask++) {
+      if (mask.toString(2).replace(/0/g, '').length !== 4) continue;
+      let scoreA = weights[0];
+      for (let i = 0; i < 8; i++) if (mask & (1 << i)) scoreA += weights[i + 2];
+      const diff = 2 * scoreA - total;
+      optimum = Math.min(optimum, diff * diff / 4);
+    }
+    const result = balanceTeams(input, { teamCount: 2 });
+    assert.equal(result.variance, optimum);
+    verifyRoster(input, result);
+  }
+});
+
+test('late GK and interleaved roles preserve all players and reserve vote order', () => {
+  const input = votes(24);
+  for (const i of [5, 12, 23]) input[i].user.isGoalkeeper = true;
+  input[22].user.tier = null;
+  input[21].user.tier = ' b ';
+  const result = balanceTeams(input, { teamCount: 5 });
+  verifyRoster(input, result);
+  assert.deepEqual(result.reserves.map(p => p.userId), ['p22']);
+});
+}

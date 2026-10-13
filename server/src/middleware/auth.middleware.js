@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const { membershipAccessError } = require('../utils/membership');
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,7 @@ const authenticate = async (req, res, next) => {
         email: true,
         displayName: true,
         role: true,
+        membershipStatus: true,
         tier: true,
         isGoalkeeper: true,
         phone: true,
@@ -37,6 +39,9 @@ const authenticate = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
+
+    const accessError = membershipAccessError(user);
+    if (accessError) return res.status(403).json(accessError);
 
     req.user = user;
     next();

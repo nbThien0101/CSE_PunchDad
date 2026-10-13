@@ -516,3 +516,13 @@
     padding: var(--space-6) 0;
   }
 }
+.membership-notification {
+  display: block;
+  padding: 12px 16px;
+  text-align: center;
+  background: #fff7df;
+  color: #735000;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+}

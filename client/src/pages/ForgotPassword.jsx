@@ -1,3 +1,4 @@
+import { Alert, Button, Card, Input } from '../components/ui/index.jsx';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
@@ -188,9 +189,9 @@ export default function ForgotPassword() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card animate-slide-up">
+      <Card className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE PunchDad" className="auth-logo-img" />
+          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Quên mật khẩu</h1>
           <p className="auth-subtitle">Khôi phục quyền truy cập vào tài khoản CLB</p>
         </div>
@@ -220,14 +221,14 @@ export default function ForgotPassword() {
         )}
 
         {error && (
-          <div className="alert alert-error">
+          <Alert className="alert alert-error">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span>{error}</span>
-          </div>
+          </Alert>
         )}
 
         {/* ====== STEP 1: Nhập Email hoặc Username ====== */}
@@ -237,7 +238,7 @@ export default function ForgotPassword() {
               <label className="form-label" htmlFor="forgot-input">
                 Email hoặc Tên đăng nhập
               </label>
-              <input
+              <Input
                 id="forgot-input"
                 type="text"
                 className="form-input"
@@ -252,7 +253,7 @@ export default function ForgotPassword() {
               </span>
             </div>
 
-            <button
+            <Button
               type="submit"
               className="btn btn-primary btn-lg btn-block"
               disabled={loading}
@@ -260,7 +261,7 @@ export default function ForgotPassword() {
             >
               {loading ? <span className="spinner spinner-sm"></span> : null}
               {loading ? 'Đang kiểm tra & gửi mã...' : 'Gửi mã xác nhận →'}
-            </button>
+            </Button>
 
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
               <Link to="/login" className="btn btn-ghost btn-sm">
@@ -284,12 +285,13 @@ export default function ForgotPassword() {
 
               <div className="otp-inputs" onPaste={handleOtpPaste}>
                 {otpDigits.map((digit, index) => (
-                  <input
+                  <Input
                     key={index}
                     ref={(el) => (otpRefs.current[index] = el)}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
+                    aria-label={`Chữ số OTP ${index + 1}`}
                     className={`otp-input ${digit ? 'filled' : ''}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
@@ -305,7 +307,7 @@ export default function ForgotPassword() {
                     Gửi lại mã sau <strong>{countdown}s</strong>
                   </span>
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     className="btn btn-ghost btn-sm"
                     onClick={handleResendOTP}
@@ -313,13 +315,13 @@ export default function ForgotPassword() {
                     id="btn-forgot-resend-otp"
                   >
                     🔄 Gửi lại mã OTP
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
 
             <div className="otp-actions">
-              <button
+              <Button
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => {
@@ -331,8 +333,8 @@ export default function ForgotPassword() {
                 id="btn-forgot-back-step1"
               >
                 ← Quay lại
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="btn btn-primary btn-lg"
                 disabled={loading || otpDigits.join('').length !== 6}
@@ -340,7 +342,7 @@ export default function ForgotPassword() {
               >
                 {loading ? <span className="spinner spinner-sm"></span> : null}
                 {loading ? 'Đang xác thực...' : 'Xác thực OTP →'}
-              </button>
+              </Button>
             </div>
           </form>
         )}
@@ -353,7 +355,7 @@ export default function ForgotPassword() {
                 Mật khẩu mới
               </label>
               <div className="password-input-wrapper">
-                <input
+                <Input
                   id="new-password"
                   type={showPassword ? 'text' : 'password'}
                   className="form-input password-input"
@@ -364,7 +366,7 @@ export default function ForgotPassword() {
                   autoFocus
                   minLength={6}
                 />
-                <button
+                <Button
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
@@ -382,7 +384,7 @@ export default function ForgotPassword() {
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -391,7 +393,7 @@ export default function ForgotPassword() {
                 Xác nhận mật khẩu mới
               </label>
               <div className="password-input-wrapper">
-                <input
+                <Input
                   id="confirm-new-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   className="form-input password-input"
@@ -401,7 +403,7 @@ export default function ForgotPassword() {
                   required
                   minLength={6}
                 />
-                <button
+                <Button
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -419,11 +421,11 @@ export default function ForgotPassword() {
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
               className="btn btn-primary btn-lg btn-block"
               disabled={loading}
@@ -431,7 +433,7 @@ export default function ForgotPassword() {
             >
               {loading ? <span className="spinner spinner-sm"></span> : null}
               {loading ? 'Đang đổi mật khẩu...' : 'Lưu mật khẩu mới'}
-            </button>
+            </Button>
           </form>
         )}
 
@@ -458,14 +460,14 @@ export default function ForgotPassword() {
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>
               {successMsg || 'Mật khẩu của bạn đã được cập nhật. Bạn có thể sử dụng mật khẩu mới để đăng nhập ngay.'}
             </p>
-            <button
+            <Button
               type="button"
               className="btn btn-primary btn-lg btn-block"
               onClick={() => navigate('/login')}
               id="btn-go-to-login"
             >
               Đăng nhập ngay →
-            </button>
+            </Button>
           </div>
         )}
 
@@ -474,7 +476,7 @@ export default function ForgotPassword() {
             Nhớ lại mật khẩu? <Link to="/login">Đăng nhập</Link>
           </p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

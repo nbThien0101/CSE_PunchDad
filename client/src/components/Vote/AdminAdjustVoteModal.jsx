@@ -1,3 +1,4 @@
+import { Badge, Button, Card, Input } from '../ui/index.jsx';
 import { useState, useEffect, useMemo } from 'react';
 import { usersAPI, votesAPI } from '../../services/api';
 import Modal from '../Modal/Modal';
@@ -187,7 +188,7 @@ export default function AdminAdjustVoteModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} closeOnBackdrop={!submitting}>
-      <div className="admin-vote-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+      <Card className="admin-vote-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
         <div className="admin-vote-modal-header">
           <div className="admin-vote-header-info">
             <span className="admin-vote-header-badge">Admin Control</span>
@@ -196,7 +197,7 @@ export default function AdminAdjustVoteModal({
               Trận đấu: <strong>{session?.title}</strong>
             </p>
           </div>
-          <button
+          <Button
             type="button"
             className="admin-vote-close-btn"
             onClick={onClose}
@@ -204,7 +205,7 @@ export default function AdminAdjustVoteModal({
             title="Đóng"
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="admin-vote-modal-body">
@@ -228,7 +229,7 @@ export default function AdminAdjustVoteModal({
               <>
                 <div className="admin-vote-search-box">
                   <span className="admin-vote-search-icon">🔍</span>
-                  <input
+                  <Input
                     type="text"
                     className="form-input admin-vote-search-input"
                     placeholder="Tìm theo tên hoặc username..."
@@ -237,13 +238,13 @@ export default function AdminAdjustVoteModal({
                     disabled={submitting}
                   />
                   {searchQuery && (
-                    <button
+                    <Button
                       type="button"
                       className="admin-vote-clear-search"
                       onClick={() => setSearchQuery('')}
                     >
                       ✕
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -269,9 +270,9 @@ export default function AdminAdjustVoteModal({
                           <span className="admin-vote-member-name">
                             {member.displayName}
                             {member.tier && (
-                              <span className={`badge member-tier-badge tier-${member.tier.toLowerCase()}`}>
+                              <Badge className={`badge member-tier-badge tier-${member.tier.toLowerCase()}`}>
                                 {member.tier}
-                              </span>
+                              </Badge>
                             )}
                             {member.isGoalkeeper && (
                               <span className="admin-vote-gk-tag" title="Thủ môn">
@@ -342,7 +343,7 @@ export default function AdminAdjustVoteModal({
               <label
                 className={`admin-status-option ${targetStatus === 'JOIN' ? 'active join-active' : ''}`}
               >
-                <input
+                <Input
                   type="radio"
                   name="targetStatus"
                   value="JOIN"
@@ -359,7 +360,7 @@ export default function AdminAdjustVoteModal({
               <label
                 className={`admin-status-option ${targetStatus === 'DECLINE' ? 'active decline-active' : ''}`}
               >
-                <input
+                <Input
                   type="radio"
                   name="targetStatus"
                   value="DECLINE"
@@ -376,7 +377,7 @@ export default function AdminAdjustVoteModal({
               <label
                 className={`admin-status-option ${targetStatus === 'NONE' ? 'active none-active' : ''}`}
               >
-                <input
+                <Input
                   type="radio"
                   name="targetStatus"
                   value="NONE"
@@ -399,7 +400,7 @@ export default function AdminAdjustVoteModal({
                   Khung giờ có thể tham gia <span className="text-danger">*</span>
                 </label>
                 {session.timeSlots.length > 1 && (
-                  <button
+                  <Button
                     type="button"
                     className="admin-vote-select-all"
                     onClick={() => setSelectedTimeSlotIds(
@@ -410,7 +411,7 @@ export default function AdminAdjustVoteModal({
                     disabled={submitting}
                   >
                     {selectedTimeSlotIds.length === session.timeSlots.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                  </button>
+                  </Button>
                 )}
               </div>
               <p className="admin-vote-time-slot-help">
@@ -422,7 +423,7 @@ export default function AdminAdjustVoteModal({
                     key={slot.id}
                     className={`admin-vote-time-slot-option ${selectedTimeSlotIds.includes(slot.id) ? 'selected' : ''}`}
                   >
-                    <input
+                    <Input
                       type="checkbox"
                       checked={selectedTimeSlotIds.includes(slot.id)}
                       onChange={() => toggleTimeSlot(slot.id)}
@@ -440,7 +441,7 @@ export default function AdminAdjustVoteModal({
             <label className="admin-vote-form-label">
               Lý do / Ghi chú điều chỉnh <span className="text-muted">(tùy chọn)</span>
             </label>
-            <input
+            <Input
               type="text"
               className="form-input"
               placeholder={
@@ -464,24 +465,24 @@ export default function AdminAdjustVoteModal({
 
           {/* Footer buttons */}
           <div className="admin-vote-modal-footer">
-            <button
+            <Button
               type="button"
               className="btn btn-outline"
               onClick={onClose}
               disabled={submitting}
             >
               Hủy
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               className="btn btn-primary"
               disabled={submitting || !selectedUserId}
             >
               {submitting ? 'Đang lưu...' : 'Xác nhận điều chỉnh'}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </Modal>
   );
 }

@@ -1,3 +1,4 @@
+import { Alert, Badge, Button, Card, Select } from '../components/ui/index.jsx';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usersAPI } from '../services/api';
@@ -31,8 +32,55 @@ export default function Members() {
   const [saving, setSaving] = useState(false);
   const [togglingGkId, setTogglingGkId] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestsError, setRequestsError] = useState('');
+  const [reviewingId, setReviewingId] = useState(null);
 
   const isAdmin = user?.role === 'ADMIN';
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const data = await usersAPI.getMembershipRequests();
+        if (!active) return;
+        if (data.error) throw new Error(data.error);
+        setRequests(data.requests || []);
+        setRequestsError('');
+      } catch (err) {
+        if (active) setRequestsError(err.message || 'Không thể tải yêu cầu tham gia CLB');
+      } finally {
+        if (active) setRequestsLoading(false);
+      }
+    };
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('membership-requests-changed', refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener('membership-requests-changed', refresh);
+    };
+  }, [isAdmin]);
+
+  const handleReviewMembership = async (request, decision) => {
+    setReviewingId(request.id);
+    setError('');
+    try {
+      const data = await usersAPI.reviewMembershipRequest(request.id, decision);
+      if (data.error) throw new Error(data.error);
+      setRequests(prev => prev.filter(item => item.id !== request.id));
+      setSuccess(`${request.displayName}: ${data.message}`);
+      await fetchMembers();
+    } catch (err) {
+      setError(err.message || 'Không thể xử lý yêu cầu tham gia');
+    } finally {
+      setReviewingId(null);
+      window.dispatchEvent(new Event('membership-requests-changed'));
+    }
+  };
 
   useEffect(() => {
     fetchMembers();
@@ -166,6 +214,35 @@ export default function Members() {
         </div>
       </div>
 
+      {isAdmin && (
+        <Card as="section" className="membership-requests card" id="membership-requests" aria-labelledby="membership-requests-title">
+          <h2 id="membership-requests-title">Yêu cầu tham gia CLB ({requests.length})</h2>
+          <p>Kiểm tra thông tin trước khi cho phép tài khoản vào CLB.</p>
+          {requestsLoading && <p>Đang tải yêu cầu...</p>}
+          {requestsError && <p className="alert alert-error" role="alert">{requestsError}</p>}
+          {!requestsLoading && !requestsError && requests.length === 0 && <p>Không có yêu cầu đang chờ duyệt.</p>}
+          {requests.map(request => (
+            <article className="membership-request" key={request.id}>
+              <div>
+                <h3>{request.displayName}</h3>
+                <dl>
+                  <div><dt>Tài khoản</dt><dd>@{request.username}</dd></div>
+                  <div><dt>Email</dt><dd>{request.email || 'Chưa cung cấp'}</dd></div>
+                  <div><dt>Số điện thoại</dt><dd>{request.phone || 'Chưa cung cấp'}</dd></div>
+                  <div><dt>Đăng ký lúc</dt><dd>{new Date(request.createdAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</dd></div>
+                </dl>
+              </div>
+              <div className="membership-request-actions">
+                <Button className="btn btn-primary btn-sm" disabled={reviewingId !== null} onClick={() => handleReviewMembership(request, 'APPROVED')}>
+                  {reviewingId === request.id ? 'Đang xử lý...' : 'Duyệt vào CLB'}
+                </Button>
+                <Button className="btn btn-danger btn-sm" disabled={reviewingId !== null} onClick={() => handleReviewMembership(request, 'REJECTED')}>Từ chối</Button>
+              </div>
+            </article>
+          ))}
+        </Card>
+      )}
+
       {/* Stats */}
       <div className="members-stats">
         <div className="member-stat">
@@ -192,24 +269,24 @@ export default function Members() {
 
       {/* Alerts */}
       {error && (
-        <div className="alert alert-error">
+        <Alert className="alert alert-error">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <span>{error}</span>
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
-        </div>
+          <Button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</Button>
+        </Alert>
       )}
       {success && (
-        <div className="alert alert-success">
+        <Alert className="alert alert-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
           <span>{success}</span>
-          <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
-        </div>
+          <Button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</Button>
+        </Alert>
       )}
 
       {/* Filters */}
@@ -225,13 +302,13 @@ export default function Members() {
           { key: 'D', label: 'Tier D' },
           { key: 'no-tier', label: 'Chưa xếp hạng' },
         ].map(tab => (
-          <button
+          <Button
             key={tab.key}
             className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
             onClick={() => setFilter(tab.key)}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -252,7 +329,7 @@ export default function Members() {
       ) : (
         <div className="members-grid stagger-children">
           {filteredMembers.map(member => (
-            <div key={member.id} className="member-card card card-hover" id={`member-${member.id}`}>
+            <Card key={member.id} className="member-card card card-hover" id={`member-${member.id}`}>
               <div className="member-card-top">
                 <div className="member-avatar-large">
                   {member.avatar ? (
@@ -266,19 +343,19 @@ export default function Members() {
                   <span className="member-username">@{member.username}</span>
                   <div className="member-badges">
                     {member.role === 'ADMIN' && (
-                      <span className="badge badge-admin">Admin</span>
+                      <Badge className="badge badge-admin">Admin</Badge>
                     )}
                     {member.isGoalkeeper && (
-                      <span className="badge badge-gk" title="Thủ môn">
+                      <Badge className="badge badge-gk" title="Thủ môn">
                         🧤 Thủ môn
-                      </span>
+                      </Badge>
                     )}
                     {member.tier ? (
-                      <span className={`badge member-tier-badge ${TIER_COLORS[member.tier] || ''}`}>
+                      <Badge className={`badge member-tier-badge ${TIER_COLORS[member.tier] || ''}`}>
                         Tier {member.tier}
-                      </span>
+                      </Badge>
                     ) : (
-                      <span className="badge member-tier-badge tier-none">Chưa xếp hạng</span>
+                      <Badge className="badge member-tier-badge tier-none">Chưa xếp hạng</Badge>
                     )}
                   </div>
                 </div>
@@ -333,7 +410,7 @@ export default function Members() {
                 <div className="member-card-admin">
                   {editingId === member.id ? (
                     <div className="tier-edit-form">
-                      <select
+                      <Select
                         className="form-input tier-select"
                         value={editTier}
                         onChange={(e) => setEditTier(e.target.value)}
@@ -344,27 +421,27 @@ export default function Members() {
                             {opt.value ? `Tier ${opt.label}` : opt.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <div className="tier-edit-actions">
-                        <button
+                        <Button
                           className="btn btn-primary btn-sm"
                           onClick={() => handleSaveTier(member.id)}
                           disabled={saving}
                         >
                           {saving ? '...' : 'Lưu'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           className="btn btn-ghost btn-sm"
                           onClick={handleCancelEdit}
                           disabled={saving}
                         >
                           Hủy
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="member-admin-actions">
-                      <button
+                      <Button
                         className="btn btn-outline btn-sm btn-edit-tier"
                         onClick={() => handleEditTier(member)}
                         id={`btn-edit-tier-${member.id}`}
@@ -374,8 +451,8 @@ export default function Members() {
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                         Tier
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className={`btn btn-sm ${member.isGoalkeeper ? 'btn-gk-active' : 'btn-outline btn-gk-toggle'}`}
                         onClick={() => handleToggleGoalkeeper(member)}
                         disabled={togglingGkId === member.id}
@@ -395,9 +472,9 @@ export default function Members() {
                             <span>Gán GK</span>
                           </>
                         )}
-                      </button>
+                      </Button>
                       {member.role !== 'ADMIN' && member.id !== user?.id && (
-                        <button
+                        <Button
                           className="btn btn-danger-solid btn-sm"
                           onClick={() => handleDeleteMember(member)}
                           id={`btn-delete-member-${member.id}`}
@@ -407,13 +484,13 @@ export default function Members() {
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                           </svg>
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}

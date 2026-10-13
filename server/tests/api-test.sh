@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================================
-# CSE PunchDad - API Integration Test Script
+# CSE HitDad - API Integration Test Script
 # Tests the complete flow: Auth → Session → Vote → Payment
 # ==========================================
 
@@ -51,7 +51,7 @@ test_api() {
 }
 
 echo -e "${CYAN}=========================================="
-echo "  CSE PunchDad - API Integration Tests"
+echo "  CSE HitDad - API Integration Tests"
 echo -e "==========================================${NC}\n"
 
 # ==========================================

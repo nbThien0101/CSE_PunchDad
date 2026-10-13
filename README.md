@@ -1,4 +1,4 @@
-# CSE PunchDad · Sports Club Management Platform
+# CSE HitDad · Sports Club Management Platform
 
 ![Version](https://img.shields.io/badge/version-v1.2.3-blue.svg?style=flat-square)
 ![Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=flat-square)
@@ -120,7 +120,7 @@
 ## Cấu trúc Dự án
 
 ```
-CSE_PunchDad/
+CSE_HitDad/
 ├── client/                     # Frontend React (Vite)
 │   ├── src/
 │   │   ├── components/
@@ -438,10 +438,33 @@ Hủy mềm trận đấu:
 - Xác thực đăng ký tài khoản bằng mã OTP gửi qua Brevo Email API.
 
 ### `v1.0.0`
-- Khởi tạo hệ thống cốt lõi CSE PunchDad: Đăng nhập/Đăng ký JWT, quản lý trận đấu, bình chọn tham gia và chia tiền sân.
+- Khởi tạo hệ thống cốt lõi CSE HitDad: Đăng nhập/Đăng ký JWT, quản lý trận đấu, bình chọn tham gia và chia tiền sân.
 
 ---
 
+## Duyệt tài khoản tham gia CLB
+
+Giao diện web đã chuyển sang bộ component gluestack UI Core v3 với theme HitDad Club.
+Xem [hướng dẫn UI và kiểm tra responsive](client/UI.md) để biết cách tích hợp,
+preview mobile/desktop và các điểm cần lưu ý trước khi tạo app Expo riêng.
+
+- Người đăng ký vẫn xác thực email bằng OTP; tài khoản mới được lưu ở trạng thái `PENDING`, chưa được cấp access/refresh token.
+- Chỉ tài khoản `APPROVED` được đăng nhập, làm mới token hoặc truy cập API CLB. Tài khoản bị từ chối thấy thông báo khi đăng nhập.
+- Admin thấy thông báo số người chờ duyệt trên web, tự cập nhật mỗi 30 giây và khi quay lại cửa sổ. Trang **Thành viên → Yêu cầu tham gia CLB** hiển thị tên, tài khoản, email, số điện thoại, thời điểm đăng ký và nút duyệt/từ chối.
+- Yêu cầu được lưu bền vững trong database cho đến khi xử lý; đây là thông báo trong web, không phải email hay push khi admin đóng web.
+- Quyết định được ghi nhận cùng admin xử lý và thời gian. Hai admin xử lý đồng thời không thể ghi đè quyết định của nhau.
+- Migration giữ các tài khoản hiện có ở trạng thái `APPROVED`; không yêu cầu thành viên cũ đăng ký lại. Seed tạo tài khoản mẫu đã được duyệt.
+
+Trước khi khởi động backend phiên bản mới, cấu hình `DATABASE_URL` và chạy trong thư mục `server`:
+
+```sh
+npx prisma migrate deploy
+npx prisma generate
+npm test
+```
+
+Triển khai frontend cùng backend để màn hình đăng ký chuyển sang thông báo chờ duyệt. Không dùng `db push` thay cho migration: migration chứa bước giữ quyền truy cập cho thành viên hiện có.
+
 ## Giấy phép
 
-Phát triển nội bộ cho **CSE PunchDad Sports Club** © 2026.
+Phát triển nội bộ cho **CSE HitDad Sports Club** © 2026.

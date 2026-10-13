@@ -1,3 +1,4 @@
+import { Badge, Button, Card } from '../ui/index.jsx';
 import { Link } from 'react-router-dom';
 import './SessionCard.css';
 
@@ -22,12 +23,12 @@ export default function SessionCard({ session, currentUser, onVote }) {
   };
 
   return (
-    <div className={`session-card card card-hover ${session.status === 'CANCELLED' ? 'cancelled' : ''}`}>
+    <Card className={`session-card card card-hover ${session.status === 'CANCELLED' ? 'cancelled' : ''}`}>
       <div className="session-card-top">
-        <span className={`badge ${config.className}`}>
+        <Badge className={`badge ${config.className}`}>
           <span className="badge-dot"></span>
           {config.label}
-        </span>
+        </Badge>
         <span className="session-date">{formatDate(session.playDate)}</span>
       </div>
 
@@ -100,25 +101,25 @@ export default function SessionCard({ session, currentUser, onVote }) {
               {userVote?.status === 'JOIN' ? '✓ Sửa khung giờ' : 'Chọn khung giờ'}
             </Link>
           ) : (
-            <button
+            <Button
               className={`vote-btn vote-join ${userVote?.status === 'JOIN' ? 'active' : ''}`}
               onClick={() => onVote(session.id, 'JOIN')}
             >
               {userVote?.status === 'JOIN' && '✓ '}Tham gia
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             className={`vote-btn vote-decline ${userVote?.status === 'DECLINE' ? 'active' : ''}`}
             onClick={() => onVote(session.id, 'DECLINE')}
           >
             {userVote?.status === 'DECLINE' && '✓ '}Báo vắng
-          </button>
+          </Button>
         </div>
       )}
 
       <Link to={`/sessions/${session.id}`} className="session-card-link">
         Xem chi tiết →
       </Link>
-    </div>
+    </Card>
   );
 }

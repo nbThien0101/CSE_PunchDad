@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { GluestackModal } from '../ui';
 import './Modal.css';
 
 /**
@@ -50,19 +51,21 @@ export default function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div
+    <GluestackModal
+      isOpen={isOpen}
+      onClose={onClose}
+      _experimentalOverlay
       className={`modal-overlay animate-fade-in ${overlayClassName}`}
       onClick={closeOnBackdrop ? onClose : undefined}
-      role="dialog"
-      aria-modal="true"
     >
-      <div
+      <GluestackModal.Content
         className={`modal-wrapper ${className}`}
         onClick={(e) => e.stopPropagation()}
+        aria-label="Hộp thoại HitDad"
       >
         {children}
-      </div>
-    </div>,
+      </GluestackModal.Content>
+    </GluestackModal>,
     document.body
   );
 }

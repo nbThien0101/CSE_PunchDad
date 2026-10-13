@@ -1,3 +1,4 @@
+import { Alert, Button, Card } from '../ui/index.jsx';
 import { useState, useEffect, useRef } from 'react';
 import Modal from '../Modal/Modal';
 import { paymentsAPI } from '../../services/api';
@@ -123,20 +124,20 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
 
   return (
     <Modal isOpen={true} onClose={onClose} closeOnBackdrop={!isSuccess}>
-      <div className="payos-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+      <Card className="payos-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="payos-modal-header">
           <div>
             <span className="payos-badge">⚡ VietQR · PayOS Tự Động</span>
             <h2 className="payos-modal-title">Thanh toán tiền sân bóng</h2>
             <p className="payos-modal-subtitle">
-              {session?.title || 'Trận đấu CSE PunchDad'}
+              {session?.title || 'Trận đấu CSE HitDad'}
             </p>
           </div>
           {!isSuccess && (
-            <button className="payos-close-btn" onClick={onClose} aria-label="Đóng">
+            <Button className="payos-close-btn" onClick={onClose} aria-label="Đóng">
               ✕
-            </button>
+            </Button>
           )}
         </div>
 
@@ -148,12 +149,12 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
             </div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div className="alert alert-error" style={{ marginBottom: 16 }}>
+              <Alert className="alert alert-error" style={{ marginBottom: 16 }}>
                 <span>{error}</span>
-              </div>
-              <button className="btn btn-primary btn-sm" onClick={initPaymentLink}>
+              </Alert>
+              <Button className="btn btn-primary btn-sm" onClick={initPaymentLink}>
                 Thử lại
-              </button>
+              </Button>
             </div>
           ) : isSuccess ? (
             /* Celebration Success State */
@@ -167,12 +168,12 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
           ) : (
             <>
               {/* Amount Highlight */}
-              <div className="payos-amount-card">
+              <Card className="payos-amount-card">
                 <span className="payos-amount-label">Số tiền cần chuyển:</span>
                 <span className="payos-amount-value">
                   {Math.round(Number(payData?.amount || payment.amount)).toLocaleString('vi-VN')}đ
                 </span>
-              </div>
+              </Card>
 
               {/* QR Code Container */}
               <div className="payos-qr-container">
@@ -201,13 +202,13 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
                   <span className="payos-detail-key">Số tài khoản:</span>
                   <span className="payos-detail-val">
                     <strong>{payData?.accountNumber}</strong>
-                    <button
+                    <Button
                       className="btn-copy-chip"
                       onClick={() => handleCopy(payData?.accountNumber, 'acc')}
                       title="Sao chép số tài khoản"
                     >
                       {copiedKey === 'acc' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
+                    </Button>
                   </span>
                 </div>
 
@@ -215,13 +216,13 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
                   <span className="payos-detail-key">Nội dung chuyển khoản:</span>
                   <span className="payos-detail-val">
                     <span className="payos-memo-highlight">{payData?.description}</span>
-                    <button
+                    <Button
                       className="btn-copy-chip"
                       onClick={() => handleCopy(payData?.description, 'desc')}
                       title="Sao chép nội dung"
                     >
                       {copiedKey === 'desc' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
+                    </Button>
                   </span>
                 </div>
               </div>
@@ -249,16 +250,16 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
               <div></div>
             )}
 
-            <button
+            <Button
               className="btn-check-payos-manual"
               onClick={handleCheckManual}
               disabled={checkingManual}
             >
               {checkingManual ? 'Đang kiểm tra...' : '⚡ Đã chuyển (Kiểm tra)'}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
     </Modal>
   );
 }

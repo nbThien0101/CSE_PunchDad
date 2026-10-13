@@ -1,3 +1,4 @@
+import { Button } from '../ui/index.jsx';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import './Toast.css';
@@ -47,11 +48,11 @@ export default function Toast({ message, type = 'success', onClose, duration = 4
           <strong>{TITLES[type]}</strong>
           <span>{message}</span>
         </span>
-        <button className="app-toast-close" type="button" onClick={onClose} aria-label="Đóng thông báo">
+        <Button className="app-toast-close" type="button" onClick={onClose} aria-label="Đóng thông báo">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m7 7 10 10M17 7 7 17" />
           </svg>
-        </button>
+        </Button>
         <span className="app-toast-progress" style={{ '--toast-duration': `${duration}ms` }} aria-hidden="true" />
       </div>
     </div>,

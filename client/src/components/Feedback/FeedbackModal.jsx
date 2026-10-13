@@ -1,3 +1,4 @@
+import { Button, Textarea } from '../ui/index.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Modal from '../Modal/Modal';
@@ -77,9 +78,9 @@ export default function FeedbackModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={resetAndClose} className="feedback-modal-shell">
       <section className="feedback-modal" aria-labelledby="feedback-title">
-        <button className="feedback-close" type="button" onClick={resetAndClose} aria-label="Đóng">
+        <Button className="feedback-close" type="button" onClick={resetAndClose} aria-label="Đóng">
           <svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17" /></svg>
-        </button>
+        </Button>
 
         {submitted ? (
           <div className="feedback-success">
@@ -89,14 +90,14 @@ export default function FeedbackModal({ isOpen, onClose }) {
             <span className="feedback-eyebrow">Đã gửi thành công</span>
             <h2 id="feedback-title">Cảm ơn bạn đã góp ý!</h2>
             <p>Admin và đội ngũ phát triển đã nhận được phản hồi của bạn.</p>
-            <button className="btn btn-primary" type="button" onClick={resetAndClose}>Hoàn tất</button>
+            <Button className="btn btn-primary" type="button" onClick={resetAndClose}>Hoàn tất</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="feedback-heading">
               <span className="feedback-heading-icon" aria-hidden="true">✦</span>
               <div>
-                <span className="feedback-eyebrow">Cùng xây dựng PunchDad</span>
+                <span className="feedback-eyebrow">Cùng xây dựng HitDad</span>
                 <h2 id="feedback-title">Gửi phản hồi</h2>
                 <p>Mỗi góp ý của bạn đều giúp trải nghiệm tốt hơn.</p>
               </div>
@@ -106,7 +107,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
               <legend>Bạn muốn chia sẻ điều gì?</legend>
               <div className="feedback-category-grid">
                 {CATEGORIES.map((item) => (
-                  <button
+                  <Button
                     key={item.value}
                     type="button"
                     className={`feedback-category ${category === item.value ? 'active' : ''}`}
@@ -114,7 +115,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
                     aria-pressed={category === item.value}
                   >
                     <span>{item.icon}</span>{item.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </fieldset>
@@ -123,7 +124,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
               <legend>Trải nghiệm của bạn <span>(không bắt buộc)</span></legend>
               <div className="feedback-rating" role="radiogroup" aria-label="Mức độ hài lòng">
                 {RATINGS.map((item) => (
-                  <button
+                  <Button
                     key={item.value}
                     type="button"
                     className={rating === item.value ? 'active' : ''}
@@ -133,14 +134,14 @@ export default function FeedbackModal({ isOpen, onClose }) {
                     title={item.label}
                   >
                     <span>{item.emoji}</span><small>{item.label}</small>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </fieldset>
 
             <label className="feedback-message-label" htmlFor="feedback-message">
               Nội dung góp ý
-              <textarea
+              <Textarea
                 ref={textareaRef}
                 id="feedback-message"
                 value={message}
@@ -156,9 +157,9 @@ export default function FeedbackModal({ isOpen, onClose }) {
 
             <div className="feedback-actions">
               <span>Trang hiện tại sẽ được đính kèm để dễ kiểm tra.</span>
-              <button className="btn btn-primary" type="submit" disabled={submitting}>
+              <Button className="btn btn-primary" type="submit" disabled={submitting}>
                 {submitting ? <><span className="feedback-spinner" />Đang gửi...</> : 'Gửi phản hồi'}
-              </button>
+              </Button>
             </div>
           </form>
         )}

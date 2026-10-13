@@ -1,5 +1,6 @@
+import { Alert, Button, Card, Input } from '../components/ui/index.jsx';
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import './Auth.css';
@@ -17,6 +18,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
+  const [registrationComplete, setRegistrationComplete] = useState(false);
 
   // OTP state
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
@@ -24,7 +26,6 @@ export default function Register() {
   const otpRefs = useRef([]);
 
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   // Countdown timer
   useEffect(() => {
@@ -218,7 +219,7 @@ export default function Register() {
         verificationToken: token,
       });
 
-      navigate('/');
+      setRegistrationComplete(true);
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại');
     } finally {
@@ -226,13 +227,29 @@ export default function Register() {
     }
   };
 
+  if (registrationComplete) {
+    return (
+      <div className="auth-page">
+        <Card className="auth-card animate-slide-up">
+          <div className="auth-header">
+            <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
+            <h1 className="auth-title">Đang chờ admin duyệt</h1>
+            <p className="auth-subtitle">Đăng ký thành công. Admin đã nhận được yêu cầu và thông tin của bạn.</p>
+          </div>
+          <p>Bạn có thể đăng nhập và vào CLB sau khi admin chấp thuận yêu cầu tham gia.</p>
+          <Link to="/login" className="btn btn-primary" style={{ marginTop: '1rem' }}>Về trang đăng nhập</Link>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page">
-      <div className="auth-card animate-slide-up">
+      <Card className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE PunchDad" className="auth-logo-img" />
+          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Tạo tài khoản</h1>
-          <p className="auth-subtitle">Tham gia CLB CSE PunchDad</p>
+          <p className="auth-subtitle">Tham gia CLB CSE HitDad</p>
         </div>
 
         {/* Step Indicator */}
@@ -251,14 +268,14 @@ export default function Register() {
         </div>
 
         {error && (
-          <div className="alert alert-error">
+          <Alert className="alert alert-error">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span>{error}</span>
-          </div>
+          </Alert>
         )}
 
         {/* ====== STEP 1: Info Form ====== */}
@@ -266,7 +283,7 @@ export default function Register() {
           <form onSubmit={handleStep1Submit} className="auth-form">
             <div className="form-group">
               <label className="form-label" htmlFor="reg-displayname">Tên hiển thị</label>
-              <input
+              <Input
                 id="reg-displayname"
                 name="displayName"
                 type="text"
@@ -281,7 +298,7 @@ export default function Register() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-username">Tên đăng nhập</label>
-              <input
+              <Input
                 id="reg-username"
                 name="username"
                 type="text"
@@ -297,7 +314,7 @@ export default function Register() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-email">Email</label>
-              <input
+              <Input
                 id="reg-email"
                 name="email"
                 type="email"
@@ -312,7 +329,7 @@ export default function Register() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-password">Mật khẩu</label>
-              <input
+              <Input
                 id="reg-password"
                 name="password"
                 type="password"
@@ -327,7 +344,7 @@ export default function Register() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-confirm">Xác nhận mật khẩu</label>
-              <input
+              <Input
                 id="reg-confirm"
                 name="confirmPassword"
                 type="password"
@@ -342,7 +359,7 @@ export default function Register() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-phone">Số điện thoại <span className="text-muted">(tùy chọn)</span></label>
-              <input
+              <Input
                 id="reg-phone"
                 name="phone"
                 type="tel"
@@ -353,7 +370,7 @@ export default function Register() {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               className="btn btn-primary btn-lg btn-block"
               disabled={loading}
@@ -361,7 +378,7 @@ export default function Register() {
             >
               {loading ? <span className="spinner spinner-sm"></span> : null}
               {loading ? 'Đang gửi mã...' : 'Tiếp theo →'}
-            </button>
+            </Button>
           </form>
         )}
 
@@ -379,12 +396,13 @@ export default function Register() {
 
               <div className="otp-inputs" onPaste={handleOtpPaste}>
                 {otpDigits.map((digit, index) => (
-                  <input
+                  <Input
                     key={index}
                     ref={el => otpRefs.current[index] = el}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
+                    aria-label={`Chữ số OTP ${index + 1}`}
                     className={`otp-input ${digit ? 'filled' : ''}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
@@ -400,7 +418,7 @@ export default function Register() {
                     Gửi lại mã sau <strong>{countdown}s</strong>
                   </span>
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     className="btn btn-ghost btn-sm"
                     onClick={handleResendOTP}
@@ -408,13 +426,13 @@ export default function Register() {
                     id="btn-resend-otp"
                   >
                     🔄 Gửi lại mã OTP
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
 
             <div className="otp-actions">
-              <button
+              <Button
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => { setStep(1); setError(''); setOtpDigits(['', '', '', '', '', '']); }}
@@ -422,8 +440,8 @@ export default function Register() {
                 id="btn-back-step1"
               >
                 ← Quay lại
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="btn btn-primary btn-lg"
                 disabled={loading || otpDigits.join('').length !== 6}
@@ -432,7 +450,7 @@ export default function Register() {
               >
                 {loading ? <span className="spinner spinner-sm"></span> : null}
                 {loading ? 'Đang xác thực...' : 'Xác nhận đăng ký'}
-              </button>
+              </Button>
             </div>
           </form>
         )}
@@ -440,7 +458,7 @@ export default function Register() {
         <p className="auth-switch">
           Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }
