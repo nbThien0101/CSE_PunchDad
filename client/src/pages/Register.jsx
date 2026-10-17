@@ -230,9 +230,9 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE PunchDad" className="auth-logo-img" />
+          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Tạo tài khoản</h1>
-          <p className="auth-subtitle">Tham gia CLB CSE PunchDad</p>
+          <p className="auth-subtitle">Tham gia CLB CSE HitDad</p>
         </div>
 
         {/* Step Indicator */}

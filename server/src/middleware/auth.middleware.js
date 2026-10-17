@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../services/token.service');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -16,12 +16,13 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token, 'access');
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
+        authVersion: true,
         username: true,
         email: true,
         displayName: true,
@@ -34,11 +35,12 @@ const authenticate = async (req, res, next) => {
       },
     });
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+    if (!user || user.authVersion !== decoded.authVersion) {
+      return res.status(401).json({ error: 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.' });
     }
 
-    req.user = user;
+    const { authVersion, ...publicUser } = user;
+    req.user = publicUser;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

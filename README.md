@@ -1,369 +1,320 @@
-# CSE PunchDad · Sports Club Management Platform
+![HitDad project banner](assets/hitdad-banner-16x9.png)
 
-![Version](https://img.shields.io/badge/version-v1.2.3-blue.svg?style=flat-square)
-![Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)
+# CSE HitDad · Sports Club Management Platform
 
-> **Phiên bản hiện tại: `v1.2.3`** — Nền tảng quản lý câu lạc bộ thể thao với bình chọn nhiều khung giờ, ghi chú hủy trận, bản đồ sân, điểm danh, chia đội, quản lý thanh toán và phân quyền quản trị.
+![Version](https://img.shields.io/badge/version-v1.2.4-blue.svg?style=flat-square)
 
----
+**Phiên bản hiện tại: `v1.2.4` — 17/10/2026.** Ứng dụng quản lý câu lạc bộ thể thao: lên lịch, bình chọn khung giờ, điểm danh, chia đội, chia tiền sân và quản lý thành viên.
 
-## Tính năng Nổi bật
+Bản 1.2.4 cập nhật cơ chế xác thực JWT, thu hồi phiên khi đổi mật khẩu, kiểm tra OTP và nhận diện **CSE HitDad**. Khi nâng cấp, các phiên đăng nhập cũ và các bước xác thực OTP đang dở sẽ hết hiệu lực. Xem [hướng dẫn phát hành và nâng cấp 1.2.4](docs/releases/v1.2.4.md).
 
-### 1. Quản lý Trận đấu (Session Management)
-- **Thiết lập trận đấu linh hoạt**: Admin tạo trận đấu với ngày chơi, một hoặc nhiều khung giờ để thành viên lựa chọn, địa điểm sân, số người tối thiểu/tối đa và hạn chót bình chọn.
-- **Bình chọn nhiều khung giờ**:
-  - Admin được tạo tối đa 20 khung giờ hợp lệ, không trùng nhau; mỗi khung phải có giờ bắt đầu nhỏ hơn giờ kết thúc.
-  - Thành viên chọn một hoặc nhiều khung giờ phù hợp khi đăng ký tham gia. Với trận chỉ có một lựa chọn, hệ thống tự chọn khung giờ đó để giữ tương thích với luồng cũ.
-  - Giao diện hiển thị số lượt chọn theo từng khung giờ và đánh dấu phương án có nhiều người tham gia nhất.
-  - Khi đặt sân, Admin có thể chốt một phương án; nếu không chỉ định, backend tự chọn khung có nhiều lượt nhất. Khung giờ không thể thay đổi sau khi trận đã `BOOKED` hoặc `COMPLETED`.
-- **Tích hợp Google Maps cho địa điểm sân**: Admin có thể lưu link chia sẻ Google Maps khi tạo hoặc chỉnh sửa trận đấu. Trang chi tiết nhúng bản đồ trực tiếp và cung cấp nút **Mở trên Google Maps**; các trận cũ chưa có link vẫn tự động tìm bản đồ theo tên địa điểm.
-- **Ghi chú hủy trận**:
-  - Admin bắt buộc nhập lý do khi hủy; nội dung được chuẩn hóa, giới hạn 500 ký tự và hiển thị trên thẻ trận đấu lẫn trang chi tiết.
-  - Admin có thể cập nhật ghi chú trong form chỉnh sửa. Ghi chú được xóa tự động nếu trận được chuyển khỏi trạng thái `CANCELLED`.
-- **Chỉnh sửa toàn diện (Admin Edit Modal)**: Cập nhật mọi thông số của trận đấu bất kỳ lúc nào qua modal giao diện SaaS chuẩn, bảo mật quyền quản trị viên.
-- **Quản lý trạng thái tự động**: Các mốc trạng thái chuẩn xác: *Đang bình chọn* $\rightarrow$ *Đủ người chơi* $\rightarrow$ *Đã đặt sân* $\rightarrow$ *Đã hoàn thành* hoặc *Đã hủy trận*.
+## Tính năng hiện tại
 
-### 2. Xác thực Tài khoản, Hồ sơ Cá nhân & Khôi phục Mật khẩu
-- **Bảo mật OTP qua Email**: Đăng ký tài khoản yêu cầu xác thực bằng mã OTP 6 chữ số gửi qua **Brevo Transactional Email API** (hỗ trợ fallback SMTP Gmail), có cơ chế chống spam (cooldown 60 giây và giới hạn 5 lần gửi / 15 phút).
-- **Khôi phục Mật khẩu qua OTP (Forgot Password Flow)**:
-  - Quy trình 3 bước bảo mật cao:
-    1. Yêu cầu đặt lại qua Email hoặc Tên đăng nhập (Username). Hệ thống tự động che mờ email (vd: `ng***@gmail.com`) để đảm bảo quyền riêng tư.
-    2. Xác thực mã OTP 6 số (thời hạn 5 phút) gửi đến hòm thư người dùng, hỗ trợ đếm ngược 60 giây gửi lại mã.
-    3. Cấp mã xác thực một lần (`resetToken`, hiệu lực 10 phút) để người dùng đặt lại mật khẩu mới an toàn.
-- **Sửa lỗi Chuẩn hóa Email Gmail**: Khắc phục triệt để lỗi tự động xóa dấu chấm (`.`) trong địa chỉ Gmail, đảm bảo quá trình đăng ký và nhận mã OTP chuẩn xác 100%.
-- **Cập nhật Ảnh đại diện (Avatar)**: Tải lên và xem trước ảnh đại diện cá nhân, lưu trữ đồng bộ trong cơ sở dữ liệu.
-- **Mã VietQR thanh toán**: Tải lên hình ảnh mã QR ngân hàng cá nhân, hiển thị trực quan cho các thành viên khác quét chuyển khoản khi phân chia tiền sân.
+| Nhóm | Chức năng |
+| --- | --- |
+| Trận đấu | Admin tạo/sửa trận, địa điểm, link Google Maps, giới hạn người chơi và hạn bình chọn; hủy trận kèm lý do tối đa 500 ký tự. |
+| Khung giờ | Một trận có tối đa 20 lựa chọn. Thành viên chọn nhiều giờ phù hợp và có thể đề xuất thêm giờ khi bình chọn còn mở. Thêm giờ không tự tạo lượt tham gia. |
+| Bình chọn | Thành viên chọn `JOIN` hoặc `DECLINE`; admin có thể điều chỉnh/xóa vote. `JOIN` bị chặn khi còn khoản tiền sân chưa được xác nhận ở trận trước; vẫn cho phép báo vắng. |
+| Thành viên | Hồ sơ cá nhân, ảnh đại diện, số điện thoại, thông tin ngân hàng và ảnh QR; admin quản lý tier, vị trí thủ môn và thành viên. |
+| Điểm danh | Khóa bình chọn, điểm danh riêng lẻ/hàng loạt, quản lý khách mời, trạng thái thi đấu và thanh toán của khách. |
+| Đội hình | Chia đội theo tier, ưu tiên lượt vote sớm, thủ môn và dự bị; xáo trộn và chỉnh phương án trước khi lưu. |
+| Thanh toán | Chia chi phí, đánh dấu đã chuyển tiền, người trả sân/admin xác nhận; tạo link VietQR PayOS và nhận webhook có kiểm tra chữ ký. |
+| Phản hồi | Thành viên gửi lỗi/đề xuất/đánh giá; admin lọc phản hồi, cập nhật trạng thái và ghi chú xử lý. |
 
-### 3. Quy trình Bình chọn Tinh gọn & Chặn Vote Khi Chưa Thanh Toán (Debt-Gated Voting)
-- **Quyết định dứt khoát 2 trạng thái**: Giao diện bình chọn của thành viên chỉ hiển thị **Tham gia (`JOIN`)** hoặc **Báo vắng (`DECLINE`)**. Giá trị `MAYBE` vẫn được giữ trong enum để tương thích dữ liệu/API cũ nhưng không còn là lựa chọn trong luồng người dùng thông thường.
-- **Chọn thời gian có thể tham gia**: Khi vote `JOIN`, client gửi danh sách `timeSlotIds`; backend loại bỏ ID trùng, kiểm tra mọi ID thuộc đúng trận đấu và yêu cầu ít nhất một lựa chọn hợp lệ.
-- **Admin điều chỉnh bình chọn**: Quản trị viên có thể thêm, chuyển trạng thái hoặc xóa lượt bình chọn của thành viên ngay trên trang chi tiết. Không cho phép điều chỉnh trận đã hủy; thao tác chuyển sang báo vắng vẫn ghi nhận lịch sử vắng và trạng thái báo muộn khi phù hợp.
-- **Cơ chế Chặn Bình chọn khi Nợ Tiền Sân (Debt Prevention Policy)**:
-  - **Tự động quét lịch sử nợ**: Khi thành viên bấm bình chọn, hệ thống tự động rà soát các khoản tiền sân chưa được xác nhận hoàn tất (`status !== 'CONFIRMED'`) từ tất cả các trận đấu trước đó (`playDate <= playDate hiện tại`, không tính các trận đã HỦY).
-  - **Chặn quyền Tham gia (`JOIN`)**: Nếu phát hiện thành viên còn nợ tiền sân ở bất kỳ trận đấu trước nào, API sẽ từ chối với mã lỗi HTTP `400 Bad Request`, đồng thời thông báo rõ ràng tên trận đấu nợ, ngày thi đấu và số tiền nợ cụ thể (hoặc tổng nợ nếu nợ nhiều trận).
-  - **Bảo lưu quyền Báo vắng (`DECLINE`)**: Thành viên vẫn được toàn quyền gửi "Báo vắng" khi bận đột xuất để Ban Quản trị nắm chắc quân số mà không bị cưỡng chế thanh toán trước.
-  - **Cảnh báo Trực quan & Thanh toán Nhanh 1-Click**:
-    - Giao diện chi tiết trận đấu hiển thị Banner cảnh báo viền đỏ nổi bật, giải thích lý do bị chặn bình chọn kèm nút bấm `💳 Xem & Thanh toán ngay ↗` điều hướng ngay đến trận đấu nợ.
-    - Nút "Tham gia" tự động đổi sang trạng thái `(Chưa nộp tiền)` với độ mờ cảnh báo trực quan.
-    - Khi bấm vote từ danh sách trận đấu trên Dashboard, lỗi nợ tiền được hiển thị tức thì trên thanh thông báo đầu trang.
-- **Đồng bộ quân số chuẩn xác**: Ban Quản trị và các thành viên nắm bắt chính xác 100% quân số thực tế tham gia ngay trên tiêu đề trận đấu, tối ưu hóa công tác đặt sân và phân bổ đội hình.
+Trạng thái trận: `VOTING` → `CONFIRMED` → `BOOKED` → `COMPLETED`, hoặc `CANCELLED`. Khi đặt sân, admin chốt một khung giờ; danh sách khung giờ không được thay đổi sau khi trận đã `BOOKED` hoặc `COMPLETED`.
 
-### 4. Quản lý Thành viên & Chỉ định Thủ môn (Goalkeeper Management)
-- **Admin Chỉ định & Quản lý Thủ môn**:
-  - Quản trị viên có toàn quyền bật/tắt vai trò Thủ môn (`isGoalkeeper`) cho bất kỳ thành viên nào trực tiếp trên trang Thành viên (`/members`) hoặc ngay trong Modal Điểm danh trận đấu (`AttendanceDashboardModal`).
-  - Huy hiệu trực quan `🧤 Thủ môn` nổi bật trên thẻ thành viên.
-  - Bộ lọc thành viên theo vai trò (*Tất cả*, *Thủ môn*, *Cầu thủ sân*) cùng thống kê tổng số lượng thủ môn sẵn có của câu lạc bộ.
-- **Tự đăng ký vị trí**: Thành viên cũng có thể chủ động cập nhật vị trí sở trường thủ môn trong trang Tài khoản cá nhân.
+Trạng thái khoản thanh toán: `PENDING` → `PAID` → `CONFIRMED`. Thành viên tự đánh dấu đã chuyển tiền tạo trạng thái `PAID`; payer/admin xác nhận hoặc PayOS báo thanh toán thành công sẽ chuyển sang `CONFIRMED`.
 
-### 5. Thuật toán Tự động Chia & Cân bằng Đội hình (Team Balancer Engine)
-- **Quy chuẩn mỗi đội 5 người**: Gồm **1 Thủ môn (GK)** và **4 Cầu thủ sân**.
-- **Cơ chế phân bổ Thủ môn thông minh**:
-  - *Số GK > Số đội*: Các thủ môn dư sẽ tự động được điều chuyển sang thi đấu như cầu thủ sân bình thường.
-  - *Số GK < Số đội*: Các thủ môn sẵn có sẽ luân phiên bắt gôn cho các đội còn thiếu (gắn huy hiệu nổi bật `GK Luân phiên`).
-- **Ưu tiên thời gian vote sớm nhất (`votedAt ASC`)**:
-  - Người vote sớm nhất được ưu tiên vào danh sách đá chính.
-  - Người vote vượt quá chỉ tiêu slot sẽ tự động vào danh sách **Dự bị (Reserves)**.
-  - *Ví dụ 21 người vote*: Chia 4 đội (20 người đá chính, 1 người dự bị).
-  - *Ví dụ 24 người vote*: Chia 5 đội (24 người thực tế, slot thứ 25 dùng thủ môn luân phiên).
-- **Cân bằng sức mạnh theo Tier**:
-  - Thang điểm: **Tier S (5đ)**, **Tier A (4đ)**, **Tier B (3đ)**, **Tier C (2đ)**, **Tier D (1đ)**, **Chưa xếp hạng (2đ)**.
-  - Kết hợp giải thuật **Greedy Snake Draft** và thuật toán tối ưu cục bộ **2-Opt Local Search Swap** để san bằng tổng điểm và điểm trung bình giữa các đội (phương sai $\approx 0$).
-- **Xáo trộn Ngẫu nhiên cùng Tier (Fisher-Yates Same-Tier Shuffle)**:
-  - Các cầu thủ trong cùng một nhóm Tier được xáo trộn vị trí ngẫu nhiên mỗi lần chia đội, kết hợp giải thuật phá vỡ thế hòa điểm (Random Tie-Breaking).
-  - Nút **"Xáo trộn & Chia lại"** cho phép tạo ra phương án đội hình hoàn toàn mới mẻ trên mỗi lần nhấp chuột mà vẫn đảm bảo tính công bằng và cân bằng sức mạnh tuyệt đối.
-- **Modal React Portal Đỉnh cao**:
-  - Gắn trực tiếp vào thẻ `<body>` qua `createPortal`, thoát khỏi mọi bẫy CSS transform.
-  - Phủ kín 100% viewport (`100vw x 100vh`), làm mờ sâu toàn màn hình (`backdrop-filter: blur(12px)`) che phủ cả thanh điều hướng và lề trang.
-  - Khóa cuộn trang nền (`body.modal-open { overflow: hidden }`), hỗ trợ phím `Escape` và hoán đổi vị trí cầu thủ thủ công trước khi lưu.
+## Xác thực và bảo mật trong 1.2.4
 
-### 6. Quản lý Chi phí & Tích hợp Cổng Thanh toán PayOS
-- **Tự động chia tiền sân**: Admin nhập tổng chi phí thực tế và chọn thành viên đại diện đứng ra thanh toán sân. Hệ thống tự động chia đều số tiền trên đầu người tham gia chính thức.
-- **Tích hợp Cổng Thanh toán Thông minh PayOS**:
-  - Tích hợp cổng thanh toán trực tuyến **PayOS** tạo link thanh toán VietQR động cho từng thành viên tham gia trận đấu.
-  - Mã QR thanh toán nhúng sẵn chính xác số tiền cần nộp và cú pháp chuyển khoản định danh riêng cho từng thành viên và trận đấu.
-  - Webhook PayOS xác thực chữ ký bảo mật Checksum (`checksum key`), tự động xác nhận giao dịch chuyển khoản thành công và cập nhật trạng thái `Đã thanh toán` (`PAID`) tức thì vào hệ thống theo thời gian thực mà không cần xác nhận thủ công.
-- **Chuyển khoản VietQR Cá nhân**: Hiển thị song song thông tin ngân hàng và mã VietQR của người đại diện chi trả để thành viên quét mã nhanh chóng qua ứng dụng ngân hàng.
-- **Theo dõi trạng thái nộp tiền**: Bảng thống kê trực quan tiến độ thu tiền sân (*Chờ thanh toán* / *Đã thanh toán*), tỷ lệ phần trăm hoàn thành và danh sách thành viên chưa hoàn thành nghĩa vụ đóng quỹ.
+- Access token mặc định **15 phút**, refresh token mặc định **30 ngày**; chỉ chấp nhận chữ ký HS256 và đúng loại token.
+- `JWT_SECRET` và `JWT_REFRESH_SECRET` phải là hai khóa ngẫu nhiên độc lập, mỗi khóa ít nhất 32 ký tự. Server từ chối khởi động nếu thiếu khóa, dùng khóa mẫu, khóa quá ngắn hoặc hai khóa trùng nhau.
+- Token có `userId`, `authVersion` và `tokenType`. Backend đối chiếu phiên bản xác thực với DB cho mỗi lần xác thực/refresh; token cũ không có claim mới bị từ chối.
+- Đổi hoặc reset mật khẩu tăng `User.authVersion`, vô hiệu hóa mọi access/refresh token trước đó. Đổi mật khẩu trong trang hồ sơ cũng đăng xuất phiên hiện tại.
+- Đăng ký và khôi phục mật khẩu dùng OTP dạng **chuỗi sáu chữ số**, hiệu lực **5 phút**. Mỗi mã được thử tối đa **5 lần**, tính trong DB; mã mới nhất được dùng cho đúng mục đích và đúng email.
+- OTP hợp lệ cấp `verificationToken` để đăng ký hoặc `resetToken` để khôi phục; proof có hiệu lực **10 phút**, dùng một lần. Transaction và cập nhật có điều kiện ngăn hai request dùng đồng thời cùng một mã/proof.
+- API cập nhật hồ sơ dùng danh tính từ JWT đã xác thực; route quản trị kiểm tra vai trò trong DB.
+- Script tạo tài khoản demo bị chặn khi `NODE_ENV=production`. Tài khoản demo đã tồn tại không tự được đổi mật khẩu.
 
-### 7. Hàng rào Bảo mật Chống DoS và DDoS Đa tầng
-- **Tầng ứng dụng (Layer 7 App Defenses)**:
-  - **`globalLimiter`**: Giới hạn 200 requests / 15 phút trên mỗi IP cho toàn bộ `/api/*`, trả về header chuẩn `RateLimit-*`.
-  - **`speedLimiter` (Speed Bumps)**: Tự động làm chậm phản hồi thêm 300ms (tối đa 2s) khi client gửi trên 80 requests / 15 phút để làm nản lòng botnet và crawler.
-  - **`otpLimiter`**: Giới hạn tối đa 5 lần gửi OTP / 15 phút trên mỗi IP, bảo vệ hạn ngạch Brevo API và chống spam email.
-  - **`authLimiter`**: Giới hạn 15 lần thử đăng nhập/đăng ký/khôi phục mật khẩu / 15 phút trên mỗi IP, chống tấn công brute-force.
-  - **`computeLimiter`**: Giới hạn 20 lần chạy thuật toán chia đội / phút trên mỗi IP, bảo vệ tài nguyên CPU.
-  - **`helmet` & `hpp`**: Thiết lập toàn diện các HTTP Security Headers chuẩn OWASP, chống MIME-sniffing, Clickjacking, XSS và HTTP Parameter Pollution. Ẩn hoàn toàn header `X-Powered-By`.
-  - **Chống Slowloris DoS**: Cấu hình Node.js timeouts (`headersTimeout = 20s`, `requestTimeout = 30s`, `keepAliveTimeout = 5s`) tự động ngắt kết nối gửi dữ liệu nhỏ giọt.
-  - **Giới hạn kích thước Body**: Giới hạn 3MB request payload, chống tràn bộ nhớ RAM server.
-  - **`trust proxy`**: Tương thích hoàn hảo với Reverse Proxy và Cloudflare CDN để nhận diện chính xác IP thực của client.
+Client hiện lưu token trong `localStorage`; thao tác đăng xuất xóa token trên trình duyệt. Cơ chế thu hồi mọi phiên phía server được thực hiện khi đổi/reset mật khẩu hoặc khi thay khóa ký, không phải một endpoint đăng xuất riêng.
 
----
+Các giới hạn hiện có:
 
-## Tech Stack
+| Phạm vi | Giới hạn |
+| --- | --- |
+| API chung | 200 request / 15 phút / IP, ngoại trừ health check |
+| Gửi OTP | 5 request / 15 phút / IP; thêm thời gian chờ gửi lại 60 giây theo email |
+| Đăng nhập, đăng ký, xác thực OTP, reset, refresh | Dùng chung `authLimiter`: 15 request / 15 phút / IP |
+| Chia đội | 20 request / phút / IP |
+| Thử một mã OTP | Tối đa 5 lần cho mã đó, lưu trong DB |
 
-| Thành phần | Công nghệ sử dụng |
-| :--- | :--- |
-| **Frontend** | React 19, Vite 8, React Router 7, Vanilla CSS SaaS Design System |
-| **Backend** | Node.js, Express 4, Prisma ORM 6 |
-| **Cơ sở dữ liệu** | PostgreSQL (Neon Serverless PostgreSQL Database) |
-| **Cổng thanh toán** | PayOS SDK (VietQR động, Webhook Checksum tự động gạch nợ) |
-| **Xác thực** | JWT (JSON Web Tokens), Bcrypt.js, Mã OTP Email 6 số, Reset Token |
-| **Dịch vụ Email** | Brevo Transactional Email API (REST API / Nodemailer fallback) |
-| **Bảo mật** | Helmet, HPP, Express-Rate-Limit, Express-Slow-Down |
+Backend còn dùng Helmet, HPP, làm chậm request sau 80 lượt/15 phút, giới hạn JSON 3 MB và các timeout HTTP. `trust proxy` hiện đặt bằng `1`; khi thay hạ tầng proxy cần kiểm tra cách xác định IP thực. Những cơ chế ở tầng ứng dụng không thay thế việc bảo vệ lưu lượng tại hạ tầng.
 
----
+## Công nghệ và cấu trúc
 
-## Cấu trúc Dự án
+| Thành phần | Công nghệ |
+| --- | --- |
+| Frontend | React 19, Vite 8, React Router 7, CSS |
+| Backend | Node.js, Express 4, Prisma 6 |
+| Dữ liệu | PostgreSQL; cấu hình triển khai có thể dùng Neon |
+| Xác thực | JWT, bcryptjs, OTP email |
+| Email | Brevo HTTP API; Nodemailer/SMTP khi không cấu hình Brevo |
+| Thanh toán | PayOS SDK, VietQR, webhook |
+| Kiểm thử bảo mật | Node.js test runner, Prisma và PostgreSQL riêng cho integration test |
 
-```
+```text
 CSE_PunchDad/
-├── client/                     # Frontend React (Vite)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Layout/         # Header điều hướng, footer, avatar user
-│   │   │   ├── Modal/          # Universal Modal Portal (Fullscreen blur & Scroll lock)
-│   │   │   ├── SessionCard/    # Thẻ hiển thị trận đấu danh sách
-│   │   │   ├── TeamGenerator/  # Modal phân chia, xáo trộn & cân bằng đội hình
-│   │   │   └── Vote/           # Modal Admin điều chỉnh bình chọn
-│   │   ├── pages/              # Dashboard, SessionDetail, CreateSession, Members, Profile, Login, Register, ForgotPassword
-│   │   ├── context/            # AuthContext lưu trữ trạng thái người dùng
-│   │   ├── services/           # Axios / Fetch API client (auth, payment, session, user)
-│   │   └── index.css           # Global SaaS Design System (typography, variables, animations)
-│   └── package.json
-│
-├── server/                     # Backend Node.js (Express)
-│   ├── prisma/
-│   │   ├── schema.prisma       # User, Session, TimeSlot, Vote, Payment, Guest và các quan hệ
-│   │   ├── migrations/         # Lịch sử các migration database
-│   │   └── seed.js             # Dữ liệu khởi tạo tài khoản ban đầu
-│   ├── src/
-│   │   ├── controllers/        # Điều khiển logic nghiệp vụ (Auth, Session, Vote, Payment, User, OTP)
-│   │   ├── middleware/         # Auth, Validation, Error Handler, Security (Rate Limiters, Speed Bumps)
-│   │   ├── routes/             # Định tuyến API
-│   │   ├── services/           # Team Balancer Service, Brevo Email Service, PayOS Service
-│   │   └── app.js              # Khởi chạy Express Server, bảo mật Helmet, HPP & Slowloris Timeout
-│   └── package.json
-│
-├── package.json                # Quản lý script khởi chạy toàn bộ ứng dụng
-└── README.md                   # Tài liệu hướng dẫn sử dụng và triển khai
+├── client/
+│   ├── src/components/       # Layout, Modal, Vote, Attendance, Payment, Feedback...
+│   ├── src/pages/            # Đăng nhập, trận đấu, thành viên, hồ sơ, quản trị phản hồi
+│   ├── src/context/          # AuthContext
+│   ├── src/services/api.js   # Fetch API, access token và refresh
+│   └── vercel.json           # Rewrite cho SPA
+├── server/
+│   ├── prisma/               # Schema, migrations, seed demo
+│   ├── src/controllers/
+│   ├── src/middleware/       # Xác thực, phân quyền, validation và rate limit
+│   ├── src/routes/
+│   ├── src/services/         # Token, email, PayOS, chia đội
+│   ├── src/app.js
+│   └── tests/auth-security.test.js
+├── docs/releases/v1.2.4.md   # Thay đổi, migration và triển khai bản 1.2.4
+├── docs/security-audit-2026-10-17.md
+├── render.yaml              # Backend Render
+└── package.json             # Script chạy toàn bộ dự án
 ```
 
----
+## Chạy trên máy
 
-## Hướng dẫn Khởi chạy (Getting Started)
+### 1. Chuẩn bị
 
-### Yêu cầu Tiên quyết
-- **Node.js**: >= 18.x
-- **npm**: >= 9.x
-- Cơ sở dữ liệu **PostgreSQL** (hoặc tài khoản Neon PostgreSQL)
+Dùng **Node.js 22.12 trở lên**, npm và PostgreSQL. Đây là yêu cầu phù hợp với Vite 8/plugin React đang cài; hướng dẫn Node 18 của bản cũ không còn phù hợp. Môi trường kiểm thử bản vá dùng Node 24 và PostgreSQL 18.3.
 
-### 1. Cài đặt Dependencies
-Chạy lệnh sau tại thư mục gốc để cài đặt toàn bộ gói cho root, client và server:
+Từ thư mục gốc:
+
 ```bash
 npm run install:all
+cp server/.env.example server/.env
 ```
 
-### 2. Cấu hình Môi trường Backend
-Tạo file `server/.env` dựa theo mẫu `server/.env.example`:
+### 2. Cấu hình backend
+
+Chỉnh `server/.env`:
+
 ```env
-DATABASE_URL="postgresql://username:password@ep-super-bar...neon.tech/neondb?sslmode=require"
-JWT_SECRET="punchdad_jwt_secret_key_super_safe"
-JWT_EXPIRES_IN="7d"
+DATABASE_URL="postgresql://username:password@localhost:5432/cse_punchdad?schema=public"
+JWT_SECRET=""
+JWT_REFRESH_SECRET=""
+JWT_EXPIRES_IN="15m"
+JWT_REFRESH_EXPIRES_IN="30d"
 PORT=5001
 NODE_ENV=development
 CLIENT_URL="http://localhost:5173"
 
-# Dịch vụ Email Brevo (Gửi mã OTP đăng ký & quên mật khẩu)
-BREVO_API_KEY="xkeysib-..."
-SMTP_EMAIL="csepunchdad@gmail.com"
+BREVO_API_KEY=""
+SMTP_EMAIL=""
+SMTP_PASSWORD=""
 
-# Cổng thanh toán PayOS
-PAYOS_CLIENT_ID="your_payos_client_id"
-PAYOS_API_KEY="your_payos_api_key"
-PAYOS_CHECKSUM_KEY="your_payos_checksum_key"
+PAYOS_CLIENT_ID=""
+PAYOS_API_KEY=""
+PAYOS_CHECKSUM_KEY=""
 ```
 
-### 3. Cập nhật Cơ sở dữ liệu
+Sinh hai khóa JWT bằng cách chạy lệnh sau **hai lần**, rồi điền mỗi kết quả vào một biến khác nhau:
+
 ```bash
-# Chạy migration đồng bộ schema vào database
-cd server && npx prisma migrate deploy
-
-# Seed dữ liệu quản trị viên và thành viên mẫu
-npx prisma db seed
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-### 4. Khởi chạy Ứng dụng
-Tại thư mục gốc, chạy lệnh:
+Để gửi OTP, cấu hình Brevo cùng email người gửi; nếu không dùng Brevo thì cấu hình SMTP email/app password. Để tạo link hoặc xác minh webhook PayOS, điền đủ ba biến PayOS. Không đưa file `.env`, khóa ký, mật khẩu hoặc token thật lên Git hay nhóm chat.
+
+`CLIENT_URL` có thể chứa nhiều origin, phân cách bằng dấu phẩy. Cấu hình local của Vite proxy `/api` tới `http://localhost:5001`, nên không cần URL API riêng cho cách chạy mặc định.
+
+### 3. Generate Prisma Client và chạy migration
+
+```bash
+cd server
+npx prisma generate
+npx prisma migrate deploy
+cd ..
+```
+
+Nếu cần dữ liệu demo, chỉ chạy trên DB local/thử nghiệm:
+
+```bash
+npm run db:seed
+```
+
+Seed tạo tài khoản `admin` và `member1`–`member3` với mật khẩu demo trong `server/prisma/seed.js`. Không dùng các tài khoản này làm tài khoản production. Cả seed chính và script tạo 24 cầu thủ đều từ chối chạy khi `NODE_ENV=production`.
+
+### 4. Chạy ứng dụng
+
 ```bash
 npm run dev
 ```
-Hệ thống sẽ khởi chạy đồng thời:
-- **Frontend**: `http://localhost:5173`
-- **Backend API**: `http://localhost:5001` (Health check: `http://localhost:5001/api/health`)
 
-### 5. Sử dụng Google Maps cho địa điểm sân
-- Khi tạo hoặc chỉnh sửa trận đấu, dán link chia sẻ Google Maps vào trường **Link Google Maps**. Hỗ trợ cả link đầy đủ và link rút gọn dạng `https://maps.app.goo.gl/...`.
-- Trường này không bắt buộc. Nếu để trống, hệ thống dùng nội dung **Địa điểm sân** để tìm và nhúng bản đồ.
-- Backend chỉ chấp nhận URL HTTPS thuộc Google Maps (`google.com/maps`, `maps.google.com`, `maps.app.goo.gl` hoặc `goo.gl/maps`).
+- Frontend: `http://localhost:5173`.
+- Backend: `http://localhost:5001`.
+- Health check: `GET http://localhost:5001/api/health`.
 
-### 6. Nâng cấp môi trường hiện có lên `v1.2.3`
+Địa điểm sân hỗ trợ link Google Maps HTTPS, gồm link rút gọn. Nếu không có link, giao diện tìm bản đồ theo tên địa điểm.
+
+## Nâng cấp và triển khai 1.2.4
+
+**Cần triển khai cùng mã nguồn, migration và cấu hình JWT mới.** Việc sửa file tại local chưa cập nhật web đang chạy. Xem [quy trình đầy đủ](docs/releases/v1.2.4.md#quy-trình-nâng-cấp-production).
+
+Migration mới `20261017090000_harden_auth_sessions`:
+
+| Thay đổi | Ảnh hưởng |
+| --- | --- |
+| Thêm `users.auth_version`, số nguyên, mặc định `0` | Dùng để thu hồi phiên đăng nhập khi mật khẩu thay đổi |
+| Thêm `otp_verifications.attempts`, số nguyên, mặc định `0` | Đếm số lần thử cho từng OTP |
+| Đặt `used = true` cho mọi OTP/proof còn chưa dùng | Người đang đăng ký/reset phải yêu cầu mã mới |
+| Yêu cầu claim JWT mới trong mã ứng dụng | Mọi phiên cấp trước bản vá phải đăng nhập lại |
+
+Prisma sẽ áp dụng tất cả migration chưa chạy; nếu DB chưa có bảng phản hồi, migration `20261001160000_add_feedback` cũng được áp dụng. Migration bảo mật không xóa user, trận đấu, vote hay payment và không tự đổi mật khẩu người dùng.
+
+Backend Render được cấu hình trong `render.yaml`:
+
+```text
+Root directory: server
+Build command: npm install && npx prisma generate
+Start command: npx prisma migrate deploy && node src/app.js
+```
+
+Với service đã tồn tại, phải kiểm tra/thay trực tiếp `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRES_IN=15m` và `NODE_ENV=production` trên Render. `generateValue: true` trong Blueprint không có nghĩa là khóa đang dùng sẽ được tự thay mới.
+
+Frontend Vercel dùng thư mục `client`, build `npm run build`, output `dist`. Đặt `VITE_API_URL=https://<ten-api>.onrender.com/api`, rồi build/deploy lại; biến Vite được đọc lúc build. `CLIENT_URL` trên backend phải chứa origin frontend tương ứng. Rewrite SPA có sẵn trong `client/vercel.json`.
+
+Sau triển khai, kiểm tra `/api/health`, đăng nhập mới, yêu cầu OTP, đổi/reset mật khẩu và việc phiên cũ nhận `401`. Nếu đang xử lý sự cố chiếm tài khoản, giữ API tạm ngưng trong lúc chuẩn bị, đối chiếu log và rà soát dữ liệu bị sửa trước khi mở lại.
+
+## Kiểm thử
+
+Từ thư mục gốc:
 
 ```bash
-git pull origin main
-cd server
-npm install
-npx prisma generate
-npx prisma migrate deploy
+npm --prefix server test
+npm --prefix client run build
 ```
 
-Ba migration liên quan sẽ được áp dụng theo thứ tự:
+`npm test` của backend chạy các kiểm tra JWT; nhóm cần PostgreSQL sẽ **skip** nếu không có `AUTH_SECURITY_TEST_DATABASE_URL`. Muốn chạy đủ nhóm integration, chuẩn bị DB riêng tên `cse_punchdad_auth_security` trên localhost, áp dụng migration vào DB đó và chạy theo [hướng dẫn kiểm thử](docs/releases/v1.2.4.md#kiểm-thử-bản-phát-hành). Không dùng DB production cho bộ kiểm thử này.
 
-1. `20260929103000_add_google_maps_url`: thêm `sessions.google_maps_url`.
-2. `20261001100000_add_session_time_slot_voting`: tạo `session_time_slots`, `time_slot_votes`, thêm `selected_time_slot_id` và chuyển mỗi trận cũ thành một lựa chọn thời gian mặc định.
-3. `20261001143000_add_session_cancellation_note`: thêm `sessions.cancellation_note` dạng nullable để tương thích dữ liệu cũ.
+Kết quả kiểm chứng bản vá ngày 17/10/2026: **17 test đạt** khi chạy với PostgreSQL tạm, migration áp dụng thành công và frontend build thành công. Đây là bằng chứng local, không xác nhận bản vá đã được deploy hay nguyên nhân chính xác của sự cố trên production.
 
-Sau khi generate Prisma Client hoặc migrate database, cần restart backend. Trên Render, cấu hình hiện tại tự chạy `prisma generate` lúc build và `prisma migrate deploy` trước khi khởi động server.
+## API hiện tại
 
----
+Base path: `/api`. Route cần đăng nhập nhận `Authorization: Bearer <accessToken>`. Trong bảng dưới, **Admin** bao gồm xác thực JWT và kiểm tra quyền `ADMIN`. Mọi route `/api` chịu giới hạn chung, ngoại trừ health check; các route auth còn áp dụng limiter riêng.
 
-## Đặc tả Dữ liệu `v1.2.3`
+### Xác thực
 
-| Model / Field | Kiểu | Quy tắc |
-| :--- | :--- | :--- |
-| `Session.googleMapsUrl` | `String?` | Link Google Maps HTTPS tùy chọn |
-| `Session.cancellationNote` | `String? @db.Text` | Bắt buộc khi chuyển mới sang `CANCELLED`; tối đa 500 ký tự |
-| `Session.selectedTimeSlotId` | `String?` | ID khung giờ được chốt khi đặt sân |
-| `SessionTimeSlot` | Model | Thuộc một session; cặp `sessionId + startTime + endTime` là duy nhất |
-| `TimeSlotVote` | Model | Bảng nối Vote–TimeSlot; cặp `voteId + timeSlotId` là duy nhất |
+| Phương thức | Endpoint | Quyền / giới hạn | Chức năng |
+| --- | --- | --- | --- |
+| GET | `/api/health` | Public | Kiểm tra tiến trình API |
+| POST | `/api/auth/send-otp` | Public, OTP limiter | Gửi OTP đăng ký |
+| POST | `/api/auth/verify-otp` | Public, auth limiter | Nhận `verificationToken` sau khi xác minh OTP |
+| POST | `/api/auth/register` | Public, auth limiter, validation | Tạo thành viên từ proof đăng ký |
+| POST | `/api/auth/login` | Public, auth limiter, validation | Đăng nhập bằng username hoặc email và mật khẩu |
+| POST | `/api/auth/refresh` | Refresh token, auth limiter | Cấp cặp token mới nếu user/phiên còn hợp lệ |
+| POST | `/api/auth/forgot-password/send-otp` | Public, OTP limiter | Tìm tài khoản và gửi OTP khôi phục |
+| POST | `/api/auth/forgot-password/verify-otp` | Public, auth limiter | Nhận `resetToken` sau khi xác minh OTP |
+| POST | `/api/auth/forgot-password/reset` | Public, auth limiter | Đặt mật khẩu mới bằng email và reset proof |
+| GET | `/api/auth/me` | Đăng nhập | Danh tính từ token đã xác thực |
 
-Quy tắc toàn vẹn:
+Payload xác minh OTP dùng chuỗi, ví dụ `{ "email": "member@example.com", "otp": "123456" }`. Reset dùng `{ "email": "member@example.com", "resetToken": "<proof>", "newPassword": "<mat-khau-moi>" }`. Không gửi `authVersion` từ client để tự cấp quyền; backend lấy giá trị từ DB.
 
-- Xóa session sẽ cascade xóa toàn bộ khung giờ và lựa chọn thời gian liên quan.
-- Xóa hoặc đổi vote sang `DECLINE` sẽ xóa các `TimeSlotVote` tương ứng.
-- Khi danh sách khung giờ được sửa trước lúc đặt sân, backend thay thế chúng trong transaction và đặt lại `selectedTimeSlotId`.
-- Trận cũ vẫn hoạt động nhờ migration tự tạo một `SessionTimeSlot` từ `startTime` và `endTime` hiện có.
+### Trận đấu, đội hình và điểm danh
 
----
+| Phương thức | Endpoint | Quyền | Chức năng |
+| --- | --- | --- | --- |
+| GET | `/api/sessions` | Đăng nhập | Danh sách trận, lọc theo `status` |
+| GET | `/api/sessions/:id` | Đăng nhập | Chi tiết trận, vote, khung giờ, nợ tiền sân |
+| POST | `/api/sessions` | Admin | Tạo trận |
+| POST | `/api/sessions/:id/time-slots` | Đăng nhập | Thêm giờ khi bình chọn còn mở |
+| PUT | `/api/sessions/:id` | Admin | Sửa trận, chốt giờ, ghi chú hủy |
+| DELETE | `/api/sessions/:id` | Admin | Hủy mềm; body có `cancellationNote` |
+| DELETE | `/api/sessions/:id/force` | Admin | Xóa vĩnh viễn trận và dữ liệu liên quan |
+| GET | `/api/sessions/:id/teams/suggestions` | Đăng nhập | Gợi ý số đội |
+| POST | `/api/sessions/:id/teams/generate` | Admin, compute limiter | Cân bằng/xáo trộn đội |
+| PUT / DELETE | `/api/sessions/:id/teams` | Admin | Lưu/xóa đội hình |
+| GET | `/api/sessions/:id/attendance` | Đăng nhập | Xem bảng điểm danh |
+| POST | `/api/sessions/:id/lock-vote` | Admin | Bật/tắt khóa bình chọn |
+| POST | `/api/sessions/:id/attendance` | Admin | Điểm danh một người |
+| POST | `/api/sessions/:id/attendance/bulk` | Admin | Điểm danh hàng loạt |
+| POST | `/api/sessions/:id/guests` | Admin | Thêm khách mời |
+| PUT / DELETE | `/api/sessions/:id/guests/:guestId` | Admin | Sửa/xóa khách mời |
+| POST | `/api/sessions/:id/recalculate-payments` | Admin | Tính lại khoản tiền sân |
 
-## Tài khoản Mặc định
+### Bình chọn
 
-| Tên đăng nhập | Mật khẩu | Họ và tên | Vai trò | Quyền hạn |
-| :--- | :--- | :--- | :--- | :--- |
-| **`admin`** | `admin123` | Admin CLB | **ADMIN** | Tạo trận, sửa/xóa trận, chia đội hình, chỉ định thủ môn, quản lý thanh toán |
-| **`member1`** | `member123` | Nguyen Van A | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
-| **`member2`** | `member123` | Tran Van B | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
-| **`member3`** | `member123` | Le Van C | **MEMBER** | Bình chọn, cập nhật hồ sơ cá nhân, xem đội hình, nộp tiền sân |
+| Phương thức | Endpoint | Quyền | Chức năng |
+| --- | --- | --- | --- |
+| POST | `/api/votes` | Đăng nhập | Vote `JOIN`/`DECLINE`; tham gia nhận thêm `timeSlotIds` |
+| PUT | `/api/votes/:id` | Chủ vote | Cập nhật trạng thái và giờ đã chọn |
+| GET | `/api/votes/session/:sessionId` | Đăng nhập | Danh sách vote của trận |
+| POST | `/api/votes/admin/adjust` | Admin | Điều chỉnh hoặc xóa vote |
 
----
+Ví dụ tham gia: `{ "sessionId": "<id>", "status": "JOIN", "timeSlotIds": ["<slot-id>"] }`. Backend kiểm tra slot thuộc đúng trận và các khoản nợ trước đó.
 
-## Danh sách API Endpoints Chính
+### Thanh toán
 
-### Xác thực & Tài khoản (`/api/auth`)
-| Phương thức | Endpoint | Middleware | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/send-otp` | `otpLimiter (5/15m)` | Gửi mã OTP xác thực email đăng ký qua Brevo API |
-| `POST` | `/api/auth/verify-otp` | `authLimiter (15/15m)` | Kiểm tra tính hợp lệ của mã OTP đăng ký |
-| `POST` | `/api/auth/register` | `authLimiter`, Validate | Đăng ký tài khoản thành viên mới |
-| `POST` | `/api/auth/login` | `authLimiter`, Validate | Đăng nhập hệ thống, cấp Access & Refresh Token |
-| `POST` | `/api/auth/forgot-password` | `otpLimiter (5/15m)` | Gửi mã OTP 6 số khôi phục mật khẩu qua email |
-| `POST` | `/api/auth/verify-reset-otp` | `authLimiter (15/15m)` | Xác thực OTP khôi phục và cấp `resetToken` (10 phút) |
-| `POST` | `/api/auth/reset-password` | `authLimiter`, Validate | Thiết lập mật khẩu mới bằng `resetToken` |
-| `GET` | `/api/auth/me` | `authenticate` | Lấy thông tin tài khoản đang đăng nhập |
+| Phương thức | Endpoint | Quyền | Chức năng |
+| --- | --- | --- | --- |
+| GET | `/api/payments/session/:sessionId` | Đăng nhập | Khoản phải nộp và tổng hợp của trận |
+| PUT | `/api/payments/:id/mark-paid` | Chủ khoản thanh toán | Đánh dấu đã chuyển tiền (`PAID`) |
+| PUT | `/api/payments/:id/confirm` | Payer hoặc Admin | Xác nhận đã nhận tiền (`CONFIRMED`) |
+| POST | `/api/payments/:id/payos-link` | Chủ khoản thanh toán hoặc Admin | Tạo/lấy link VietQR PayOS |
+| GET | `/api/payments/:id/payos-status` | Đăng nhập | Kiểm tra trạng thái PayOS |
+| POST | `/api/payments/payos-webhook` | Chữ ký PayOS | Nhận webhook, xác nhận thanh toán thành công |
 
-### Trận đấu & Đội hình (`/api/sessions`)
-| Phương thức | Endpoint | Middleware | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/sessions` | `authenticate` | Lấy danh sách trận đấu (hỗ trợ bộ lọc tab) |
-| `GET` | `/api/sessions/:id` | `authenticate` | Lấy chi tiết trận, vote, lựa chọn khung giờ, đội hình và thông tin nợ tiền sân |
-| `POST` | `/api/sessions` | `requireAdmin`, Validate | Tạo trận với `timeSlots` và `googleMapsUrl` tùy chọn |
-| `PUT` | `/api/sessions/:id` | `requireAdmin` | Chỉnh sửa trận, chốt `selectedTimeSlotId` hoặc cập nhật ghi chú hủy |
-| `DELETE` | `/api/sessions/:id` | `requireAdmin` | Hủy mềm trận đấu; body bắt buộc `{ "cancellationNote": "..." }` |
-| `DELETE` | `/api/sessions/:id/force` | `requireAdmin` | Xóa vĩnh viễn trận và dữ liệu liên quan |
-| `GET` | `/api/sessions/:id/teams/suggestions` | `authenticate` | Gợi ý số đội phù hợp và danh sách vote sớm nhất |
-| `POST` | `/api/sessions/:id/teams/generate` | `requireAdmin`, `computeLimiter` | Tự động cân bằng và xáo trộn đội hình ngẫu nhiên |
-| `PUT` | `/api/sessions/:id/teams` | `requireAdmin` | Lưu danh sách đội hình chính thức vào database |
-| `DELETE` | `/api/sessions/:id/teams` | `requireAdmin` | Hủy bảng chia đội hình của trận đấu |
+### Hồ sơ và phản hồi
 
-### Bình chọn (`/api/votes`)
-| Phương thức | Endpoint | Middleware | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/votes` | `authenticate` | Bình chọn `JOIN`/`DECLINE`; `JOIN` nhận thêm `timeSlotIds` và áp dụng kiểm tra nợ |
-| `PUT` | `/api/votes/:id` | `authenticate` | Cập nhật trạng thái và danh sách `timeSlotIds` của chính người dùng |
-| `POST` | `/api/votes/admin/adjust` | `requireAdmin` | Admin thêm, đổi hoặc xóa vote (`JOIN`, `DECLINE`, `MAYBE`, `NONE`/`DELETE`) |
-| `GET` | `/api/votes/session/:sessionId` | `authenticate` | Lấy danh sách vote kèm các khung giờ đã chọn |
+| Phương thức | Endpoint | Quyền | Chức năng |
+| --- | --- | --- | --- |
+| GET | `/api/users/members` | Đăng nhập | Danh sách thành viên |
+| PUT | `/api/users/profile` | Đăng nhập, chính mình | Tên hiển thị, điện thoại, ngân hàng, vị trí thủ môn |
+| PUT | `/api/users/change-password` | Đăng nhập, mật khẩu hiện tại | Đổi mật khẩu và thu hồi mọi phiên cũ |
+| PUT / DELETE | `/api/users/avatar` | Đăng nhập, chính mình | Tải/xóa ảnh đại diện |
+| PUT / DELETE | `/api/users/qr-code` | Đăng nhập, chính mình | Tải/xóa ảnh QR |
+| GET | `/api/users/:id/qr-code` | Đăng nhập | Xem QR của thành viên |
+| PUT | `/api/users/:userId/tier` | Admin | Cập nhật tier |
+| PUT | `/api/users/:userId/goalkeeper` | Admin | Cập nhật vị trí thủ môn |
+| DELETE | `/api/users/:userId` | Admin | Xóa thành viên theo các ràng buộc nghiệp vụ |
+| POST | `/api/feedback` | Đăng nhập | Gửi phản hồi |
+| GET | `/api/feedback` | Admin | Danh sách và thống kê phản hồi |
+| PUT | `/api/feedback/:id` | Admin | Cập nhật trạng thái/ghi chú phản hồi |
 
-Payload tiêu biểu của `v1.2.3`.
+Ảnh avatar/QR nhận data URL PNG, JPEG hoặc WebP, tối đa 2 MB dữ liệu ảnh. Phản hồi nhận `category` là `BUG`, `FEATURE`, `UX`, `OTHER`; `message` dài 10–2.000 ký tự; `rating` tùy chọn từ 1–5. Trạng thái xử lý là `NEW`, `REVIEWING`, `RESOLVED`.
 
-Tạo hoặc cập nhật các lựa chọn thời gian của trận:
+## Dữ liệu cần biết
 
-```json
-{
-  "title": "Weekly match",
-  "playDate": "2026-10-04",
-  "startTime": "17:00",
-  "endTime": "19:00",
-  "timeSlots": [
-    { "startTime": "17:00", "endTime": "19:00" },
-    { "startTime": "19:00", "endTime": "21:00" }
-  ],
-  "location": "Sân CSE",
-  "googleMapsUrl": "https://maps.app.goo.gl/example",
-  "minPlayers": 10,
-  "maxPlayers": 20
-}
-```
+| Model / trường | Vai trò |
+| --- | --- |
+| `User.authVersion` | Phiên bản xác thực; không trả ra trong hồ sơ công khai |
+| `OtpVerification.attempts` | Số lần thử của challenge; mặc định `0` |
+| `OtpVerification.otp` | Mã/proof được phân loại nội bộ theo mục đích, không phải dữ liệu công khai |
+| `Session.googleMapsUrl` | Link Google Maps HTTPS tùy chọn |
+| `Session.cancellationNote` | Lý do hủy, tối đa 500 ký tự |
+| `Session.selectedTimeSlotId` | Khung giờ được chốt |
+| `SessionTimeSlot` | Khung giờ; duy nhất theo session và cặp giờ bắt đầu/kết thúc |
+| `TimeSlotVote` | Lựa chọn giờ của vote; duy nhất theo vote và slot |
+| `Feedback` | Phản hồi của user, loại, đánh giá, trạng thái và ghi chú quản trị |
 
-Thành viên tham gia và chọn các khung giờ phù hợp:
+Enum `MAYBE` vẫn tồn tại để tương thích dữ liệu cũ; giao diện thành viên dùng `JOIN`/`DECLINE`. Xóa hoặc đổi vote sang báo vắng sẽ xóa lựa chọn giờ tương ứng. Dữ liệu trận cũ được migration khung giờ tạo lựa chọn mặc định từ giờ bắt đầu/kết thúc đã có.
 
-```json
-{
-  "sessionId": "session-id",
-  "status": "JOIN",
-  "timeSlotIds": ["time-slot-id-1", "time-slot-id-2"]
-}
-```
+## Lịch sử phiên bản
 
-Hủy mềm trận đấu:
+### `v1.2.4` — 17/10/2026 (phiên bản hiện tại)
 
-```json
-{
-  "cancellationNote": "Sân đóng cửa do thời tiết xấu"
-}
-```
+- Siết cấu hình và xác thực JWT; phân biệt access/refresh, mặc định access token 15 phút.
+- Thêm `authVersion`, kiểm tra user/phiên khi refresh; thu hồi mọi phiên sau đổi/reset mật khẩu.
+- Sửa OTP nhận sai kiểu; giới hạn năm lần thử theo challenge; ngăn dùng lại mã/proof qua request đồng thời.
+- Thêm migration bảo mật, vô hiệu hóa OTP/proof trước bản vá và yêu cầu đăng nhập lại.
+- Chặn seed demo trên production; bổ sung bộ kiểm thử bảo mật với PostgreSQL riêng.
+- Cập nhật logo, favicon, banner và tên hiển thị CSE HitDad; footer hiển thị `v1.2.4`.
+- Viết lại hướng dẫn cấu hình/nâng cấp, đồng bộ API với route thật, bổ sung tài liệu phản hồi và triển khai.
+- Đồng bộ version tại root, client, server và các lockfile. Chi tiết: [release notes 1.2.4](docs/releases/v1.2.4.md).
 
-### Quản lý Chi phí & Thanh toán (`/api/payments`)
-| Phương thức | Endpoint | Middleware | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/payments/calculate` | `requireAdmin` | Phân chia chi phí sân bóng cho các thành viên tham gia |
-| `PUT` | `/api/payments/:id/status` | `requireAdmin` | Cập nhật thủ công trạng thái nộp tiền của thành viên |
-| `POST` | `/api/payments/payos/create-payment-link` | `authenticate` | Khởi tạo link thanh toán VietQR PayOS động cho trận đấu |
-| `POST` | `/api/payments/payos/webhook` | — | Webhook PayOS xác thực Checksum, tự động cập nhật trạng thái `PAID` |
-
-### Người dùng & Hồ sơ (`/api/users`)
-| Phương thức | Endpoint | Middleware | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/users` | `authenticate` | Lấy danh sách toàn bộ thành viên câu lạc bộ |
-| `PUT` | `/api/users/profile` | `authenticate` | Cập nhật hồ sơ cá nhân (Avatar, mã VietQR, vai trò Thủ môn) |
-| `PUT` | `/api/users/:userId/goalkeeper` | `requireAdmin` | Admin gán hoặc hủy vai trò thủ môn cho thành viên |
-
----
-
-## Kiến trúc Triển khai Production & Bảo vệ DDoS
-
-Để đạt hiệu quả phòng vệ tối ưu trước các đợt tấn công từ chối dịch vụ quy mô lớn trên môi trường Production:
-1. **Trỏ tên miền qua Cloudflare (Gói Miễn phí)**:
-   - Kích hoạt biểu tượng Đám mây cam (**Proxied**) trên bản ghi DNS.
-   - Bật **Bot Fight Mode** trong Cloudflare Security để tự động chặn các botnet quét lỗ hổng đã biết.
-   - Đảm bảo `app.set('trust proxy', 1)` trong `server/src/app.js` để Express đọc đúng địa chỉ IP gốc của người dùng thông qua header `CF-Connecting-IP`.
-2. **Kích hoạt Under Attack Mode khi bị tấn công**:
-   - Khi có dấu hiệu bị flood lưu lượng lớn, bật chế độ "Under Attack" để Cloudflare tự động lọc traffic thông qua thử thách Turnstile không xâm phạm.
-
----
-
-## Lịch sử Phiên bản (Changelog)
-
-### `v1.2.3` (Phiên bản hiện tại)
+### `v1.2.3`
 - **Bình chọn Nhiều Khung giờ**:
   - Admin tạo, chỉnh sửa tối đa 20 phương án thời gian cho một trận đấu.
   - Thành viên chọn một hoặc nhiều khung giờ có thể tham gia; giao diện thống kê và đánh dấu phương án phổ biến nhất.
@@ -441,4 +392,4 @@ Hủy mềm trận đấu:
 
 ## Giấy phép
 
-Phát triển nội bộ cho **CSE PunchDad Sports Club** © 2026.
+Phát triển nội bộ cho **CSE HitDad Sports Club** © 2026.

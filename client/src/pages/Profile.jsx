@@ -115,7 +115,8 @@ export default function Profile() {
         return;
       }
 
-      setSuccess('Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.');
+      // Password changes revoke every existing session, including this one.
+      logout();
       setShowPasswordModal(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setTimeout(() => setSuccess(''), 5000);

@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
 require('dotenv').config();
+require('./services/token.service').assertJwtConfiguration();
 
 const authRoutes = require('./routes/auth.routes');
 const sessionRoutes = require('./routes/session.routes');

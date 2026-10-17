@@ -5,6 +5,41 @@ const { sendOTPEmail } = require('../services/email.service');
 
 const prisma = new PrismaClient();
 
+const validEmail = (value) => typeof value === 'string' &&
+  value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+const validOTP = (value) => typeof value === 'string' && /^\d{6}$/.test(value);
+
+// Attempts belong to the challenge in the database, so changing IP cannot reset them.
+// Claiming the code and issuing a proof happen together; a proof can be issued once.
+const exchangeOTP = (email, otp, purpose) => prisma.$transaction(async (tx) => {
+  const forgot = purpose === 'forgot';
+  const record = await tx.otpVerification.findFirst({
+    where: {
+      email,
+      otp: { startsWith: forgot ? 'forgot_' : 'register_' },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!record) return null;
+  const attempt = await tx.otpVerification.updateMany({
+    where: { id: record.id, used: false, attempts: { lt: 5 }, expiresAt: { gte: new Date() } },
+    data: { attempts: { increment: 1 } },
+  });
+  if (attempt.count !== 1 || record.otp !== `${forgot ? 'forgot' : 'register'}_${otp}`) return null;
+  const claimed = await tx.otpVerification.updateMany({
+    where: { id: record.id, used: false }, data: { used: true },
+  });
+  if (claimed.count !== 1) return null;
+  const token = crypto.randomBytes(32).toString('hex');
+  await tx.otpVerification.create({
+    data: {
+      email, otp: `${forgot ? 'reset' : 'verified'}_${token}`,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), used: false,
+    },
+  });
+  return token;
+});
+
 /**
  * Tạo mã OTP 6 số ngẫu nhiên
  */
@@ -20,7 +55,7 @@ const sendOTP = async (req, res, next) => {
   try {
     const { email, phone, username } = req.body;
 
-    if (!email) {
+    if (!validEmail(email)) {
       return res.status(400).json({ error: 'Email không được để trống' });
     }
 
@@ -89,7 +124,7 @@ const sendOTP = async (req, res, next) => {
     await prisma.otpVerification.create({
       data: {
         email: normalizedEmail,
-        otp,
+        otp: `register_${otp}`,
         expiresAt,
       },
     });
@@ -115,48 +150,16 @@ const verifyOTP = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
+    if (!validEmail(email) || !validOTP(otp)) {
       return res.status(400).json({ error: 'Email và mã OTP không được để trống' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Tìm OTP hợp lệ (chưa dùng + chưa hết hạn)
-    const otpRecord = await prisma.otpVerification.findFirst({
-      where: {
-        email: normalizedEmail,
-        otp,
-        used: false,
-        expiresAt: {
-          gte: new Date(),
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otpRecord) {
+    const verificationToken = await exchangeOTP(normalizedEmail, otp, 'register');
+    if (!verificationToken) {
       return res.status(400).json({ error: 'Mã OTP không hợp lệ hoặc đã hết hạn' });
     }
-
-    // Đánh dấu OTP đã sử dụng
-    await prisma.otpVerification.update({
-      where: { id: otpRecord.id },
-      data: { used: true },
-    });
-
-    // Tạo token xác thực tạm thời (lưu email đã verified, dùng cho bước register)
-    // Dùng crypto để tạo token ngẫu nhiên
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-
-    // Lưu token vào OTP record (re-use field otp để đơn giản)
-    await prisma.otpVerification.create({
-      data: {
-        email: normalizedEmail,
-        otp: `verified_${verificationToken}`,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // Token hợp lệ 10 phút
-        used: false,
-      },
-    });
 
     res.json({
       message: 'Xác thực OTP thành công',
@@ -175,7 +178,7 @@ const verifyOTP = async (req, res, next) => {
 const forgotPasswordSendOTP = async (req, res, next) => {
   try {
     const { emailOrUsername } = req.body;
-    const input = (emailOrUsername || '').trim();
+    const input = typeof emailOrUsername === 'string' ? emailOrUsername.trim() : '';
 
     if (!input) {
       return res.status(400).json({ error: 'Vui lòng nhập Email hoặc Tên đăng nhập' });
@@ -262,47 +265,16 @@ const forgotPasswordVerifyOTP = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
+    if (!validEmail(email) || !validOTP(otp)) {
       return res.status(400).json({ error: 'Email và mã OTP không được để trống' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Tìm OTP 'forgot_' hợp lệ
-    const otpRecord = await prisma.otpVerification.findFirst({
-      where: {
-        email: normalizedEmail,
-        otp: `forgot_${otp}`,
-        used: false,
-        expiresAt: {
-          gte: new Date(),
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otpRecord) {
+    const resetToken = await exchangeOTP(normalizedEmail, otp, 'forgot');
+    if (!resetToken) {
       return res.status(400).json({ error: 'Mã OTP không hợp lệ hoặc đã hết hạn' });
     }
-
-    // Đánh dấu OTP đã sử dụng
-    await prisma.otpVerification.update({
-      where: { id: otpRecord.id },
-      data: { used: true },
-    });
-
-    // Tạo resetToken ngẫu nhiên
-    const resetToken = crypto.randomBytes(32).toString('hex');
-
-    // Lưu token vào DB với prefix 'reset_' (hiệu lực 10 phút)
-    await prisma.otpVerification.create({
-      data: {
-        email: normalizedEmail,
-        otp: `reset_${resetToken}`,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        used: false,
-      },
-    });
 
     res.json({
       message: 'Xác thực OTP thành công',
@@ -322,7 +294,8 @@ const resetPassword = async (req, res, next) => {
   try {
     const { email, resetToken, newPassword } = req.body;
 
-    if (!email || !resetToken || !newPassword) {
+    if (!validEmail(email) || typeof resetToken !== 'string' || !/^[a-f0-9]{64}$/.test(resetToken) ||
+        typeof newPassword !== 'string') {
       return res.status(400).json({ error: 'Thiếu thông tin đặt lại mật khẩu' });
     }
 
@@ -360,17 +333,19 @@ const resetPassword = async (req, res, next) => {
     // Hash mật khẩu mới
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
-    // Cập nhật mật khẩu trong DB
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash },
+    const changed = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.otpVerification.updateMany({
+        where: { id: tokenRecord.id, used: false, expiresAt: { gte: new Date() } },
+        data: { used: true },
+      });
+      if (claimed.count !== 1) return false;
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash, authVersion: { increment: 1 } },
+      });
+      return true;
     });
-
-    // Đánh dấu token đã sử dụng
-    await prisma.otpVerification.update({
-      where: { id: tokenRecord.id },
-      data: { used: true },
-    });
+    if (!changed) return res.status(400).json({ error: 'Token đặt lại mật khẩu đã được sử dụng hoặc hết hạn' });
 
     res.json({
       message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bây giờ.',

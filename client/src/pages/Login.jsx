@@ -31,9 +31,9 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE PunchDad" className="auth-logo-img" />
+          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Chào mừng trở lại!</h1>
-          <p className="auth-subtitle">Đăng nhập vào CSE PunchDad</p>
+          <p className="auth-subtitle">Đăng nhập vào CSE HitDad</p>
         </div>
 
         {error && (

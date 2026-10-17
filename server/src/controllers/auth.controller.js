@@ -1,28 +1,9 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { generateTokens, verifyToken } = require('../services/token.service');
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
 
 const prisma = new PrismaClient();
-
-/**
- * Tạo JWT tokens (access + refresh)
- */
-const generateTokens = (userId) => {
-  const accessToken = jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
-
-  const refreshToken = jwt.sign(
-    { userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
-  );
-
-  return { accessToken, refreshToken };
-};
 
 /**
  * POST /api/auth/register
@@ -39,7 +20,7 @@ const register = async (req, res, next) => {
     const normalizedEmail = (email || '').trim().toLowerCase();
 
     // Kiểm tra verificationToken
-    if (!verificationToken || !normalizedEmail) {
+    if (typeof verificationToken !== 'string' || !/^[a-f0-9]{64}$/.test(verificationToken) || !normalizedEmail) {
       return res.status(400).json({ error: 'Cần xác thực email trước khi đăng ký' });
     }
 
@@ -59,43 +40,47 @@ const register = async (req, res, next) => {
       return res.status(400).json({ error: 'Token xác thực không hợp lệ hoặc đã hết hạn. Vui lòng xác thực lại.' });
     }
 
-    // Đánh dấu token đã sử dụng
-    await prisma.otpVerification.update({
-      where: { id: tokenRecord.id },
-      data: { used: true },
-    });
-
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        username: username.trim(),
-        passwordHash,
-        displayName: displayName.trim(),
-        phone: phone ? phone.trim() : null,
-        email: normalizedEmail,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        displayName: true,
-        phone: true,
-        bankInfo: true,
-        role: true,
-        tier: true,
-        isGoalkeeper: true,
-        avatar: true,
-        createdAt: true,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.otpVerification.updateMany({
+        where: { id: tokenRecord.id, used: false, expiresAt: { gte: new Date() } },
+        data: { used: true },
+      });
+      if (claimed.count !== 1) return null;
+      return tx.user.create({
+        data: {
+          username: username.trim(),
+          passwordHash,
+          displayName: displayName.trim(),
+          phone: phone ? phone.trim() : null,
+          email: normalizedEmail,
+        },
+        select: {
+          id: true,
+          authVersion: true,
+          username: true,
+          email: true,
+          displayName: true,
+          phone: true,
+          bankInfo: true,
+          role: true,
+          tier: true,
+          isGoalkeeper: true,
+          avatar: true,
+          createdAt: true,
+        },
+      });
     });
+    if (!user) return res.status(400).json({ error: 'Token xác thực đã được sử dụng hoặc hết hạn' });
 
-    const tokens = generateTokens(user.id);
+    const tokens = generateTokens(user);
+    const { authVersion, ...publicUser } = user;
 
     res.status(201).json({
       message: 'Registration successful',
-      user,
+      user: publicUser,
       ...tokens,
     });
   } catch (error) {
@@ -135,7 +120,7 @@ const login = async (req, res, next) => {
       return res.status(401).json({ error: 'Tên đăng nhập / email hoặc mật khẩu không đúng' });
     }
 
-    const tokens = generateTokens(user.id);
+    const tokens = generateTokens(user);
 
     res.json({
       message: 'Login successful',
@@ -166,12 +151,19 @@ const refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
-    if (!refreshToken) {
+    if (typeof refreshToken !== 'string' || !refreshToken) {
       return res.status(400).json({ error: 'Refresh token required' });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const tokens = generateTokens(decoded.userId);
+    const decoded = verifyToken(refreshToken, 'refresh');
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, authVersion: true },
+    });
+    if (!user || user.authVersion !== decoded.authVersion) {
+      return res.status(401).json({ error: 'Phiên đăng nhập không còn hợp lệ' });
+    }
+    const tokens = generateTokens(user);
 
     res.json(tokens);
   } catch (error) {

@@ -14,7 +14,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: "7d"
+        value: "15m"
       - key: JWT_REFRESH_EXPIRES_IN
         value: "30d"
       - key: CLIENT_URL

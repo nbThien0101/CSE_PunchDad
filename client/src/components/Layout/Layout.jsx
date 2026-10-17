@@ -59,9 +59,9 @@ export default function Layout() {
       <header className="header">
         <div className="header-inner container">
           <NavLink to="/" className="header-brand" onClick={() => setIsMenuOpen(false)}>
-            <img src="/logo.png" alt="CSE Football Club" className="brand-logo-img" />
+            <img src="/logo.png" alt="HitDad · CSE Football Club" className="brand-logo-img" />
             <div className="brand-info">
-              <h1 className="brand-name">PunchDad</h1>
+              <h1 className="brand-name">HitDad</h1>
               <span className="brand-tag">CSE FC · HCMUT</span>
             </div>
           </NavLink>
@@ -286,7 +286,7 @@ export default function Layout() {
 
       <footer className="footer">
         <div className="container">
-          <p>v1.2.3 · CSE PunchDad © 2026 · Built with ❤️ for the club</p>
+          <p>v1.2.4 · CSE HitDad © 2026 · Built with ❤️ for the club</p>
         </div>
       </footer>
 

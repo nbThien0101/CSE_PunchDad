@@ -16,7 +16,7 @@ const sendViaBrevo = async (email, otp, htmlContent, subject) => {
     },
     body: JSON.stringify({
       sender: {
-        name: 'CSE PunchDad ⚽',
+        name: 'CSE HitDad ⚽',
         email: senderEmail,
       },
       to: [
@@ -24,7 +24,7 @@ const sendViaBrevo = async (email, otp, htmlContent, subject) => {
           email: email,
         },
       ],
-      subject: subject || `[CSE PunchDad] Mã xác thực OTP: ${otp}`,
+      subject: subject || `[CSE HitDad] Mã xác thực OTP: ${otp}`,
       htmlContent,
     }),
   });
@@ -90,12 +90,12 @@ const verifyTransporter = async (transporter) => {
 const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
   const isForgotPassword = type === 'FORGOT_PASSWORD';
   const subject = isForgotPassword
-    ? `[CSE PunchDad] Mã xác nhận đặt lại mật khẩu: ${otp}`
-    : `[CSE PunchDad] Mã xác thực OTP: ${otp}`;
+    ? `[CSE HitDad] Mã xác nhận đặt lại mật khẩu: ${otp}`
+    : `[CSE HitDad] Mã xác thực OTP: ${otp}`;
   const titleText = isForgotPassword ? 'Đặt lại mật khẩu' : 'Xác thực email đăng ký';
   const bodyDesc = isForgotPassword
-    ? 'Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản CSE PunchDad. Vui lòng sử dụng mã OTP bên dưới để tiếp tục:'
-    : 'Bạn đang đăng ký tài khoản CSE PunchDad. Vui lòng sử dụng mã OTP bên dưới để hoàn tất xác thực:';
+    ? 'Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản CSE HitDad. Vui lòng sử dụng mã OTP bên dưới để tiếp tục:'
+    : 'Bạn đang đăng ký tài khoản CSE HitDad. Vui lòng sử dụng mã OTP bên dưới để hoàn tất xác thực:';
   const footerNotice = isForgotPassword
     ? 'Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này để đảm bảo an toàn cho tài khoản.'
     : 'Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.';
@@ -116,7 +116,7 @@ const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
               <tr>
                 <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
                   <div style="font-size: 2rem; margin-bottom: 8px;">⚽</div>
-                  <h1 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #111827; letter-spacing: -0.02em;">CSE PunchDad</h1>
+                  <h1 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #111827; letter-spacing: -0.02em;">CSE HitDad</h1>
                   <p style="margin: 4px 0 0; font-size: 0.85rem; color: #6b7280;">${titleText}</p>
                 </td>
               </tr>
@@ -145,7 +145,7 @@ const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
                 <td style="padding: 20px 32px; background: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb;">
                   <p style="margin: 0; font-size: 0.75rem; color: #9ca3af; text-align: center; line-height: 1.5;">
                     ${footerNotice}<br>
-                    © ${new Date().getFullYear()} CSE PunchDad
+                    © ${new Date().getFullYear()} CSE HitDad
                   </p>
                 </td>
               </tr>
@@ -169,7 +169,7 @@ const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
   const smtpEmail = (process.env.SMTP_EMAIL || '').replace(/^["']|["']$/g, '').trim();
 
   const mailOptions = {
-    from: `"CSE PunchDad ⚽" <${smtpEmail}>`,
+    from: `"CSE HitDad ⚽" <${smtpEmail}>`,
     to: email,
     subject: subject,
     html: htmlContent,
@@ -184,4 +184,3 @@ const sendOTPEmail = async (email, otp, type = 'REGISTER') => {
 };
 
 module.exports = { sendOTPEmail };
-

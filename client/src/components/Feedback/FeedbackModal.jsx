@@ -96,7 +96,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
             <div className="feedback-heading">
               <span className="feedback-heading-icon" aria-hidden="true">✦</span>
               <div>
-                <span className="feedback-eyebrow">Cùng xây dựng PunchDad</span>
+                <span className="feedback-eyebrow">Cùng xây dựng HitDad</span>
                 <h2 id="feedback-title">Gửi phản hồi</h2>
                 <p>Mỗi góp ý của bạn đều giúp trải nghiệm tốt hơn.</p>
               </div>

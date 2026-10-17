@@ -33,6 +33,9 @@ const MOCK_PLAYERS = [
 ];
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo accounts must not be seeded in production.');
+  }
   const passwordHash = await bcrypt.hash('123456', 10);
 
   console.log(`Bắt đầu seed 24 cầu thủ cho session ${SESSION_ID}...`);

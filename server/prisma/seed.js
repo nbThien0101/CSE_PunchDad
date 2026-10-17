@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo accounts must not be seeded in production.');
+  }
   console.log('🌱 Seeding database...');
 
   // Tạo Admin user

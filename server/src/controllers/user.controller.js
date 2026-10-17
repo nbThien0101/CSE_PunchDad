@@ -388,11 +388,11 @@ const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword) {
+    if (typeof currentPassword !== 'string' || !currentPassword) {
       return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại' });
     }
 
-    if (!newPassword || newPassword.length < 6) {
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
       return res.status(400).json({ error: 'Mật khẩu mới phải có tối thiểu 6 ký tự' });
     }
 
@@ -419,10 +419,11 @@ const changePassword = async (req, res, next) => {
     // Băm mật khẩu mới
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { passwordHash },
+    const changed = await prisma.user.updateMany({
+      where: { id: req.user.id, passwordHash: user.passwordHash },
+      data: { passwordHash, authVersion: { increment: 1 } },
     });
+    if (changed.count !== 1) return res.status(409).json({ error: 'Mật khẩu vừa thay đổi. Vui lòng đăng nhập lại.' });
 
     res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (error) {

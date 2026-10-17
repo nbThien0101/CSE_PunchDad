@@ -130,7 +130,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
             <span className="payos-badge">⚡ VietQR · PayOS Tự Động</span>
             <h2 className="payos-modal-title">Thanh toán tiền sân bóng</h2>
             <p className="payos-modal-subtitle">
-              {session?.title || 'Trận đấu CSE PunchDad'}
+              {session?.title || 'Trận đấu CSE HitDad'}
             </p>
           </div>
           {!isSuccess && (

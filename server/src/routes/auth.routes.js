@@ -13,7 +13,7 @@ const { authLimiter, otpLimiter } = require('../middleware/security.middleware')
 
 router.post('/register', authLimiter, registerValidation, register);
 router.post('/login', authLimiter, loginValidation, login);
-router.post('/refresh', refresh);
+router.post('/refresh', authLimiter, refresh);
 router.get('/me', authenticate, getMe);
 
 // OTP routes
