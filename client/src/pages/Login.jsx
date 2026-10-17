@@ -32,7 +32,7 @@ export default function Login() {
     <div className="auth-page">
       <Card className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
+          <img src="/logo.svg" width="88" height="88" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Chào mừng trở lại!</h1>
           <p className="auth-subtitle">Đăng nhập vào CSE HitDad</p>
         </div>

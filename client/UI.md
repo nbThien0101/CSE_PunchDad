@@ -62,3 +62,16 @@ Visible branding, package names, email subjects/sender display names and docs us
 HitDad. The existing Render endpoint/service identifier and SMTP email address
 remain the actual configured infrastructure; changing them requires provisioning
 the new endpoint/address rather than a text replacement.
+
+## Logo assets
+
+- `/logo.svg` is the shared vector crest for the header, authentication screens and
+  SVG favicon. The artwork is made of paths and gradients, with no embedded PNG
+  or external font. Keep the `viewBox` when editing the vector artwork.
+- `/logo.png` is a 180 × 180 PNG for Apple touch icons and legacy references;
+  `/favicon.png` is a 32 × 32 PNG fallback. Neither is the source for the on-page
+  logo. `/favicon.svg` contains the same current crest for direct references.
+- The original full-resolution reference remains at `assets/logoCSEHitDad.png`.
+  Displayed logo images declare width/height to reserve layout space.
+- The SVG is about 5 KB (about 2.4 KB gzip), compared with the previous 1.07 MB PNG.
+  Both authentication and header views reuse the same URL for browser caching.

@@ -232,7 +232,7 @@ export default function Register() {
       <div className="auth-page">
         <Card className="auth-card animate-slide-up">
           <div className="auth-header">
-            <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
+            <img src="/logo.svg" width="88" height="88" alt="CSE HitDad" className="auth-logo-img" />
             <h1 className="auth-title">Đang chờ admin duyệt</h1>
             <p className="auth-subtitle">Đăng ký thành công. Admin đã nhận được yêu cầu và thông tin của bạn.</p>
           </div>
@@ -247,7 +247,7 @@ export default function Register() {
     <div className="auth-page">
       <Card className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
+          <img src="/logo.svg" width="88" height="88" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Tạo tài khoản</h1>
           <p className="auth-subtitle">Tham gia CLB CSE HitDad</p>
         </div>

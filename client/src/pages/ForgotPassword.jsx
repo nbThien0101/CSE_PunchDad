@@ -191,7 +191,7 @@ export default function ForgotPassword() {
     <div className="auth-page">
       <Card className="auth-card animate-slide-up">
         <div className="auth-header">
-          <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
+          <img src="/logo.svg" width="88" height="88" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Quên mật khẩu</h1>
           <p className="auth-subtitle">Khôi phục quyền truy cập vào tài khoản CLB</p>
         </div>

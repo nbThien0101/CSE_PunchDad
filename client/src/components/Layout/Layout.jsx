@@ -88,7 +88,7 @@ export default function Layout() {
       <header className="header">
         <div className="header-inner container">
           <NavLink to="/" className="header-brand" onClick={() => setIsMenuOpen(false)}>
-            <img src="/logo.png" alt="HitDad · CSE Football Club" className="brand-logo-img" />
+            <img src="/logo.svg" width="40" height="40" alt="HitDad · CSE Football Club" className="brand-logo-img" />
             <div className="brand-info">
               <h1 className="brand-name">HitDad</h1>
               <span className="brand-tag">CSE FC · HCMUT</span>
