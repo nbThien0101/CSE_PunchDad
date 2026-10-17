@@ -30,3 +30,5 @@ server/prisma/migrations/**/migration_lock.toml
 
 # Coverage
 coverage/
+
+docs/

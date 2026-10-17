@@ -1,6 +1,6 @@
 # Kiểm tra sự cố truy cập tài khoản — bản vá 1.2.4 — 17/10/2026
 
-Người dùng báo cáo có người thấy tài khoản khác trên giao diện và sửa được thông tin. Đây là báo cáo truy cập trái phép cần xử lý; chưa có request gốc, log server hay cấu hình Render để xác định chính xác cách người đó thực hiện. Kiểm tra này chỉ đọc mã nguồn và kiểm thử bằng tài khoản giả, không truy cập hoặc sửa tài khoản thật.
+Người dùng báo cáo có người thấy tài khoản khác trên giao diện và sửa được thông tin, sau đó cung cấp ảnh console có request cập nhật hồ sơ. Chưa có log server, bằng chứng nguồn gốc token hoặc cấu hình Render để xác định chính xác cách người đó thực hiện. Kiểm tra này chỉ đọc mã nguồn và kiểm thử bằng tài khoản giả, không dùng token trong ảnh để truy cập hoặc sửa tài khoản thật.
 
 ## Phát hiện
 
@@ -13,6 +13,20 @@ Người dùng báo cáo có người thấy tài khoản khác trên giao diệ
 | Cao nếu đã seed lên production | Hai script demo tạo tài khoản với mật khẩu cố định; tài liệu công khai các tài khoản demo. | Chưa xác minh production có tài khoản demo hay có giữ mật khẩu mặc định. |
 
 Các đường cập nhật hồ sơ, avatar, QR và mật khẩu hiện lấy ID từ `req.user`; cập nhật vote kiểm tra chủ sở hữu; các route quản trị user kiểm tra role từ DB. Chưa tìm thấy đường đổi ID trong body đơn thuần để sửa hồ sơ người khác. Việc xem được danh sách thành viên là chức năng riêng và không chứng minh có quyền đăng nhập.
+
+## Bằng chứng bổ sung từ ảnh console
+
+Ảnh được cung cấp sau báo cáo ban đầu cho thấy:
+
+- Một phản hồi `401 Invalid token` ở phía trên; ảnh không đủ để xác định request gây ra phản hồi đó hoặc liên hệ chính xác với request thành công phía dưới.
+- Một request `PUT /api/users/profile` dùng Bearer token được điền thủ công, cùng các trường hồ sơ và `role: "ADMIN"` trong body.
+- Request phía dưới nhận `200`, thông báo cập nhật thành công, nhưng user trả về vẫn có `role: "MEMBER"`. Ảnh không chứng minh nâng quyền admin thành công.
+
+Cả controller trước bản vá được kiểm tra và controller hiện tại chỉ nhận các trường hồ sơ cho phép; `role` không nằm trong dữ liệu update. ID cập nhật lấy từ `req.user.id`, được middleware tra từ `userId` trong token đã xác thực. Vì vậy, `200` chỉ cho thấy token được chấp nhận và hồ sơ gắn với token được cập nhật; chưa xác định người gửi có quyền sở hữu token đó hay không.
+
+Cần đối chiếu ID tài khoản trong response với tài khoản mà người gửi được phép sử dụng. Nếu token thuộc chính người gửi, thao tác này có thể chỉ là cập nhật hồ sơ cá nhân, kể cả khi tên hiển thị giống người khác. Nếu token thuộc thành viên khác mà không được cho phép, cần xác minh cách token bị lấy hoặc giả mạo. Các khả năng này chưa được phân biệt chỉ từ ảnh.
+
+Ảnh chứa Bearer token và thông tin liên hệ. Không chép token hoặc thông tin cá nhân vào tài liệu/repository, không dùng token thử trên production. Token đã lộ cần được thu hồi; việc triển khai cơ chế mới và thay khóa trên Render phải được xác nhận riêng, vì deployment frontend trên Vercel không xác nhận trạng thái backend.
 
 ## Bản sửa trong mã nguồn 1.2.4
 

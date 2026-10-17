@@ -33,5 +33,5 @@ window.fetch = async (url, options = {}) => {
   return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 // Mount at the selected route before BrowserRouter initializes.
-history.replaceState(null, '', params.get('screen') === 'login' ? '/login' : '/');
+history.replaceState(null, '', params.get('screen') === 'login' ? '/login' : params.get('screen') === 'members' ? '/members' : '/');
 createRoot(document.getElementById('root')).render(<HitDadUIProvider><AuthProvider><App /></AuthProvider></HitDadUIProvider>);

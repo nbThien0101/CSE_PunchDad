@@ -630,3 +630,44 @@ body.modal-open {
   overflow: hidden !important;
   overscroll-behavior: contain !important;
 }
+
+/* Shared by Dashboard and Members, including direct route loads. */
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tab {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.filter-tab:hover {
+  border-color: var(--primary-300);
+  color: var(--primary-600);
+}
+
+.filter-tab.active {
+  background: var(--primary-500);
+  color: white;
+  border-color: var(--primary-500);
+}
+
+@media (max-width: 768px) {
+  .filter-tabs {
+    gap: var(--space-1);
+  }
+}
