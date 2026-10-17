@@ -14,6 +14,7 @@ export default function Modal({
   onClose,
   children,
   className = '',
+  overlayClassName = '',
   closeOnBackdrop = true,
   closeOnEsc = true
 }) {
@@ -50,7 +51,7 @@ export default function Modal({
 
   return createPortal(
     <div
-      className="modal-overlay animate-fade-in"
+      className={`modal-overlay animate-fade-in ${overlayClassName}`}
       onClick={closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"

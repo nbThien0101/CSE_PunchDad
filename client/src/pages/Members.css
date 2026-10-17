@@ -206,6 +206,11 @@
   flex-shrink: 0;
 }
 
+.member-email {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 /* Admin Tier Edit */
 .member-card-admin {
   padding-top: var(--space-3);

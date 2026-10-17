@@ -509,11 +509,12 @@ const adminDeleteSession = async (req, res, next) => {
 const getTeamSuggestions = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const attendedOnly = req.query.useAttendedOnly === 'true';
     const joinCount = await prisma.vote.count({
-      where: { sessionId: id, status: 'JOIN' },
+      where: { sessionId: id, status: 'JOIN', ...(attendedOnly ? { isCheckedIn: true } : {}) },
     });
     const guestCount = await prisma.guestPlayer.count({
-      where: { sessionId: id, status: 'PLAYING' },
+      where: { sessionId: id, ...(attendedOnly ? { isCheckedIn: true } : { status: 'PLAYING' }) },
     });
     const totalPlayers = joinCount + guestCount;
     const suggestions = getSuggestedTeamCounts(totalPlayers);
@@ -597,6 +598,7 @@ const generateTeams = async (req, res, next) => {
     const result = balanceTeams(candidates, { teamCount, goalkeeperOverrides });
     res.json({ result });
   } catch (error) {
+    if (error.statusCode === 400) return res.status(400).json({ error: error.message });
     next(error);
   }
 };

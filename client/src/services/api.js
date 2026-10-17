@@ -183,8 +183,8 @@ export const sessionsAPI = {
     return res.json();
   },
 
-  getTeamSuggestions: async (id) => {
-    const res = await fetchWithAuth(`/sessions/${id}/teams/suggestions`);
+  getTeamSuggestions: async (id, useAttendedOnly = false) => {
+    const res = await fetchWithAuth(`/sessions/${id}/teams/suggestions?useAttendedOnly=${useAttendedOnly}`);
     return res.json();
   },
 

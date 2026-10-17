@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { attendanceAPI, usersAPI } from '../../services/api';
 import Modal from '../Modal/Modal';
 import AdminAdjustVoteModal from '../Vote/AdminAdjustVoteModal';
+import { matchesAttendanceSearch } from '../../utils/attendance';
 import './AttendanceDashboardModal.css';
 
 export default function AttendanceDashboardModal({
@@ -19,6 +20,12 @@ export default function AttendanceDashboardModal({
   const [rosterFilter, setRosterFilter] = useState('ALL'); // 'ALL' | 'ATTENDED' | 'UNATTENDED' | 'DECLINED'
   const [showAdminVoteModal, setShowAdminVoteModal] = useState(false);
   const [adminVoteTargetUserId, setAdminVoteTargetUserId] = useState('');
+  const [search, setSearch] = useState('');
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [pendingCheckIns, setPendingCheckIns] = useState({});
+  const pendingCheckInKeys = useRef(new Set());
+  const refreshVersion = useRef(0);
+  const busy = Boolean(actionLoading) || Object.keys(pendingCheckIns).length > 0;
 
   // Guest Form State
   const [guestForm, setGuestForm] = useState({
@@ -35,13 +42,15 @@ export default function AttendanceDashboardModal({
   }, [session?.id]);
 
   const fetchDashboard = async () => {
+    const version = ++refreshVersion.current;
     try {
       const res = await attendanceAPI.getDashboard(session.id);
-      setData(res);
+      if (res.error) throw new Error(res.error);
+      if (version === refreshVersion.current) setData(res);
     } catch {
-      setError('Không thể tải dữ liệu điểm danh');
+      if (version === refreshVersion.current) setError('Không thể tải dữ liệu điểm danh');
     } finally {
-      setLoading(false);
+      if (version === refreshVersion.current) setLoading(false);
     }
   };
 
@@ -56,6 +65,7 @@ export default function AttendanceDashboardModal({
     try {
       const isCurrentlyLocked = Boolean(data?.session?.isVoteLocked);
       const res = await attendanceAPI.toggleLockVote(session.id, !isCurrentlyLocked);
+      if (res.error) throw new Error(res.error);
       notifySuccess(res.message);
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
@@ -67,24 +77,36 @@ export default function AttendanceDashboardModal({
   };
 
   const handleCheckIn = async (userId, currentCheckedIn) => {
-    setActionLoading(`checkin-${userId}`);
+    const key = `member-${userId}`;
+    if (pendingCheckInKeys.current.has(key) || actionLoading) return;
+    pendingCheckInKeys.current.add(key);
+    setPendingCheckIns(prev => ({ ...prev, [key]: true }));
     setError('');
     try {
-      await attendanceAPI.checkIn(session.id, userId, !currentCheckedIn);
+      const res = await attendanceAPI.checkIn(session.id, userId, !currentCheckedIn);
+      if (res.error) throw new Error(res.error);
+      setData(prev => ({ ...prev, joined: prev.joined.map(v => v.userId === userId
+        ? { ...v, isCheckedIn: !currentCheckedIn, checkedInAt: res.vote?.checkedInAt || new Date().toISOString() } : v) }));
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
     } catch {
       setError('Không thể cập nhật điểm danh');
     } finally {
-      setActionLoading('');
+      pendingCheckInKeys.current.delete(key);
+      setPendingCheckIns(prev => { const next = { ...prev }; delete next[key]; return next; });
     }
   };
 
   const handleBulkCheckIn = async (isCheckedIn) => {
+    if (busy) return;
+    if (!window.confirm(isCheckedIn
+      ? 'Đánh dấu TẤT CẢ thành viên đăng ký là có mặt? Chỉ thực hiện khi đã kiểm tra đầy đủ.'
+      : 'Hủy điểm danh của TẤT CẢ thành viên đăng ký?')) return;
     setActionLoading('bulk');
     setError('');
     try {
       const res = await attendanceAPI.bulkCheckIn(session.id, isCheckedIn);
+      if (res.error) throw new Error(res.error);
       notifySuccess(res.message);
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
@@ -103,7 +125,9 @@ export default function AttendanceDashboardModal({
     setError('');
     try {
       const res = await attendanceAPI.addGuest(session.id, guestForm);
+      if (res.error) throw new Error(res.error);
       notifySuccess(res.message);
+      setShowGuestForm(false);
       setGuestForm({
         name: '',
         tier: 'C',
@@ -122,17 +146,25 @@ export default function AttendanceDashboardModal({
   };
 
   const handleToggleGuestAttendance = async (guest) => {
-    setActionLoading(`guest-checkin-${guest.id}`);
+    const key = `guest-${guest.id}`;
+    if (pendingCheckInKeys.current.has(key) || actionLoading) return;
+    pendingCheckInKeys.current.add(key);
+    setPendingCheckIns(prev => ({ ...prev, [key]: true }));
+    setError('');
     try {
-      await attendanceAPI.updateGuest(session.id, guest.id, {
+      const res = await attendanceAPI.updateGuest(session.id, guest.id, {
         isCheckedIn: !guest.isCheckedIn,
       });
+      if (res.error) throw new Error(res.error);
+      setData(prev => ({ ...prev, guests: prev.guests.map(g => g.id === guest.id
+        ? { ...g, isCheckedIn: !guest.isCheckedIn } : g) }));
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
     } catch {
       setError('Lỗi cập nhật điểm danh khách');
     } finally {
-      setActionLoading('');
+      pendingCheckInKeys.current.delete(key);
+      setPendingCheckIns(prev => { const next = { ...prev }; delete next[key]; return next; });
     }
   };
 
@@ -140,10 +172,11 @@ export default function AttendanceDashboardModal({
     const nextStatus = guest.status === 'RESERVE' ? 'PLAYING' : 'RESERVE';
     setActionLoading(`guest-status-${guest.id}`);
     try {
-      await attendanceAPI.updateGuest(session.id, guest.id, {
+      const res = await attendanceAPI.updateGuest(session.id, guest.id, {
         status: nextStatus,
         isCheckedIn: nextStatus === 'PLAYING' ? true : guest.isCheckedIn,
       });
+      if (res.error) throw new Error(res.error);
       notifySuccess(
         nextStatus === 'PLAYING'
           ? `Đã đôn ${guest.name} lên đá chính và điểm danh có mặt`
@@ -162,7 +195,8 @@ export default function AttendanceDashboardModal({
     if (!window.confirm('Bạn có chắc chắn muốn xóa khách mời này?')) return;
     setActionLoading(`guest-delete-${guestId}`);
     try {
-      await attendanceAPI.deleteGuest(session.id, guestId);
+      const res = await attendanceAPI.deleteGuest(session.id, guestId);
+      if (res.error) throw new Error(res.error);
       notifySuccess('Đã xóa khách mời');
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
@@ -176,7 +210,8 @@ export default function AttendanceDashboardModal({
   const handleToggleMemberGK = async (userId, currentGK) => {
     setActionLoading(`gk-${userId}`);
     try {
-      await usersAPI.updateGoalkeeper(userId, !currentGK);
+      const res = await usersAPI.updateGoalkeeper(userId, !currentGK);
+      if (res.error) throw new Error(res.error);
       setData(prev => {
         if (!prev) return prev;
         const updateVote = v => v.userId === userId ? { ...v, user: { ...v.user, isGoalkeeper: !currentGK } } : v;
@@ -198,9 +233,10 @@ export default function AttendanceDashboardModal({
   const handleToggleGuestGK = async (guest) => {
     setActionLoading(`guest-gk-${guest.id}`);
     try {
-      await attendanceAPI.updateGuest(session.id, guest.id, {
+      const res = await attendanceAPI.updateGuest(session.id, guest.id, {
         isGoalkeeper: !guest.isGoalkeeper,
       });
+      if (res.error) throw new Error(res.error);
       notifySuccess(!guest.isGoalkeeper ? `Đã chỉ định ${guest.name} làm thủ môn 🧤` : `Đã hủy thủ môn của ${guest.name}`);
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
@@ -217,6 +253,7 @@ export default function AttendanceDashboardModal({
     setError('');
     try {
       const res = await attendanceAPI.recalculatePayments(session.id);
+      if (res.error) throw new Error(res.error);
       notifySuccess(res.message);
       await fetchDashboard();
       if (onSessionUpdated) onSessionUpdated();
@@ -238,14 +275,17 @@ export default function AttendanceDashboardModal({
     if (rosterFilter === 'UNATTENDED') return !v.isCheckedIn;
     return true;
   });
-  const displayRoster = rosterFilter === 'DECLINED' ? (data?.declined || []) : filteredJoined;
+  const displayRoster = (rosterFilter === 'DECLINED' ? (data?.declined || []) : filteredJoined)
+    .filter(v => matchesAttendanceSearch(v.user?.displayName, search));
+  const displayGuests = (data?.guests || []).filter(g => matchesAttendanceSearch(g.name, search));
 
   const lateWarnings = data?.warnings?.lateCancellations || [];
   const noShowWarnings = data?.warnings?.noShows || [];
   const totalWarnings = lateWarnings.length + noShowWarnings.length;
 
   return (
-    <Modal isOpen={true} onClose={onClose} closeOnBackdrop={true}>
+    <Modal isOpen={true} onClose={onClose} closeOnBackdrop={!busy && !showAdminVoteModal} closeOnEsc={!busy && !showAdminVoteModal}
+      className="attendance-modal-wrapper" overlayClassName="attendance-overlay">
       <div className="attendance-modal-card animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="attendance-modal-header">
@@ -264,7 +304,7 @@ export default function AttendanceDashboardModal({
             <button
               className={`btn-lock-toggle ${isLocked ? 'is-locked' : 'is-unlocked'}`}
               onClick={handleToggleLockVote}
-              disabled={actionLoading === 'lock'}
+              disabled={busy || loading}
               title={isLocked ? 'Click để mở lại bình chọn' : 'Click để chốt danh sách vote'}
               id="btn-toggle-vote-lock"
             >
@@ -275,7 +315,7 @@ export default function AttendanceDashboardModal({
               )}
             </button>
 
-            <button className="attendance-close-btn" onClick={onClose} id="btn-close-attendance-modal" aria-label="Đóng">
+            <button className="attendance-close-btn" onClick={onClose} disabled={busy} id="btn-close-attendance-modal" aria-label="Đóng">
               ✕
             </button>
           </div>
@@ -318,13 +358,13 @@ export default function AttendanceDashboardModal({
 
       {/* Alerts */}
       {error && (
-        <div className="alert alert-error" style={{ margin: '8px 18px 0' }}>
+        <div className="alert alert-error" role="alert" style={{ margin: '8px 18px 0' }}>
           <span>{error}</span>
           <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
         </div>
       )}
       {success && (
-        <div className="alert alert-success" style={{ margin: '8px 18px 0' }}>
+        <div className="alert alert-success" role="status" style={{ margin: '8px 18px 0' }}>
           <span>{success}</span>
           <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>✕</button>
         </div>
@@ -334,7 +374,7 @@ export default function AttendanceDashboardModal({
       <div className="attendance-nav-tabs">
         <button
           className={`attendance-tab-btn ${activeTab === 'roster' ? 'active' : ''}`}
-          onClick={() => setActiveTab('roster')}
+          onClick={() => { setActiveTab('roster'); setSearch(''); }}
           id="tab-btn-roster"
         >
           <span>👥 Điểm danh</span>
@@ -343,7 +383,7 @@ export default function AttendanceDashboardModal({
 
         <button
           className={`attendance-tab-btn ${activeTab === 'guests' ? 'active' : ''}`}
-          onClick={() => setActiveTab('guests')}
+          onClick={() => { setActiveTab('guests'); setSearch(''); }}
           id="tab-btn-guests"
         >
           <span>🌟 Khách mời</span>
@@ -352,7 +392,7 @@ export default function AttendanceDashboardModal({
 
         <button
           className={`attendance-tab-btn ${activeTab === 'warnings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('warnings')}
+          onClick={() => { setActiveTab('warnings'); setSearch(''); }}
           id="tab-btn-warnings"
         >
           <span>⚠️ Cảnh cáo</span>
@@ -372,6 +412,12 @@ export default function AttendanceDashboardModal({
             {activeTab === 'roster' && (
               <div className="roster-tab-content">
                 <div className="roster-toolbar">
+                  <div className="attendance-search">
+                    <label className="sr-only" htmlFor="attendance-search-members">Tìm thành viên</label>
+                    <input id="attendance-search-members" type="search" placeholder="Tìm tên thành viên…"
+                      value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+                    {search && <button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</button>}
+                  </div>
                   <div className="roster-filters">
                     <button
                       className={`roster-filter-btn ${rosterFilter === 'ALL' ? 'active' : ''}`}
@@ -402,7 +448,9 @@ export default function AttendanceDashboardModal({
                     )}
                   </div>
 
-                  <div className="roster-bulk-actions">
+                  <details className="attendance-management">
+                    <summary>Thao tác quản lý</summary>
+                    <div className="roster-bulk-actions">
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => {
@@ -410,6 +458,7 @@ export default function AttendanceDashboardModal({
                         setShowAdminVoteModal(true);
                       }}
                       id="btn-attendance-adjust-vote"
+                      disabled={busy}
                       title="Admin điều chỉnh hoặc đăng ký vote cho bất kỳ thành viên nào"
                     >
                       ⚙️ Điều chỉnh vote
@@ -417,7 +466,7 @@ export default function AttendanceDashboardModal({
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleBulkCheckIn(true)}
-                      disabled={actionLoading === 'bulk'}
+                      disabled={busy || loading}
                       id="btn-bulk-checkin"
                     >
                       Điểm danh tất cả
@@ -425,12 +474,13 @@ export default function AttendanceDashboardModal({
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={() => handleBulkCheckIn(false)}
-                      disabled={actionLoading === 'bulk'}
+                      disabled={busy || loading}
                       id="btn-bulk-uncheckin"
                     >
                       Hủy điểm danh
                     </button>
                   </div>
+                  </details>
                 </div>
 
                 <div className="roster-grid">
@@ -448,29 +498,24 @@ export default function AttendanceDashboardModal({
                           )}
                         </div>
                         <div className="roster-player-meta">
-                          <span
-                            className="roster-player-name"
-                            style={{ cursor: 'pointer' }}
-                            title="Bấm để điều chỉnh vote của thành viên này"
-                            onClick={() => {
-                              setAdminVoteTargetUserId(vote.userId);
-                              setShowAdminVoteModal(true);
-                            }}
-                          >
-                            {vote.user?.displayName} <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>✎</span>
-                          </span>
+                          <span className="roster-player-name">{vote.user?.displayName}</span>
                           <div className="roster-tags">
                             {vote.user?.tier && (
                               <span className={`badge member-tier-badge tier-${vote.user.tier.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
                                 {vote.user.tier}
                               </span>
                             )}
+                            <details className="attendance-player-options">
+                              <summary>Tùy chọn</summary>
+                              <button type="button" className="attendance-edit-vote" disabled={busy} onClick={() => {
+                                setAdminVoteTargetUserId(vote.userId); setShowAdminVoteModal(true);
+                              }}>Điều chỉnh vote</button>
                             {vote.user?.isGoalkeeper ? (
                               <button
                                 type="button"
                                 className="badge-gk-mini badge-gk-clickable"
                                 onClick={() => handleToggleMemberGK(vote.userId, true)}
-                                disabled={actionLoading === `gk-${vote.userId}`}
+                                disabled={busy}
                                 title="Bấm để hủy chỉ định thủ môn"
                               >
                                 {actionLoading === `gk-${vote.userId}` ? '...' : '🧤 Thủ môn'}
@@ -480,12 +525,14 @@ export default function AttendanceDashboardModal({
                                 type="button"
                                 className="badge-gk-mini badge-gk-add"
                                 onClick={() => handleToggleMemberGK(vote.userId, false)}
-                                disabled={actionLoading === `gk-${vote.userId}`}
+                                disabled={busy}
                                 title="Bấm để chỉ định làm thủ môn"
                               >
                                 {actionLoading === `gk-${vote.userId}` ? '...' : '+ GK'}
                               </button>
                             )}
+                            </details>
+                            {vote.user?.isGoalkeeper && <span className="attendance-gk-label">🧤 GK</span>}
                           </div>
                           {vote.isCheckedIn && vote.checkedInAt && (
                             <span className="checkin-time-text">
@@ -499,6 +546,7 @@ export default function AttendanceDashboardModal({
                         <button
                           className="btn btn-outline btn-sm"
                           style={{ borderColor: '#10b981', color: '#047857', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                          disabled={busy}
                           onClick={() => {
                             setAdminVoteTargetUserId(vote.userId);
                             setShowAdminVoteModal(true);
@@ -510,10 +558,12 @@ export default function AttendanceDashboardModal({
                         <button
                           className={`btn-checkin-toggle ${vote.isCheckedIn ? 'active' : 'inactive'}`}
                           onClick={() => handleCheckIn(vote.userId, vote.isCheckedIn)}
-                          disabled={actionLoading === `checkin-${vote.userId}`}
+                          disabled={Boolean(actionLoading) || pendingCheckIns[`member-${vote.userId}`]}
+                          aria-pressed={Boolean(vote.isCheckedIn)}
+                          aria-label={`${vote.isCheckedIn ? 'Hủy điểm danh' : 'Điểm danh'} ${vote.user?.displayName}`}
                           id={`btn-checkin-${vote.userId}`}
                         >
-                          {vote.isCheckedIn ? '✓ Đã đến' : 'Điểm danh'}
+                          {pendingCheckIns[`member-${vote.userId}`] ? 'Đang lưu…' : vote.isCheckedIn ? '✓ Có mặt' : '+ Có mặt'}
                         </button>
                       )}
                     </div>
@@ -531,8 +581,20 @@ export default function AttendanceDashboardModal({
             {/* TAB 2: Guests & Reserves */}
             {activeTab === 'guests' && (
               <div className="guests-tab-content">
+                <div className="attendance-guest-toolbar">
+                  <div className="attendance-search">
+                    <label className="sr-only" htmlFor="attendance-search-guests">Tìm khách mời</label>
+                    <input id="attendance-search-guests" type="search" placeholder="Tìm tên khách mời…"
+                      value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+                    {search && <button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm">✕</button>}
+                  </div>
+                  <button type="button" className="btn btn-outline" aria-expanded={showGuestForm}
+                    onClick={() => setShowGuestForm(prev => !prev)} disabled={busy}>
+                    {showGuestForm ? 'Đóng biểu mẫu' : '+ Thêm khách'}
+                  </button>
+                </div>
                 {/* Form Thêm Guest */}
-                <div className="guest-form-card">
+                {showGuestForm && <div className="guest-form-card">
                   <h3 className="guest-form-title">
                     <span>➕</span> Thêm khách mời mới (vào danh sách Dự bị)
                   </h3>
@@ -542,6 +604,7 @@ export default function AttendanceDashboardModal({
                         type="text"
                         className="form-input guest-name-input"
                         placeholder="Nhập tên khách mời (vd: Bạn Hùng, Minh Guest)..."
+                        aria-label="Tên khách mời"
                         value={guestForm.name}
                         onChange={(e) => setGuestForm((prev) => ({ ...prev, name: e.target.value }))}
                         required
@@ -555,6 +618,7 @@ export default function AttendanceDashboardModal({
                         value={guestForm.tier}
                         onChange={(e) => setGuestForm((prev) => ({ ...prev, tier: e.target.value }))}
                         id="select-guest-tier"
+                        aria-label="Trình độ khách mời"
                       >
                         <option value="S">Tier S (Rất hay)</option>
                         <option value="A">Tier A (Hay)</option>
@@ -575,14 +639,14 @@ export default function AttendanceDashboardModal({
                       <button
                         type="submit"
                         className="btn btn-primary btn-sm btn-add-guest-submit"
-                        disabled={actionLoading === 'add-guest'}
+                        disabled={busy}
                         id="btn-submit-add-guest"
                       >
                         {actionLoading === 'add-guest' ? 'Đang thêm...' : '+ Thêm khách'}
                       </button>
                     </div>
                   </form>
-                </div>
+                </div>}
 
                 {/* Danh sách Guest */}
                 <div className="guest-list-section">
@@ -590,7 +654,7 @@ export default function AttendanceDashboardModal({
                     Danh sách khách mời trong trận ({data?.guests?.length || 0}):
                   </h4>
 
-                  {data?.guests?.map((guest) => (
+                  {displayGuests.map((guest) => (
                     <div
                       key={guest.id}
                       className={`guest-card ${guest.status === 'PLAYING' ? 'is-playing' : 'is-reserve'}`}
@@ -605,12 +669,16 @@ export default function AttendanceDashboardModal({
                             <span className={`badge member-tier-badge tier-${guest.tier?.toLowerCase()}`} style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
                               Tier {guest.tier}
                             </span>
+                            {guest.isGoalkeeper && <span className="attendance-gk-label">🧤 GK</span>}
+                          </div>
+                          <details className="attendance-player-options">
+                            <summary>Tùy chọn khách</summary>
                             {guest.isGoalkeeper ? (
                               <button
                                 type="button"
                                 className="badge-gk-mini badge-gk-clickable"
                                 onClick={() => handleToggleGuestGK(guest)}
-                                disabled={actionLoading === `guest-gk-${guest.id}`}
+                                disabled={busy}
                                 title="Bấm để hủy chỉ định thủ môn"
                               >
                                 {actionLoading === `guest-gk-${guest.id}` ? '...' : '🧤 Thủ môn'}
@@ -620,13 +688,19 @@ export default function AttendanceDashboardModal({
                                 type="button"
                                 className="badge-gk-mini badge-gk-add"
                                 onClick={() => handleToggleGuestGK(guest)}
-                                disabled={actionLoading === `guest-gk-${guest.id}`}
+                                disabled={busy}
                                 title="Bấm để chỉ định khách làm thủ môn"
                               >
                                 {actionLoading === `guest-gk-${guest.id}` ? '...' : '+ GK'}
                               </button>
                             )}
-                          </div>
+                            <button className="btn btn-outline btn-sm" onClick={() => handleToggleGuestStatus(guest)}
+                              disabled={busy} id={`btn-guest-toggle-status-${guest.id}`}>
+                              {guest.status === 'RESERVE' ? '⬆ Đôn lên đá chính' : '⬇ Chuyển về dự bị'}
+                            </button>
+                            <button className="btn btn-ghost btn-sm btn-delete-guest" onClick={() => handleDeleteGuest(guest.id)}
+                              disabled={busy} id={`btn-guest-delete-${guest.id}`}>Xóa khách</button>
+                          </details>
                           <div className="guest-status-row">
                             {guest.status === 'PLAYING' ? (
                               <span className="badge-guest-playing">Đá chính</span>
@@ -644,32 +718,14 @@ export default function AttendanceDashboardModal({
 
                       <div className="guest-actions">
                         <button
-                          className={`btn ${guest.isCheckedIn ? 'btn-success' : 'btn-outline'} btn-sm`}
+                          className={`btn-checkin-toggle ${guest.isCheckedIn ? 'active' : 'inactive'}`}
                           onClick={() => handleToggleGuestAttendance(guest)}
-                          disabled={actionLoading === `guest-checkin-${guest.id}`}
+                          disabled={Boolean(actionLoading) || pendingCheckIns[`guest-${guest.id}`]}
+                          aria-pressed={Boolean(guest.isCheckedIn)}
+                          aria-label={`${guest.isCheckedIn ? 'Hủy điểm danh' : 'Điểm danh'} ${guest.name}`}
                           id={`btn-guest-checkin-${guest.id}`}
                         >
-                          {guest.isCheckedIn ? '✓ Có mặt' : 'Điểm danh'}
-                        </button>
-
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => handleToggleGuestStatus(guest)}
-                          disabled={actionLoading === `guest-status-${guest.id}`}
-                          title={guest.status === 'RESERVE' ? 'Đôn lên đá chính' : 'Chuyển về dự bị'}
-                          id={`btn-guest-toggle-status-${guest.id}`}
-                        >
-                          {guest.status === 'RESERVE' ? '⬆ Đá chính' : '⬇ Dự bị'}
-                        </button>
-
-                        <button
-                          className="btn btn-ghost btn-sm btn-delete-guest"
-                          onClick={() => handleDeleteGuest(guest.id)}
-                          disabled={actionLoading === `guest-delete-${guest.id}`}
-                          title="Xóa khách mời"
-                          id={`btn-guest-delete-${guest.id}`}
-                        >
-                          🗑
+                          {pendingCheckIns[`guest-${guest.id}`] ? 'Đang lưu…' : guest.isCheckedIn ? '✓ Có mặt' : '+ Có mặt'}
                         </button>
                       </div>
                     </div>
@@ -679,6 +735,9 @@ export default function AttendanceDashboardModal({
                     <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '24px 0' }}>
                       Chưa có khách mời nào được thêm vào trận đấu này.
                     </p>
+                  )}
+                  {data?.guests?.length > 0 && displayGuests.length === 0 && (
+                    <p className="attendance-empty">Không tìm thấy khách mời. Hãy thử tên khác.</p>
                   )}
                 </div>
               </div>
@@ -794,7 +853,7 @@ export default function AttendanceDashboardModal({
             <button
               className="btn-payment-recalc"
               onClick={handleRecalculatePayments}
-              disabled={actionLoading === 'recalc-payment'}
+              disabled={busy || loading}
               title="Chia đều tiền sân theo số người thực tế có mặt"
               id="btn-recalc-payments-attendance"
             >
@@ -810,12 +869,13 @@ export default function AttendanceDashboardModal({
                 onOpenTeamGenerator(true); // useAttendedOnly = true
               }}
               id="btn-team-gen-attendance"
+              disabled={busy || loading || (summary.totalAttendedOnPitch || 0) < 4}
             >
               ⚽ Chia đội
             </button>
           )}
 
-          <button className="btn btn-outline btn-sm" onClick={onClose} id="btn-close-attendance-footer">
+          <button className="btn btn-outline btn-sm" disabled={busy} onClick={onClose} id="btn-close-attendance-footer">
             Đóng
           </button>
         </div>
