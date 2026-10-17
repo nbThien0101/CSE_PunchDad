@@ -19,6 +19,12 @@ enum Role {
   MEMBER
 }
 
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum SessionStatus {
   VOTING
   CONFIRMED
@@ -55,6 +61,9 @@ model User {
   qrCodeImage  String?  @map("qr_code_image") @db.Text
   avatar       String?  @db.Text
   role         Role     @default(MEMBER)
+  membershipStatus MembershipStatus @default(PENDING) @map("membership_status")
+  membershipReviewedAt DateTime? @map("membership_reviewed_at")
+  membershipReviewedBy String? @map("membership_reviewed_by")
   tier         String?
   isGoalkeeper Boolean  @default(false) @map("is_goalkeeper")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -67,6 +76,7 @@ model User {
   absenceLogs     AbsenceLog[]
   feedbacks       Feedback[]
 
+  @@index([membershipStatus, createdAt])
   @@map("users")
 }
 

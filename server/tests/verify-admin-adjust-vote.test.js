@@ -37,7 +37,7 @@ const mockRes = () => {
 async function runTests() {
   const sampleSession = {
     id: 'session-123',
-    title: 'Giao lưu FC PunchDad',
+    title: 'Giao lưu FC HitDad',
     playDate: new Date('2026-09-30T17:00:00.000Z'),
     startTime: '17:00',
     minPlayers: 6,

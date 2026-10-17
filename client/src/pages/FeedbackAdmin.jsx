@@ -1,3 +1,4 @@
+import { Button, Card, Select, Textarea } from '../components/ui/index.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { feedbackAPI } from '../services/api';
 import Toast from '../components/Toast/Toast';
@@ -100,10 +101,10 @@ export default function FeedbackAdmin() {
           <h1 className="page-title">Ý kiến người dùng</h1>
           <p className="page-subtitle">Lắng nghe, ưu tiên và theo dõi những điều cần cải thiện.</p>
         </div>
-        <button className="btn btn-outline btn-sm" type="button" onClick={loadFeedbacks} disabled={loading}>
+        <Button className="btn btn-outline btn-sm" type="button" onClick={loadFeedbacks} disabled={loading}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 11a8.1 8.1 0 1 0 .5 4M20 4v7h-7" /></svg>
           Làm mới
-        </button>
+        </Button>
       </div>
 
       <div className="feedback-stats">
@@ -113,7 +114,7 @@ export default function FeedbackAdmin() {
           { key: 'REVIEWING', label: 'Đang xem xét', icon: '◷' },
           { key: 'RESOLVED', label: 'Đã xử lý', icon: '✓' },
         ].map((item) => (
-          <button
+          <Button
             key={item.key}
             type="button"
             className={`feedback-stat-card ${item.key !== 'total' && statusFilter === item.key ? 'active' : ''}`}
@@ -121,7 +122,7 @@ export default function FeedbackAdmin() {
           >
             <span className={`feedback-stat-icon ${item.key.toLowerCase()}`}>{item.icon}</span>
             <span><strong>{stats[item.key] || 0}</strong><small>{item.label}</small></span>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -131,13 +132,13 @@ export default function FeedbackAdmin() {
             { value: '', label: 'Tất cả' },
             ...Object.entries(CATEGORY_META).map(([value, meta]) => ({ value, label: `${meta.icon} ${meta.label}` })),
           ].map((item) => (
-            <button key={item.value || 'all'} type="button" className={categoryFilter === item.value ? 'active' : ''} onClick={() => setCategoryFilter(item.value)}>{item.label}</button>
+            <Button key={item.value || 'all'} type="button" className={categoryFilter === item.value ? 'active' : ''} onClick={() => setCategoryFilter(item.value)}>{item.label}</Button>
           ))}
         </div>
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Lọc trạng thái">
+        <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Lọc trạng thái">
           <option value="">Mọi trạng thái</option>
           {Object.entries(STATUS_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
-        </select>
+        </Select>
       </div>
 
       {loading ? (
@@ -150,7 +151,7 @@ export default function FeedbackAdmin() {
             const category = CATEGORY_META[item.category] || CATEGORY_META.OTHER;
             const status = STATUS_META[item.status] || STATUS_META.NEW;
             return (
-              <article key={item.id} className={`feedback-card ${item.status === 'NEW' ? 'unread' : ''}`}>
+              <Card as="article" key={item.id} className={`feedback-card ${item.status === 'NEW' ? 'unread' : ''}`}>
                 <div className="feedback-card-main">
                   <div className={`feedback-category-icon ${category.className}`}>{category.icon}</div>
                   <div className="feedback-card-content">
@@ -170,8 +171,8 @@ export default function FeedbackAdmin() {
                     </div>
                   </div>
                 </div>
-                <button className="btn btn-outline btn-sm" type="button" onClick={() => openFeedback(item)}>Xem & xử lý</button>
-              </article>
+                <Button className="btn btn-outline btn-sm" type="button" onClick={() => openFeedback(item)}>Xem & xử lý</Button>
+              </Card>
             );
           })}
         </div>
@@ -182,7 +183,7 @@ export default function FeedbackAdmin() {
           <aside className="feedback-drawer" onClick={(event) => event.stopPropagation()} aria-label="Chi tiết phản hồi">
             <div className="feedback-drawer-header">
               <div><span>Chi tiết phản hồi</span><h2>{CATEGORY_META[selected.category]?.icon} {CATEGORY_META[selected.category]?.label}</h2></div>
-              <button type="button" onClick={() => setSelectedId(null)} aria-label="Đóng">×</button>
+              <Button type="button" onClick={() => setSelectedId(null)} aria-label="Đóng">×</Button>
             </div>
             <div className="feedback-drawer-body">
               <div className="feedback-drawer-author"><strong>{selected.user.displayName}</strong><span>@{selected.user.username} · {formatTime(selected.createdAt)}</span></div>
@@ -190,17 +191,17 @@ export default function FeedbackAdmin() {
               <div className="feedback-message-box">{selected.message}</div>
               {selected.pagePath && <div className="feedback-context"><span>Trang được gửi từ</span><code>{selected.pagePath}</code></div>}
               <label>Trạng thái
-                <select value={draftStatus} onChange={(event) => setDraftStatus(event.target.value)}>
+                <Select value={draftStatus} onChange={(event) => setDraftStatus(event.target.value)}>
                   {Object.entries(STATUS_META).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
-                </select>
+                </Select>
               </label>
               <label>Ghi chú nội bộ
-                <textarea value={adminNote} onChange={(event) => setAdminNote(event.target.value.slice(0, 2000))} rows="5" placeholder="Thêm ghi chú cho admin và đội ngũ dev..." />
+                <Textarea value={adminNote} onChange={(event) => setAdminNote(event.target.value.slice(0, 2000))} rows="5" placeholder="Thêm ghi chú cho admin và đội ngũ dev..." />
               </label>
             </div>
             <div className="feedback-drawer-actions">
-              <button className="btn btn-ghost" type="button" onClick={() => setSelectedId(null)}>Hủy</button>
-              <button className="btn btn-primary" type="button" onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu cập nhật'}</button>
+              <Button className="btn btn-ghost" type="button" onClick={() => setSelectedId(null)}>Hủy</Button>
+              <Button className="btn btn-primary" type="button" onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu cập nhật'}</Button>
             </div>
           </aside>
         </div>

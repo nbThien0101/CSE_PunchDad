@@ -1,15 +1,16 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import SessionDetail from './pages/SessionDetail';
-import CreateSession from './pages/CreateSession';
-import Profile from './pages/Profile';
-import Members from './pages/Members';
-import FeedbackAdmin from './pages/FeedbackAdmin';
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SessionDetail = lazy(() => import('./pages/SessionDetail'));
+const CreateSession = lazy(() => import('./pages/CreateSession'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Members = lazy(() => import('./pages/Members'));
+const FeedbackAdmin = lazy(() => import('./pages/FeedbackAdmin'));
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -55,7 +56,7 @@ function GuestRoute({ children }) {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter><Suspense fallback={<div className="loading-screen"><div className="spinner" /><p>Đang tải giao diện…</p></div>}>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
@@ -78,7 +79,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Suspense></BrowserRouter>
   );
 }
 

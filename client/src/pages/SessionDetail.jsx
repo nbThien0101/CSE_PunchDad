@@ -1,3 +1,4 @@
+import { Alert, Badge, Button, Card, Input, Select, Textarea } from '../components/ui/index.jsx';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -523,25 +524,25 @@ export default function SessionDetail() {
 
   return (
     <div className="session-detail animate-fade-in">
-      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} id="btn-back">
+      <Button className="btn btn-ghost btn-sm" onClick={() => navigate('/')} id="btn-back">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
         Quay lại
-      </button>
+      </Button>
 
       {/* Status + Title */}
       <div style={{ margin: 'var(--space-6) 0 var(--space-4)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          <span className={`badge ${config.className}`} style={{ whiteSpace: 'nowrap' }}>
+          <Badge className={`badge ${config.className}`} style={{ whiteSpace: 'nowrap' }}>
             <span className="badge-dot"></span>
             {config.label}
-          </span>
+          </Badge>
           {session.isVoteLocked && (
-            <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>
+            <Badge className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>
               🔒 Đã chốt danh sách
-            </span>
+            </Badge>
           )}
         </div>
         <h1 className="detail-title" style={{ marginTop: 0 }}>{session.title}</h1>
@@ -561,7 +562,7 @@ export default function SessionDetail() {
       {/* Admin Actions */}
       {isAdmin && (
         <div className="detail-header-actions" style={{ marginBottom: 'var(--space-6)' }}>
-          <button
+          <Button
             className="btn btn-primary btn-sm"
             onClick={() => setShowAttendanceModal(true)}
             id="btn-open-attendance-modal"
@@ -572,8 +573,8 @@ export default function SessionDetail() {
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
             Điểm danh sân
-          </button>
-          <button
+          </Button>
+          <Button
             className={`btn btn-outline btn-sm ${session.isVoteLocked ? 'btn-danger' : ''}`}
             onClick={handleToggleLockVote}
             disabled={actionLoading === 'toggleLock'}
@@ -581,8 +582,8 @@ export default function SessionDetail() {
             title={session.isVoteLocked ? 'Mở lại bình chọn cho mọi người' : 'Chốt danh sách, không cho vote thêm'}
           >
             {session.isVoteLocked ? '🔓 Mở lại vote' : '🔒 Chốt danh sách'}
-          </button>
-          <button
+          </Button>
+          <Button
             className="btn btn-outline btn-sm"
             onClick={() => {
               setAutoRebalance(Boolean(session.teams));
@@ -598,8 +599,8 @@ export default function SessionDetail() {
               <line x1="4" y1="4" x2="9" y2="9"></line>
             </svg>
             {session.teams ? 'Chia lại đội' : 'Chia đội'}
-          </button>
-          <button
+          </Button>
+          <Button
             className="btn btn-outline btn-sm"
             onClick={handleOpenEdit}
             id="btn-edit-session"
@@ -609,13 +610,13 @@ export default function SessionDetail() {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
             Chỉnh sửa
-          </button>
+          </Button>
           {!['COMPLETED', 'CANCELLED'].includes(session.status) && (
-            <button className="btn btn-danger btn-sm" onClick={handleCancel} disabled={actionLoading === 'cancel'} id="btn-cancel-session">
+            <Button className="btn btn-danger btn-sm" onClick={handleCancel} disabled={actionLoading === 'cancel'} id="btn-cancel-session">
               {actionLoading === 'cancel' ? 'Đang hủy...' : 'Hủy trận đấu'}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             className="btn btn-danger-solid btn-sm"
             onClick={handleForceDelete}
             disabled={actionLoading === 'forceDelete'}
@@ -626,7 +627,7 @@ export default function SessionDetail() {
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
             {actionLoading === 'forceDelete' ? 'Đang xóa...' : 'Xóa trận đấu'}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -732,18 +733,18 @@ export default function SessionDetail() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h2 className="section-title" style={{ margin: 0 }}>Bình chọn tham gia</h2>
             {isAdmin && (
-              <button
+              <Button
                 className="btn btn-ghost btn-sm"
                 onClick={() => setShowAttendanceModal(true)}
                 style={{ color: '#059669', fontWeight: 600 }}
               >
                 📋 Mở điểm danh trên sân
-              </button>
+              </Button>
             )}
           </div>
 
           {session.unpaidPreviousPayment && (
-            <div
+            <Alert
               className="alert alert-danger"
               style={{
                 display: 'flex',
@@ -770,7 +771,7 @@ export default function SessionDetail() {
                   💳 Xem & Thanh toán ngay ↗
                 </Link>
               )}
-            </div>
+            </Alert>
           )}
 
           {timeSlots.length > 0 && (
@@ -781,9 +782,9 @@ export default function SessionDetail() {
                   <p>Có thể chọn nhiều khung giờ. Số vote được cập nhật sau khi bấm “Tham gia”.</p>
                 </div>
                 {!session.isVoteLocked && (
-                  <button type="button" className="btn btn-outline btn-sm" onClick={toggleAllTimeSlots}>
+                  <Button type="button" className="btn btn-outline btn-sm" onClick={toggleAllTimeSlots}>
                     {selectedTimeSlotIds.length === timeSlots.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả khung giờ'}
-                  </button>
+                  </Button>
                 )}
               </div>
               <div className="time-slot-options">
@@ -795,7 +796,7 @@ export default function SessionDetail() {
                       key={slot.id}
                       className={`time-slot-option ${selectedTimeSlotIds.includes(slot.id) ? 'is-selected' : ''} ${isTop ? 'is-top' : ''}`}
                     >
-                      <input
+                      <Input
                         type="checkbox"
                         checked={selectedTimeSlotIds.includes(slot.id)}
                         onChange={() => toggleTimeSlot(slot.id)}
@@ -814,15 +815,15 @@ export default function SessionDetail() {
           {canAddTimeSlot && (
             <div className="add-time-slot">
               {!showAddTimeSlot ? (
-                <button type="button" className="btn btn-outline btn-sm" disabled={timeSlots.length >= 20 || Boolean(actionLoading)} onClick={() => { setTimeSlotError(''); setShowAddTimeSlot(true); }}>
+                <Button type="button" className="btn btn-outline btn-sm" disabled={timeSlots.length >= 20 || Boolean(actionLoading)} onClick={() => { setTimeSlotError(''); setShowAddTimeSlot(true); }}>
                   + Thêm khung giờ
-                </button>
+                </Button>
               ) : (
                 <form className="add-time-slot-form" onSubmit={handleAddTimeSlot}>
-                  <label>Giờ bắt đầu<input type="time" required value={newTimeSlot.startTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, startTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
-                  <label>Giờ kết thúc<input type="time" required value={newTimeSlot.endTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, endTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={Boolean(actionLoading)}>{actionLoading === 'addTimeSlot' ? 'Đang thêm...' : 'Thêm khung giờ'}</button>
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={Boolean(actionLoading)} onClick={() => setShowAddTimeSlot(false)}>Hủy</button>
+                  <label>Giờ bắt đầu<Input type="time" required value={newTimeSlot.startTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, startTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
+                  <label>Giờ kết thúc<Input type="time" required value={newTimeSlot.endTime} onChange={e => setNewTimeSlot(prev => ({ ...prev, endTime: e.target.value }))} disabled={Boolean(actionLoading)} /></label>
+                  <Button type="submit" className="btn btn-primary btn-sm" disabled={Boolean(actionLoading)}>{actionLoading === 'addTimeSlot' ? 'Đang thêm...' : 'Thêm khung giờ'}</Button>
+                  <Button type="button" className="btn btn-ghost btn-sm" disabled={Boolean(actionLoading)} onClick={() => setShowAddTimeSlot(false)}>Hủy</Button>
                   {timeSlotError && <p className="alert alert-error" role="alert">{timeSlotError}</p>}
                   <p className="text-muted">Khung giờ mới sẽ xuất hiện cho mọi người. Bấm “Tham gia” để lưu các giờ bạn đã chọn.</p>
                 </form>
@@ -831,21 +832,21 @@ export default function SessionDetail() {
           )}
 
           {session.isVoteLocked ? (
-            <div className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <Alert className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
               <div>
                 <strong>🔒 Danh sách bình chọn đã được Admin chốt.</strong>
                 <p style={{ margin: '2px 0 0', fontSize: '0.82rem' }}>
                   Không nhận thêm lượt tham gia mới. Nếu có việc bận đột xuất, bạn có thể gửi Báo vắng kèm lý do.
                 </p>
               </div>
-              <button
+              <Button
                 className="btn btn-danger btn-sm"
                 onClick={() => handleVote('DECLINE')}
                 disabled={actionLoading === 'vote'}
               >
                 Báo vắng
-              </button>
-            </div>
+              </Button>
+            </Alert>
           ) : (
             <div className="vote-actions">
               {[
@@ -854,7 +855,7 @@ export default function SessionDetail() {
               ].map(item => {
                 const isJoinBlockedByUnpaid = item.id === 'JOIN' && Boolean(session.unpaidPreviousPayment);
                 return (
-                  <button
+                  <Button
                     key={item.id}
                     className={`btn ${item.btnClass} ${userVote?.status === item.id ? '' : 'btn-outline'}`}
                     onClick={() => handleVote(item.id)}
@@ -876,7 +877,7 @@ export default function SessionDetail() {
                     {item.label}
                     {isJoinBlockedByUnpaid && ' (Chưa nộp tiền)'}
                     {userVote?.status === item.id && !isJoinBlockedByUnpaid && ' (Đã chọn)'}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -898,7 +899,7 @@ export default function SessionDetail() {
             </div>
             {isAdmin && (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
+                <Button
                   className="btn btn-outline btn-sm"
                   onClick={() => {
                     setAutoRebalance(true);
@@ -907,8 +908,8 @@ export default function SessionDetail() {
                   id="btn-rebalance-teams"
                 >
                   Chia lại
-                </button>
-                <button
+                </Button>
+                <Button
                   className="btn btn-ghost btn-sm"
                   style={{ color: '#ef4444' }}
                   onClick={handleDeleteTeams}
@@ -916,14 +917,14 @@ export default function SessionDetail() {
                   id="btn-delete-teams"
                 >
                   Hủy chia đội
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           <div className="match-teams-grid">
             {session.teams.teams.map((t) => (
-              <div key={t.id} className="match-team-card" style={{ borderTop: `4px solid ${t.color}` }}>
+              <Card key={t.id} className="match-team-card" style={{ borderTop: `4px solid ${t.color}` }}>
                 <div className="match-team-header" style={{ background: t.bg }}>
                   <span className="match-team-name" style={{ color: t.color }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.color }}></span>
@@ -946,9 +947,9 @@ export default function SessionDetail() {
                       </div>
                       <div className="match-player-tags">
                         {t.goalkeeper.tier && (
-                          <span className={`badge member-tier-badge tier-${t.goalkeeper.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                          <Badge className={`badge member-tier-badge tier-${t.goalkeeper.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
                             {t.goalkeeper.tier}
-                          </span>
+                          </Badge>
                         )}
                         {t.goalkeeper.isShared ? (
                           <span className="badge-shared-gk" title={`Luân phiên từ ${t.goalkeeper.sharedFrom || ''}`}>
@@ -972,15 +973,15 @@ export default function SessionDetail() {
                       </div>
                       <div className="match-player-tags">
                         {p.tier && (
-                          <span className={`badge member-tier-badge tier-${p.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                          <Badge className={`badge member-tier-badge tier-${p.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
                             {p.tier}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -1004,7 +1005,7 @@ export default function SessionDetail() {
 
       {/* Invite box when no teams yet */}
       {!session.teams && isAdmin && (
-        <div className="detail-section team-gen-invite card">
+        <Card className="detail-section team-gen-invite card">
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>
               Chia đội hình thi đấu (5 người/đội)
@@ -1015,7 +1016,7 @@ export default function SessionDetail() {
                 : `Hiện có ${joinedVotes.length} người tham gia. Bạn có thể mở công cụ để xem danh sách hoặc chia đội.`}
             </p>
           </div>
-          <button
+          <Button
             className="btn btn-primary btn-sm"
             onClick={() => {
               setAutoRebalance(false);
@@ -1024,8 +1025,8 @@ export default function SessionDetail() {
             id="btn-open-team-gen-banner"
           >
             Chia đội hình
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Votes List */}
@@ -1036,7 +1037,7 @@ export default function SessionDetail() {
           </h2>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {isAdmin && (
-              <button
+              <Button
                 className="btn btn-outline btn-sm"
                 onClick={() => {
                   setAdminVoteTargetUserId('');
@@ -1050,15 +1051,15 @@ export default function SessionDetail() {
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
                 Điều chỉnh vote
-              </button>
+              </Button>
             )}
             {isAdmin && (
-              <button
+              <Button
                 className="btn btn-outline btn-sm"
                 onClick={() => setShowAttendanceModal(true)}
               >
                 📋 Quản lý điểm danh
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1070,18 +1071,18 @@ export default function SessionDetail() {
                 const count = slot.votes?.length ?? slot._count?.votes ?? 0;
                 const active = registrationSlotId !== 'unassigned' && activeRegistrationSlot?.id === slot.id;
                 return (
-                  <button key={slot.id} type="button" className={`registration-slot ${active ? 'is-active' : ''}`} aria-pressed={active} onClick={() => setRegistrationSlotId(slot.id)}>
+                  <Button key={slot.id} type="button" className={`registration-slot ${active ? 'is-active' : ''}`} aria-pressed={active} onClick={() => setRegistrationSlotId(slot.id)}>
                     <strong>{slot.startTime} – {slot.endTime}</strong>
                     <span>{count} người đăng ký</span>
                     <span className="registration-slot-bar"><span style={{ width: `${maxTimeSlotVotes ? count / maxTimeSlotVotes * 100 : 0}%` }} /></span>
                     {maxTimeSlotVotes > 0 && topTimeSlotIds.has(slot.id) && <small>Nhiều đăng ký nhất</small>}
-                  </button>
+                  </Button>
                 );
               })}
               {unassignedVotes.length > 0 && (
-                <button type="button" className={`registration-slot ${registrationSlotId === 'unassigned' ? 'is-active' : ''}`} aria-pressed={registrationSlotId === 'unassigned'} onClick={() => setRegistrationSlotId('unassigned')}>
+                <Button type="button" className={`registration-slot ${registrationSlotId === 'unassigned' ? 'is-active' : ''}`} aria-pressed={registrationSlotId === 'unassigned'} onClick={() => setRegistrationSlotId('unassigned')}>
                   <strong>Chưa chọn khung giờ</strong><span>{unassignedVotes.length} người</span>
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -1177,7 +1178,7 @@ export default function SessionDetail() {
             {timeSlots.length > 0 && (
               <div className="form-group">
                 <label className="form-label" htmlFor="book-time-slot">Khung giờ chốt sân</label>
-                <select
+                <Select
                   id="book-time-slot"
                   className="form-input"
                   value={bookForm.selectedTimeSlotId}
@@ -1192,13 +1193,13 @@ export default function SessionDetail() {
                       </option>
                     );
                   })}
-                </select>
+                </Select>
                 <span className="form-hint">Hệ thống đã đề xuất khung giờ có nhiều lượt chọn nhất. Admin vẫn có thể đổi trước khi xác nhận.</span>
               </div>
             )}
             <div className="form-group">
               <label className="form-label" htmlFor="total-cost">Tổng tiền sân (VNĐ)</label>
-              <input
+              <Input
                 id="total-cost"
                 type="number"
                 className="form-input"
@@ -1210,7 +1211,7 @@ export default function SessionDetail() {
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="split-count">Số người chia tiền (bao gồm khách mời)</label>
-              <input
+              <Input
                 id="split-count"
                 type="number"
                 className="form-input"
@@ -1230,7 +1231,7 @@ export default function SessionDetail() {
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="payer-select">Người thanh toán trước</label>
-              <select
+              <Select
                 id="payer-select"
                 className="form-input"
                 value={bookForm.payerId}
@@ -1242,11 +1243,11 @@ export default function SessionDetail() {
                   <option key={v.user?.id} value={v.user?.id}>{v.user?.displayName}</option>
                 ))}
                 <option value={user?.id}>{user?.displayName} (Admin)</option>
-              </select>
+              </Select>
             </div>
-            <button type="submit" className="btn btn-primary btn-lg" disabled={actionLoading === 'book'}>
+            <Button type="submit" className="btn btn-primary btn-lg" disabled={actionLoading === 'book'}>
               {actionLoading === 'book' ? 'Đang xử lý...' : 'Xác nhận thông tin đặt sân'}
-            </button>
+            </Button>
           </form>
         </div>
       )}
@@ -1301,7 +1302,7 @@ export default function SessionDetail() {
               {payerQR ? (
                 <div className="payer-qr-section">
                   <div className="payer-qr-divider"></div>
-                  <button
+                  <Button
                     className="payer-qr-toggle"
                     onClick={() => setQrExpanded(prev => !prev)}
                     id="btn-toggle-payer-qr"
@@ -1316,7 +1317,7 @@ export default function SessionDetail() {
                       Mã QR thanh toán nhanh
                     </span>
                     <span className={`payer-qr-arrow ${qrExpanded ? 'expanded' : ''}`}>▾</span>
-                  </button>
+                  </Button>
                   {qrExpanded && (
                     <div className="payer-qr-container animate-fade-in">
                       <img
@@ -1341,18 +1342,18 @@ export default function SessionDetail() {
 
           {paymentSummary && (
             <div className="payment-summary">
-              <span className="badge badge-confirmed">
+              <Badge className="badge badge-confirmed">
                 <span className="badge-dot"></span>
                 {paymentSummary.confirmed} Đã xác nhận
-              </span>
-              <span className="badge badge-paid">
+              </Badge>
+              <Badge className="badge badge-paid">
                 <span className="badge-dot"></span>
                 {paymentSummary.paid} Đã chuyển
-              </span>
-              <span className="badge badge-pending">
+              </Badge>
+              <Badge className="badge badge-pending">
                 <span className="badge-dot"></span>
                 {paymentSummary.pending} Chờ chuyển
-              </span>
+              </Badge>
             </div>
           )}
 
@@ -1373,15 +1374,15 @@ export default function SessionDetail() {
                   </div>
                 </div>
                 <div className="payment-actions">
-                  <span className={`badge badge-${p.status.toLowerCase()}`}>
+                  <Badge className={`badge badge-${p.status.toLowerCase()}`}>
                     <span className="badge-dot"></span>
                     {p.status === 'PENDING' ? 'Chưa thanh toán' :
                      p.status === 'PAID' ? 'Đã chuyển tiền' : 'Đã xác nhận'}
-                  </span>
+                  </Badge>
 
                   {/* Nút thanh toán VietQR PayOS tự động */}
                   {p.status === 'PENDING' && (p.user?.id === user?.id || isAdmin) && (
-                    <button
+                    <Button
                       className="btn btn-primary btn-sm btn-payos-qr"
                       style={{ background: 'linear-gradient(135deg, #10b981, #059669)', borderColor: '#059669', color: '#ffffff', gap: '4px' }}
                       onClick={() => setPayOSPayment(p)}
@@ -1389,19 +1390,19 @@ export default function SessionDetail() {
                       title="Quét mã VietQR chuyển khoản tự động gạch nợ ngay"
                     >
                       ⚡ Thanh toán VietQR
-                    </button>
+                    </Button>
                   )}
 
                   {/* Payer or admin can confirm */}
                   {p.status !== 'CONFIRMED' && (isPayer || isAdmin) && (
-                    <button
+                    <Button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleConfirmPayment(p.id)}
                       disabled={actionLoading === p.id}
                       title="Xác nhận thành viên đã thanh toán"
                     >
                       {actionLoading === p.id ? '...' : 'Xác nhận đã nhận'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -1438,13 +1439,13 @@ export default function SessionDetail() {
                         </div>
                       </div>
                       <div className="payment-actions">
-                        <span className={`badge ${g.isPaid ? 'badge-confirmed' : 'badge-pending'}`}>
+                        <Badge className={`badge ${g.isPaid ? 'badge-confirmed' : 'badge-pending'}`}>
                           <span className="badge-dot"></span>
                           {g.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                        </span>
+                        </Badge>
                         {isAdmin && (
                           <label className="guest-payment-checkbox" title={g.isPaid ? 'Bỏ đánh dấu đã thanh toán' : 'Đánh dấu đã thanh toán'}>
-                            <input
+                            <Input
                               type="checkbox"
                               checked={g.isPaid}
                               disabled={actionLoading === `guest-${g.id}`}
@@ -1471,14 +1472,14 @@ export default function SessionDetail() {
         isOpen={showCancelModal}
         onClose={() => actionLoading !== 'cancel' && setShowCancelModal(false)}
       >
-        <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+        <Card className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <div>
               <span className="modal-badge modal-badge-danger">Hủy trận đấu</span>
               <h2 className="modal-title">Xác nhận hủy trận</h2>
               <p className="modal-subtitle">Ghi chú này sẽ được hiển thị cho tất cả thành viên.</p>
             </div>
-            <button
+            <Button
               className="modal-close-btn"
               onClick={() => setShowCancelModal(false)}
               disabled={actionLoading === 'cancel'}
@@ -1486,7 +1487,7 @@ export default function SessionDetail() {
               aria-label="Đóng"
             >
               ✕
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={handleConfirmCancel} className="modal-form">
@@ -1494,7 +1495,7 @@ export default function SessionDetail() {
               <label className="form-label" htmlFor="cancellation-note">
                 Lý do hủy trận <span className="text-danger">*</span>
               </label>
-              <textarea
+              <Textarea
                 id="cancellation-note"
                 className="form-input form-textarea"
                 rows="4"
@@ -1509,36 +1510,36 @@ export default function SessionDetail() {
             </div>
 
             <div className="modal-actions">
-              <button
+              <Button
                 type="button"
                 className="btn-modal-cancel"
                 onClick={() => setShowCancelModal(false)}
                 disabled={actionLoading === 'cancel'}
               >
                 Giữ trận đấu
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="btn btn-danger"
                 disabled={actionLoading === 'cancel' || !cancellationNote.trim()}
                 id="btn-confirm-cancel-session"
               >
                 {actionLoading === 'cancel' ? 'Đang hủy...' : 'Xác nhận hủy trận'}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </Modal>
 
       <Modal isOpen={showEditModal} onClose={() => !editLoading && setShowEditModal(false)}>
-        <div className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+        <Card className="modal-card card animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <span className="modal-badge">Quản trị viên</span>
                 <h2 className="modal-title">Chỉnh sửa thông tin trận đấu</h2>
                 <p className="modal-subtitle">Cập nhật lịch thi đấu, địa điểm và thiết lập số lượng người</p>
               </div>
-              <button
+              <Button
                 className="modal-close-btn"
                 onClick={() => setShowEditModal(false)}
                 disabled={editLoading}
@@ -1546,7 +1547,7 @@ export default function SessionDetail() {
                 aria-label="Đóng"
               >
                 ✕
-              </button>
+              </Button>
             </div>
 
             <form onSubmit={handleSaveEdit} className="modal-form">
@@ -1555,7 +1556,7 @@ export default function SessionDetail() {
                 <div className="form-section-title">Thông tin cơ bản</div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-title">Tiêu đề trận đấu <span className="text-danger">*</span></label>
-                  <input
+                  <Input
                     id="edit-title"
                     type="text"
                     className="form-input"
@@ -1568,7 +1569,7 @@ export default function SessionDetail() {
 
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-status">Trạng thái trận đấu</label>
-                  <select
+                  <Select
                     id="edit-status"
                     className="form-input"
                     value={editForm.status}
@@ -1579,7 +1580,7 @@ export default function SessionDetail() {
                     <option value="BOOKED">Đã đặt sân</option>
                     <option value="COMPLETED">Đã hoàn thành</option>
                     <option value="CANCELLED">Đã hủy trận</option>
-                  </select>
+                  </Select>
                 </div>
 
                 {editForm.status === 'CANCELLED' && (
@@ -1587,7 +1588,7 @@ export default function SessionDetail() {
                     <label className="form-label" htmlFor="edit-cancellation-note">
                       Lý do hủy trận <span className="text-danger">*</span>
                     </label>
-                    <textarea
+                    <Textarea
                       id="edit-cancellation-note"
                       className="form-input form-textarea"
                       rows="3"
@@ -1607,7 +1608,7 @@ export default function SessionDetail() {
                 <div className="form-section-title">Thời gian & Địa điểm</div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-playDate">Ngày chơi <span className="text-danger">*</span></label>
-                  <input
+                  <Input
                     id="edit-playDate"
                     type="date"
                     className="form-input"
@@ -1620,12 +1621,12 @@ export default function SessionDetail() {
                 <div className="form-group">
                   <div className="edit-time-slots-header">
                     <label className="form-label">Các khung giờ bình chọn <span className="text-danger">*</span></label>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={addEditTimeSlot}>+ Thêm</button>
+                    <Button type="button" className="btn btn-outline btn-sm" onClick={addEditTimeSlot}>+ Thêm</Button>
                   </div>
                   <div className="edit-time-slots">
                     {editForm.timeSlots.map((slot, index) => (
                       <div className="edit-time-slot-row" key={index}>
-                        <input
+                        <Input
                           type="time"
                           className="form-input"
                           value={slot.startTime}
@@ -1634,7 +1635,7 @@ export default function SessionDetail() {
                           required
                         />
                         <span>đến</span>
-                        <input
+                        <Input
                           type="time"
                           className="form-input"
                           value={slot.endTime}
@@ -1642,13 +1643,13 @@ export default function SessionDetail() {
                           aria-label={`Giờ kết thúc khung ${index + 1}`}
                           required
                         />
-                        <button
+                        <Button
                           type="button"
                           className="btn btn-ghost btn-sm"
                           onClick={() => removeEditTimeSlot(index)}
                           disabled={editForm.timeSlots.length === 1}
                           aria-label={`Xóa khung giờ ${index + 1}`}
-                        >✕</button>
+                        >✕</Button>
                       </div>
                     ))}
                   </div>
@@ -1659,7 +1660,7 @@ export default function SessionDetail() {
 
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-location">Địa điểm sân <span className="text-danger">*</span></label>
-                  <input
+                  <Input
                     id="edit-location"
                     type="text"
                     className="form-input"
@@ -1674,7 +1675,7 @@ export default function SessionDetail() {
                   <label className="form-label" htmlFor="edit-googleMapsUrl">
                     Link Google Maps <span className="text-muted">(tùy chọn)</span>
                   </label>
-                  <input
+                  <Input
                     id="edit-googleMapsUrl"
                     type="url"
                     className="form-input"
@@ -1692,7 +1693,7 @@ export default function SessionDetail() {
                 <div className="form-row-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="edit-minPlayers">Tối thiểu (người)</label>
-                    <input
+                    <Input
                       id="edit-minPlayers"
                       type="number"
                       min="2"
@@ -1705,7 +1706,7 @@ export default function SessionDetail() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="edit-maxPlayers">Tối đa (người)</label>
-                    <input
+                    <Input
                       id="edit-maxPlayers"
                       type="number"
                       min={editForm.minPlayers || "2"}
@@ -1720,7 +1721,7 @@ export default function SessionDetail() {
                 <div className="form-row-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="edit-totalCost">Tổng tiền sân (VNĐ)</label>
-                    <input
+                    <Input
                       id="edit-totalCost"
                       type="number"
                       className="form-input"
@@ -1732,7 +1733,7 @@ export default function SessionDetail() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="edit-voteDeadline">Hạn chót bình chọn</label>
-                    <input
+                    <Input
                       id="edit-voteDeadline"
                       type="datetime-local"
                       className="form-input"
@@ -1744,7 +1745,7 @@ export default function SessionDetail() {
               </div>
 
               <div className="modal-actions">
-                <button
+                <Button
                   type="button"
                   className="btn-modal-cancel"
                   onClick={() => setShowEditModal(false)}
@@ -1752,8 +1753,8 @@ export default function SessionDetail() {
                   id="btn-cancel-edit-modal"
                 >
                   Hủy bỏ
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   className="btn-modal-submit"
                   disabled={editLoading}
@@ -1769,10 +1770,10 @@ export default function SessionDetail() {
                       Lưu thay đổi
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </Modal>
       {/* ====== Attendance Dashboard Modal ====== */}
       {showAttendanceModal && (
@@ -1791,7 +1792,7 @@ export default function SessionDetail() {
       {/* ====== Decline Reason Modal ====== */}
       {declineModal.isOpen && (
         <Modal isOpen={true} onClose={() => setDeclineModal(prev => ({ ...prev, isOpen: false }))}>
-          <div className="card animate-scale-up" style={{ width: '100%', maxWidth: 450, padding: 24, background: '#ffffff', borderRadius: 12, boxSizing: 'border-box' }}>
+          <Card className="card animate-scale-up" style={{ width: '100%', maxWidth: 450, padding: 24, background: '#ffffff', borderRadius: 12, boxSizing: 'border-box' }}>
             <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', color: '#0f172a' }}>
               {declineModal.isLate ? '⚠️ Báo Vắng Sát Giờ Thi Đấu' : 'Xác nhận Báo Vắng'}
             </h3>
@@ -1802,7 +1803,7 @@ export default function SessionDetail() {
             </p>
             <div className="form-group" style={{ marginBottom: 16 }}>
               <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Lý do báo vắng (tùy chọn):</label>
-              <textarea
+              <Textarea
                 className="form-input"
                 rows={3}
                 placeholder="VD: Bận việc đột xuất, chấn thương, ốm sốt..."
@@ -1812,21 +1813,21 @@ export default function SessionDetail() {
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
+              <Button
                 className="btn btn-ghost btn-sm"
                 onClick={() => setDeclineModal(prev => ({ ...prev, isOpen: false }))}
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 className="btn btn-danger btn-sm"
                 onClick={() => submitVote('DECLINE', declineModal.reason)}
                 disabled={actionLoading === 'vote'}
               >
                 {actionLoading === 'vote' ? 'Đang gửi...' : 'Xác nhận Báo vắng'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </Modal>
       )}
 

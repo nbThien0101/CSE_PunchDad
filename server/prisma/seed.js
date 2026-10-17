@@ -21,6 +21,7 @@ async function main() {
       phone: '0901234567',
       bankInfo: 'Vietcombank - 1234567890 - NGUYEN VAN ADMIN',
       role: 'ADMIN',
+      membershipStatus: 'APPROVED',
     },
   });
   console.log(`✅ Admin created: ${admin.displayName} (${admin.username})`);
@@ -41,6 +42,7 @@ async function main() {
         ...member,
         passwordHash: memberPassword,
         role: 'MEMBER',
+        membershipStatus: 'APPROVED',
       },
     });
     console.log(`✅ Member created: ${user.displayName} (${user.username})`);

@@ -1,3 +1,4 @@
+import { Alert, Button, Card } from '../components/ui/index.jsx';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +25,7 @@ export default function Dashboard() {
       }
       setSessions(data.sessions || []);
     } catch (err) {
-      setError('Không thể tải danh sách sessions');
+      setError('Không thể tải danh sách trận đấu');
     } finally {
       setLoading(false);
     }
@@ -86,33 +87,33 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="stats-grid">
-        <div className="stat-card stat-total">
+        <Card className="stat-card stat-total">
           <span className="stat-number">{stats.total}</span>
-          <span className="stat-label">Tổng sessions</span>
-        </div>
-        <div className="stat-card stat-voting">
+          <span className="stat-label">Tổng trận đấu</span>
+        </Card>
+        <Card className="stat-card stat-voting">
           <span className="stat-number">{stats.voting}</span>
           <span className="stat-label">Đang vote</span>
-        </div>
-        <div className="stat-card stat-confirmed">
+        </Card>
+        <Card className="stat-card stat-confirmed">
           <span className="stat-number">{stats.confirmed}</span>
           <span className="stat-label">Đã đủ người</span>
-        </div>
-        <div className="stat-card stat-booked">
+        </Card>
+        <Card className="stat-card stat-booked">
           <span className="stat-number">{stats.booked}</span>
           <span className="stat-label">Đã đặt sân</span>
-        </div>
+        </Card>
       </div>
 
       {error && (
-        <div className="alert alert-error">
+        <Alert className="alert alert-error">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <span>{error}</span>
-        </div>
+        </Alert>
       )}
 
       {/* Filter Tabs */}
@@ -124,13 +125,13 @@ export default function Dashboard() {
           { key: 'COMPLETED', label: 'Đã xong' },
           { key: 'CANCELLED', label: 'Đã hủy' },
         ].map(tab => (
-          <button
+          <Button
             key={tab.key}
             className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
             onClick={() => setFilter(tab.key)}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

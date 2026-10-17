@@ -6,7 +6,7 @@
 
 **Phiên bản hiện tại: `v1.2.4` — 17/10/2026.** Ứng dụng quản lý câu lạc bộ thể thao: lên lịch, bình chọn khung giờ, điểm danh, chia đội, chia tiền sân và quản lý thành viên.
 
-Bản 1.2.4 cập nhật cơ chế xác thực JWT, thu hồi phiên khi đổi mật khẩu, kiểm tra OTP và nhận diện **CSE HitDad**. Khi nâng cấp, các phiên đăng nhập cũ và các bước xác thực OTP đang dở sẽ hết hiệu lực. Xem [hướng dẫn phát hành và nâng cấp 1.2.4](docs/releases/v1.2.4.md).
+Bản 1.2.4 tích hợp giao diện gluestack UI mới, luồng admin duyệt thành viên, cải tiến chia đội và bản vá JWT/OTP của **CSE HitDad**. Khi nâng cấp, các phiên đăng nhập cũ và các bước xác thực OTP đang dở sẽ hết hiệu lực. Xem [hướng dẫn phát hành và nâng cấp 1.2.4](docs/releases/v1.2.4.md).
 
 ## Tính năng hiện tại
 
@@ -15,7 +15,7 @@ Bản 1.2.4 cập nhật cơ chế xác thực JWT, thu hồi phiên khi đổi 
 | Trận đấu | Admin tạo/sửa trận, địa điểm, link Google Maps, giới hạn người chơi và hạn bình chọn; hủy trận kèm lý do tối đa 500 ký tự. |
 | Khung giờ | Một trận có tối đa 20 lựa chọn. Thành viên chọn nhiều giờ phù hợp và có thể đề xuất thêm giờ khi bình chọn còn mở. Thêm giờ không tự tạo lượt tham gia. |
 | Bình chọn | Thành viên chọn `JOIN` hoặc `DECLINE`; admin có thể điều chỉnh/xóa vote. `JOIN` bị chặn khi còn khoản tiền sân chưa được xác nhận ở trận trước; vẫn cho phép báo vắng. |
-| Thành viên | Hồ sơ cá nhân, ảnh đại diện, số điện thoại, thông tin ngân hàng và ảnh QR; admin quản lý tier, vị trí thủ môn và thành viên. |
+| Thành viên | Tài khoản mới chờ admin duyệt trước khi truy cập CLB. Admin xem email và xử lý yêu cầu; thành viên thường không thấy email đăng ký của người khác. Hồ sơ hỗ trợ avatar, điện thoại, ngân hàng và QR. Số trận chỉ tính lượt đã điểm danh trong trận hoàn tất. |
 | Điểm danh | Khóa bình chọn, điểm danh riêng lẻ/hàng loạt, quản lý khách mời, trạng thái thi đấu và thanh toán của khách. |
 | Đội hình | Chia đội theo tier, ưu tiên lượt vote sớm, thủ môn và dự bị; xáo trộn và chỉnh phương án trước khi lưu. |
 | Thanh toán | Chia chi phí, đánh dấu đã chuyển tiền, người trả sân/admin xác nhận; tạo link VietQR PayOS và nhận webhook có kiểm tra chữ ký. |
@@ -33,6 +33,7 @@ Trạng thái khoản thanh toán: `PENDING` → `PAID` → `CONFIRMED`. Thành 
 - Đổi hoặc reset mật khẩu tăng `User.authVersion`, vô hiệu hóa mọi access/refresh token trước đó. Đổi mật khẩu trong trang hồ sơ cũng đăng xuất phiên hiện tại.
 - Đăng ký và khôi phục mật khẩu dùng OTP dạng **chuỗi sáu chữ số**, hiệu lực **5 phút**. Mỗi mã được thử tối đa **5 lần**, tính trong DB; mã mới nhất được dùng cho đúng mục đích và đúng email.
 - OTP hợp lệ cấp `verificationToken` để đăng ký hoặc `resetToken` để khôi phục; proof có hiệu lực **10 phút**, dùng một lần. Transaction và cập nhật có điều kiện ngăn hai request dùng đồng thời cùng một mã/proof.
+- Tài khoản mới có trạng thái `PENDING`, không được cấp token khi đăng ký. Chỉ tài khoản `APPROVED` được đăng nhập, refresh và truy cập API; admin xử lý yêu cầu thành `APPROVED` hoặc `REJECTED`.
 - API cập nhật hồ sơ dùng danh tính từ JWT đã xác thực; route quản trị kiểm tra vai trò trong DB.
 - Script tạo tài khoản demo bị chặn khi `NODE_ENV=production`. Tài khoản demo đã tồn tại không tự được đổi mật khẩu.
 
@@ -54,7 +55,7 @@ Backend còn dùng Helmet, HPP, làm chậm request sau 80 lượt/15 phút, gi�
 
 | Thành phần | Công nghệ |
 | --- | --- |
-| Frontend | React 19, Vite 8, React Router 7, CSS |
+| Frontend | React 19, Vite 8, React Router 7, gluestack UI Core v3, React Aria, React Native Web và CSS |
 | Backend | Node.js, Express 4, Prisma 6 |
 | Dữ liệu | PostgreSQL; cấu hình triển khai có thể dùng Neon |
 | Xác thực | JWT, bcryptjs, OTP email |
@@ -83,6 +84,8 @@ CSE_PunchDad/
 ├── render.yaml              # Backend Render
 └── package.json             # Script chạy toàn bộ dự án
 ```
+
+Giao diện dùng theme navy/vàng, điều hướng dưới màn hình mobile, modal hỗ trợ bàn phím và tải trang theo nhu cầu. Xem [tài liệu tích hợp UI](client/UI.md); `client/.npmrc` giữ cấu hình cài dependency cho các adapter web.
 
 ## Chạy trên máy
 
@@ -172,6 +175,8 @@ Migration mới `20261017090000_harden_auth_sessions`:
 | Đặt `used = true` cho mọi OTP/proof còn chưa dùng | Người đang đăng ký/reset phải yêu cầu mã mới |
 | Yêu cầu claim JWT mới trong mã ứng dụng | Mọi phiên cấp trước bản vá phải đăng nhập lại |
 
+Migration `20261013090000_add_membership_approval` thêm trạng thái duyệt: user đã tồn tại được giữ `APPROVED`, còn tài khoản tạo mới mặc định `PENDING`.
+
 Prisma sẽ áp dụng tất cả migration chưa chạy; nếu DB chưa có bảng phản hồi, migration `20261001160000_add_feedback` cũng được áp dụng. Migration bảo mật không xóa user, trận đấu, vote hay payment và không tự đổi mật khẩu người dùng.
 
 Backend Render được cấu hình trong `render.yaml`:
@@ -197,9 +202,9 @@ npm --prefix server test
 npm --prefix client run build
 ```
 
-`npm test` của backend chạy các kiểm tra JWT; nhóm cần PostgreSQL sẽ **skip** nếu không có `AUTH_SECURITY_TEST_DATABASE_URL`. Muốn chạy đủ nhóm integration, chuẩn bị DB riêng tên `cse_punchdad_auth_security` trên localhost, áp dụng migration vào DB đó và chạy theo [hướng dẫn kiểm thử](docs/releases/v1.2.4.md#kiểm-thử-bản-phát-hành). Không dùng DB production cho bộ kiểm thử này.
+`npm test` của backend chạy kiểm tra JWT, chia đội, email/số trận thành viên và duyệt thành viên; nhóm cần PostgreSQL sẽ **skip** nếu không có `AUTH_SECURITY_TEST_DATABASE_URL`. Muốn chạy đủ nhóm integration, chuẩn bị DB riêng tên `cse_punchdad_auth_security` trên localhost, áp dụng migration vào DB đó và chạy theo [hướng dẫn kiểm thử](docs/releases/v1.2.4.md#kiểm-thử-bản-phát-hành). Không dùng DB production cho bộ kiểm thử này.
 
-Kết quả kiểm chứng bản vá ngày 17/10/2026: **17 test đạt** khi chạy với PostgreSQL tạm, migration áp dụng thành công và frontend build thành công. Đây là bằng chứng local, không xác nhận bản vá đã được deploy hay nguyên nhân chính xác của sự cố trên production.
+Kết quả kiểm chứng bản vá ngày 17/10/2026: **54 test backend đạt** khi chạy với PostgreSQL tạm; **8 test frontend đạt**, migration áp dụng thành công và frontend build thành công. Đây là bằng chứng local, không xác nhận bản vá đã được deploy hay nguyên nhân chính xác của sự cố trên production.
 
 ## API hiện tại
 
@@ -212,7 +217,7 @@ Base path: `/api`. Route cần đăng nhập nhận `Authorization: Bearer <acce
 | GET | `/api/health` | Public | Kiểm tra tiến trình API |
 | POST | `/api/auth/send-otp` | Public, OTP limiter | Gửi OTP đăng ký |
 | POST | `/api/auth/verify-otp` | Public, auth limiter | Nhận `verificationToken` sau khi xác minh OTP |
-| POST | `/api/auth/register` | Public, auth limiter, validation | Tạo thành viên từ proof đăng ký |
+| POST | `/api/auth/register` | Public, auth limiter, validation | Tạo yêu cầu `PENDING` từ proof đăng ký; không cấp JWT |
 | POST | `/api/auth/login` | Public, auth limiter, validation | Đăng nhập bằng username hoặc email và mật khẩu |
 | POST | `/api/auth/refresh` | Refresh token, auth limiter | Cấp cặp token mới nếu user/phiên còn hợp lệ |
 | POST | `/api/auth/forgot-password/send-otp` | Public, OTP limiter | Tìm tài khoản và gửi OTP khôi phục |
@@ -270,7 +275,10 @@ Ví dụ tham gia: `{ "sessionId": "<id>", "status": "JOIN", "timeSlotIds": ["<s
 
 | Phương thức | Endpoint | Quyền | Chức năng |
 | --- | --- | --- | --- |
-| GET | `/api/users/members` | Đăng nhập | Danh sách thành viên |
+| GET | `/api/users/members` | Đăng nhập | Thành viên đã duyệt; chỉ admin nhận thêm email |
+| GET | `/api/users/membership-requests` | Admin | Danh sách yêu cầu chờ duyệt |
+| GET | `/api/users/membership-requests/count` | Admin | Số yêu cầu chờ duyệt |
+| PUT | `/api/users/membership-requests/:userId` | Admin | Duyệt/từ chối với `decision=APPROVED/REJECTED` |
 | PUT | `/api/users/profile` | Đăng nhập, chính mình | Tên hiển thị, điện thoại, ngân hàng, vị trí thủ môn |
 | PUT | `/api/users/change-password` | Đăng nhập, mật khẩu hiện tại | Đổi mật khẩu và thu hồi mọi phiên cũ |
 | PUT / DELETE | `/api/users/avatar` | Đăng nhập, chính mình | Tải/xóa ảnh đại diện |
@@ -289,6 +297,8 @@ Ví dụ tham gia: `{ "sessionId": "<id>", "status": "JOIN", "timeSlotIds": ["<s
 
 | Model / trường | Vai trò |
 | --- | --- |
+| `User.membershipStatus` | `PENDING`, `APPROVED`, `REJECTED`; chỉ trạng thái đã duyệt có quyền truy cập CLB |
+| `User.membershipReviewedAt` / `membershipReviewedBy` | Thời điểm và ID admin xử lý yêu cầu |
 | `User.authVersion` | Phiên bản xác thực; không trả ra trong hồ sơ công khai |
 | `OtpVerification.attempts` | Số lần thử của challenge; mặc định `0` |
 | `OtpVerification.otp` | Mã/proof được phân loại nội bộ theo mục đích, không phải dữ liệu công khai |
@@ -310,6 +320,8 @@ Enum `MAYBE` vẫn tồn tại để tương thích dữ liệu cũ; giao diện
 - Sửa OTP nhận sai kiểu; giới hạn năm lần thử theo challenge; ngăn dùng lại mã/proof qua request đồng thời.
 - Thêm migration bảo mật, vô hiệu hóa OTP/proof trước bản vá và yêu cầu đăng nhập lại.
 - Chặn seed demo trên production; bổ sung bộ kiểm thử bảo mật với PostgreSQL riêng.
+- Tích hợp nhánh `optimizeSplitTeamAlgorithm`: gluestack UI, React Aria, giao diện responsive, duyệt thành viên và cải tiến thuật toán chia đội.
+- Admin xem email; số trận thành viên dựa vào điểm danh ở trận hoàn tất; giữ đúng vòng đời trận khi xác nhận thanh toán.
 - Cập nhật logo, favicon, banner và tên hiển thị CSE HitDad; footer hiển thị `v1.2.4`.
 - Viết lại hướng dẫn cấu hình/nâng cấp, đồng bộ API với route thật, bổ sung tài liệu phản hồi và triển khai.
 - Đồng bộ version tại root, client, server và các lockfile. Chi tiết: [release notes 1.2.4](docs/releases/v1.2.4.md).

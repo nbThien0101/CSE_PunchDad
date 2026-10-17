@@ -1,5 +1,5 @@
 {
-  "name": "cse-punchdad-client",
+  "name": "cse-hitdad-client",
   "private": true,
   "version": "1.2.4",
   "type": "module",
@@ -9,9 +9,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gluestack-ui/core": "3.0.16",
+    "@gluestack-ui/utils": "3.0.19",
+    "@react-aria/dialog": "3.6.1",
+    "@react-aria/focus": "3.22.1",
+    "@react-aria/interactions": "3.28.1",
+    "@react-aria/overlays": "3.32.1",
+    "@react-aria/ssr": "3.10.1",
+    "@react-aria/utils": "3.34.1",
     "react": "^19.1.0",
+    "react-aria": "3.53.1",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.18.1"
+    "react-native-web": "0.21.2",
+    "react-router-dom": "^7.18.1",
+    "react-stately": "3.39.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.3",

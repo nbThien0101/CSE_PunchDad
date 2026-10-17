@@ -48,10 +48,7 @@ export function AuthProvider({ children }) {
     if (data.error || data.errors) {
       throw new Error(data.error || data.errors[0]?.msg || 'Registration failed');
     }
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    setUser(data.user);
-    return data.user;
+    return data;
   };
 
   const logout = () => {

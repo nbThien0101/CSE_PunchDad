@@ -1,5 +1,6 @@
 const { verifyToken } = require('../services/token.service');
 const { PrismaClient } = require('@prisma/client');
+const { membershipAccessError } = require('../utils/membership');
 
 const prisma = new PrismaClient();
 
@@ -27,6 +28,7 @@ const authenticate = async (req, res, next) => {
         email: true,
         displayName: true,
         role: true,
+        membershipStatus: true,
         tier: true,
         isGoalkeeper: true,
         phone: true,
@@ -38,6 +40,9 @@ const authenticate = async (req, res, next) => {
     if (!user || user.authVersion !== decoded.authVersion) {
       return res.status(401).json({ error: 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.' });
     }
+
+    const accessError = membershipAccessError(user);
+    if (accessError) return res.status(403).json(accessError);
 
     const { authVersion, ...publicUser } = user;
     req.user = publicUser;

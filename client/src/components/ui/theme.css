@@ -1,0 +1,108 @@
+/* HitDad Club: navy from the CSE crest, gold accents, clear matchday controls. */
+:root {
+  --primary-50: #edf4fc;
+  --primary-100: #dae8f8;
+  --primary-200: #b8d2ef;
+  --primary-300: #87b2de;
+  --primary-400: #558fca;
+  --primary-500: #245c94;
+  --primary-600: #194b7c;
+  --primary-700: #163d64;
+  --primary-800: #142e4c;
+  --primary-900: #10243d;
+  --accent-400: #e6c87d;
+  --accent-500: #d5af58;
+  --accent-600: #a77c24;
+  --bg-primary: #f4f6f9;
+  --border-color: #dfe5ed;
+  --text-primary: #15283e;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 3px 12px rgb(16 36 61 / 4%);
+  --shadow-md: 0 8px 24px rgb(16 36 61 / 7%);
+  --shadow-xl: 0 16px 48px rgb(16 36 61 / 12%);
+}
+
+.hitdad-app { min-height: 100dvh; }
+.ui-field-root { display: contents; }
+.ui-button { touch-action: manipulation; }
+.ui-button:disabled { cursor: not-allowed; }
+.ui-button:focus-visible, .ui-select:focus-visible, a:focus-visible {
+  outline: 3px solid var(--primary-300);
+  outline-offset: 3px;
+}
+.ui-input:focus-visible, .ui-textarea:focus-visible {
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+}
+.ui-input, .ui-select, .ui-textarea { max-width: 100%; }
+.ui-button-primary { background: var(--primary-500); color: white; }
+.ui-button-outline { background: white; color: var(--primary-600); border: 1px solid var(--border-color); }
+.ui-card { box-shadow: var(--shadow-sm); }
+.ui-badge { font-variant-numeric: tabular-nums; }
+.dashboard-header {
+  background: linear-gradient(115deg, #10243d, #194b7c);
+  padding: 30px;
+  border-radius: 22px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.dashboard-header .page-title { color: white; font-size: clamp(1.4rem, 3vw, 2rem); }
+.dashboard-header .page-subtitle { color: #d4e3f3; }
+.dashboard-header .btn-primary { background: #e6c87d; color: #10243d; border-color: #e6c87d; flex-shrink: 0; }
+.brand-name { background: none; -webkit-text-fill-color: initial; color: var(--primary-900); }
+.stat-card, .member-stat { box-shadow: var(--shadow-sm); }
+.stat-number, .member-stat-number { font-variant-numeric: tabular-nums; }
+.session-card { border-top: 3px solid var(--primary-500); }
+.session-card.cancelled { border-top-color: var(--gray-300); }
+.auth-page { min-height: 100dvh; }
+.auth-card { box-shadow: var(--shadow-xl); }
+.mobile-bottom-nav { display: none; }
+.modal-overlay { height: 100dvh !important; width: 100% !important; }
+.modal-wrapper > * { max-height: calc(100dvh - 48px); overflow-y: auto; }
+
+@media (max-width: 768px) {
+  .container { padding-left: 16px; padding-right: 16px; }
+  .dashboard-header { padding: 24px 20px; align-items: stretch; gap: 20px; }
+  .dashboard-header .btn { align-self: flex-start; min-height: 44px; }
+  .btn, .filter-tab, .vote-btn, .time-slot-option, .menu-item { min-height: 44px; }
+  .form-input, .form-select, .form-textarea, .ui-input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]), .ui-select, .ui-textarea { font-size: 16px; }
+  .ui-input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]) { min-height: 44px; }
+  .auth-card { padding: 28px 22px; }
+  .members-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .member-stat:last-child { grid-column: 1 / -1; }
+  .main-content { padding-bottom: calc(84px + env(safe-area-inset-bottom)); min-height: calc(100dvh - 56px); }
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 150;
+    background: rgb(255 255 255 / 97%);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-color);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+    gap: 4px;
+  }
+  .mobile-bottom-nav a { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 48px; border-radius: 12px; font-size: 11px; color: var(--text-secondary); }
+  .mobile-bottom-nav a.active { background: var(--primary-50); color: var(--primary-600); font-weight: 700; }
+  .mobile-bottom-nav svg { width: 21px; height: 21px; }
+  .feedback-fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .footer { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .modal-overlay { padding: 12px !important; }
+  .modal-wrapper > * { max-height: calc(100dvh - 24px); }
+  .toast-viewport { top: auto; bottom: calc(88px + env(safe-area-inset-bottom)); right: 16px; }
+  .membership-requests { padding: 18px; }
+  .membership-request-actions { width: 100%; }
+  .membership-request-actions .btn { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 480px) {
+  .hitdad-app .otp-inputs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; width: 100%; }
+  .hitdad-app .otp-input { width: 100%; min-width: 0; padding: 0; font-size: 20px; }
+}

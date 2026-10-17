@@ -86,11 +86,11 @@ test('auth security against isolated PostgreSQL', { skip: !testDatabase }, async
   const email = `victim-${suffix}@example.test`;
   const password = 'original-test-password';
   const victim = await db.user.create({ data: {
-    username: `victim${suffix}`, email, displayName: 'Victim test',
+    username: `victim${suffix}`, email, displayName: 'Victim test', membershipStatus: 'APPROVED',
     passwordHash: await bcrypt.hash(password, 4),
   } });
   const other = await db.user.create({ data: {
-    username: `other${suffix}`, email: `other-${suffix}@example.test`, displayName: 'Other test',
+    username: `other${suffix}`, email: `other-${suffix}@example.test`, displayName: 'Other test', membershipStatus: 'APPROVED',
     passwordHash: await bcrypt.hash('other-password', 4),
   } });
   const challenge = (value, overrides = {}) => db.otpVerification.create({ data: {
@@ -222,7 +222,18 @@ test('auth security against isolated PostgreSQL', { skip: !testDatabase }, async
       assert.equal(results.filter(result => result.statusCode === 400).length, 1);
       const created = results.find(result => result.statusCode === 201);
       assert.equal(created.data.user.authVersion, undefined);
-      assert.equal((await authenticate(created.data.accessToken)).accepted, true);
+      assert.equal(created.data.user.membershipStatus, 'PENDING');
+      assert.equal(created.data.accessToken, undefined);
+      assert.equal(created.data.refreshToken, undefined);
+      const pendingLogin = await invoke(auth.login, { body: { username: body.username, password: body.password } });
+      assert.equal(pendingLogin.statusCode, 403);
+      const approved = await db.user.update({ where: { email: registrationEmail }, data: { membershipStatus: 'APPROVED' } });
+      const approvedLogin = await invoke(auth.login, { body: { username: body.username, password: body.password } });
+      assert.equal(approvedLogin.statusCode, 200);
+      assert.equal((await authenticate(approvedLogin.data.accessToken)).accepted, true);
+      await db.user.update({ where: { id: approved.id }, data: { membershipStatus: 'REJECTED' } });
+      assert.equal((await authenticate(approvedLogin.data.accessToken)).res.statusCode, 403);
+      assert.equal((await invoke(auth.refresh, { body: { refreshToken: approvedLogin.data.refreshToken } })).statusCode, 403);
       await db.user.deleteMany({ where: { email: registrationEmail } });
       await db.otpVerification.deleteMany({ where: { email: registrationEmail } });
     });

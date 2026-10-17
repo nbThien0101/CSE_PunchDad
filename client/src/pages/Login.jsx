@@ -1,3 +1,4 @@
+import { Alert, Button, Card, Input } from '../components/ui/index.jsx';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +30,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card animate-slide-up">
+      <Card className="auth-card animate-slide-up">
         <div className="auth-header">
           <img src="/logo.png" alt="CSE HitDad" className="auth-logo-img" />
           <h1 className="auth-title">Chào mừng trở lại!</h1>
@@ -37,20 +38,20 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="alert alert-error">
+          <Alert className="alert alert-error">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span>{error}</span>
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label className="form-label" htmlFor="login-username">Tên đăng nhập hoặc Email</label>
-            <input
+            <Input
               id="login-username"
               type="text"
               className="form-input"
@@ -71,7 +72,7 @@ export default function Login() {
               </Link>
             </div>
             <div className="password-input-wrapper">
-              <input
+              <Input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
                 className="form-input password-input"
@@ -81,7 +82,7 @@ export default function Login() {
                 required
                 autoComplete="current-password"
               />
-              <button
+              <Button
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
@@ -99,11 +100,11 @@ export default function Login() {
                     <circle cx="12" cy="12" r="3"></circle>
                   </svg>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             className="btn btn-primary btn-lg btn-block"
             disabled={loading}
@@ -111,13 +112,13 @@ export default function Login() {
           >
             {loading ? <span className="spinner spinner-sm"></span> : null}
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
+          </Button>
         </form>
 
         <p className="auth-switch">
           Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

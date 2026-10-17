@@ -1,3 +1,4 @@
+import { Alert, Badge, Button, Card, Input } from '../ui/index.jsx';
 import { useState, useEffect, useRef } from 'react';
 import { sessionsAPI } from '../../services/api';
 import { swapFieldPlayers } from '../../utils/teamBalance';
@@ -149,7 +150,7 @@ export default function TeamGeneratorModal({
 
   return (
     <Modal isOpen={true} onClose={onClose}>
-      <div className="team-gen-modal card animate-scale-up" onClick={(e) => e.stopPropagation()}>
+      <Card className="team-gen-modal card animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="team-gen-header">
           <div>
@@ -159,13 +160,13 @@ export default function TeamGeneratorModal({
               Cân bằng lực lượng theo Tier trình độ · Mỗi đội 5 người (1 Thủ môn + 4 Cầu thủ)
             </p>
           </div>
-          <button className="modal-close-btn" onClick={onClose} type="button">✕</button>
+          <Button className="modal-close-btn" onClick={onClose} type="button">✕</Button>
         </div>
 
         {/* Body */}
         <div className="team-gen-body">
-          {error && <div className="alert alert-error"><span>{error}</span></div>}
-          {success && <div className="alert alert-success"><span>{success}</span></div>}
+          {error && <Alert className="alert alert-error"><span>{error}</span></Alert>}
+          {success && <Alert className="alert alert-success"><span>{success}</span></Alert>}
 
           {/* Controls Bar */}
           <div className="team-gen-controls">
@@ -175,7 +176,7 @@ export default function TeamGeneratorModal({
                 {(suggestions?.available || [2, 3, 4, 5]).map(count => {
                   const isRec = count === suggestions?.recommended;
                   return (
-                    <button
+                    <Button
                       key={count}
                       type="button"
                       className={`team-pill ${teamCount === count ? 'active' : ''}`}
@@ -190,7 +191,7 @@ export default function TeamGeneratorModal({
                     >
                       {count} đội
                       {isRec && <span className="pill-rec-tag">Gợi ý</span>}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -198,7 +199,7 @@ export default function TeamGeneratorModal({
 
             <div className="control-group" style={{ display: 'flex', alignItems: 'center' }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#334155' }}>
-                <input
+                <Input
                   type="checkbox"
                   checked={onlyAttended}
                   disabled={loading || saving}
@@ -212,7 +213,7 @@ export default function TeamGeneratorModal({
               </label>
             </div>
 
-            <button
+            <Button
               type="button"
               className="btn-run-balance"
               onClick={() => handleRunBalance(teamCount, onlyAttended)}
@@ -233,7 +234,7 @@ export default function TeamGeneratorModal({
                   {generatedData ? 'Xáo trộn & Chia lại' : 'Tự động cân bằng đội'}
                 </>
               )}
-            </button>
+            </Button>
           </div>
 
           {/* Quick GK Settings */}
@@ -263,20 +264,20 @@ export default function TeamGeneratorModal({
                     <span className="voter-chip-order">#{i + 1}</span>
                     <span style={{ fontWeight: 600 }}>{user.displayName}</span>
                     {user.tier ? (
-                      <span className={`badge member-tier-badge tier-${user.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                      <Badge className={`badge member-tier-badge tier-${user.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
                         {user.tier}
-                      </span>
+                      </Badge>
                     ) : (
                       <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>-</span>
                     )}
-                    <button
+                    <Button
                       type="button"
                       className={`voter-chip-gk-toggle ${isGK ? 'active' : ''}`}
                       onClick={() => handleToggleGK(user.id, user.isGoalkeeper)}
                       title={isGK ? 'Đã chọn làm Thủ môn' : 'Đặt làm Thủ môn'}
                     >
                       GK
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -298,20 +299,20 @@ export default function TeamGeneratorModal({
                         Khách
                       </span>
                       {g.tier ? (
-                        <span className={`badge member-tier-badge tier-${g.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                        <Badge className={`badge member-tier-badge tier-${g.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
                           {g.tier}
-                        </span>
+                        </Badge>
                       ) : (
                         <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>-</span>
                       )}
-                      <button
+                      <Button
                         type="button"
                         className={`voter-chip-gk-toggle ${isGK ? 'active' : ''}`}
                         onClick={() => handleToggleGK(guestId, g.isGoalkeeper)}
                         title={isGK ? 'Đã chọn làm Thủ môn' : 'Đặt làm Thủ môn'}
                       >
                         GK
-                      </button>
+                      </Button>
                     </div>
                   );
                 })}
@@ -345,7 +346,7 @@ export default function TeamGeneratorModal({
 
                     <div className="team-players-list">
                       {team.missingPlayersCount > 0 && (
-                        <div className="alert alert-error">Còn thiếu {team.missingPlayersCount} cầu thủ sân</div>
+                        <Alert className="alert alert-error">Còn thiếu {team.missingPlayersCount} cầu thủ sân</Alert>
                       )}
                       {/* Goalkeeper */}
                       {team.goalkeeper && (
@@ -362,9 +363,9 @@ export default function TeamGeneratorModal({
                           </div>
                           <div className="player-tags">
                             {team.goalkeeper.tier && (
-                              <span className={`badge member-tier-badge tier-${team.goalkeeper.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 4px' }}>
+                              <Badge className={`badge member-tier-badge tier-${team.goalkeeper.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 4px' }}>
                                 {team.goalkeeper.tier}
-                              </span>
+                              </Badge>
                             )}
                             {team.goalkeeper.isShared || team.goalkeeper.isRotating || team.goalkeeper.isPlaceholder ? (
                               <span className="role-badge-shared-gk" title={team.goalkeeper.isShared
@@ -401,9 +402,9 @@ export default function TeamGeneratorModal({
                             </div>
                             <div className="player-tags">
                               {p.tier && (
-                                <span className={`badge member-tier-badge tier-${p.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 4px' }}>
+                                <Badge className={`badge member-tier-badge tier-${p.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 4px' }}>
                                   {p.tier}
-                                </span>
+                                </Badge>
                               )}
                               {isSelectedForSwap && (
                                 <span style={{ fontSize: '0.65rem', color: 'var(--primary-600)', fontWeight: 700 }}>
@@ -444,10 +445,10 @@ export default function TeamGeneratorModal({
 
         {/* Footer */}
         <div className="team-gen-footer">
-          <button type="button" className="btn-modal-cancel" onClick={onClose} disabled={saving}>
+          <Button type="button" className="btn-modal-cancel" onClick={onClose} disabled={saving}>
             Hủy bỏ
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="btn-modal-submit"
             onClick={handleSaveTeams}
@@ -464,9 +465,9 @@ export default function TeamGeneratorModal({
                 Lưu danh sách đội
               </>
             )}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </Modal>
   );
 }

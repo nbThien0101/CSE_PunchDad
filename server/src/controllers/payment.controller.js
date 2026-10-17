@@ -16,11 +16,12 @@ const checkAndCompleteSession = async (sessionId) => {
   });
 
   if (pendingCount === 0) {
-    await prisma.session.update({
-      where: { id: sessionId },
+    // A late payment confirmation must not reopen a cancelled session.
+    const result = await prisma.session.updateMany({
+      where: { id: sessionId, status: 'BOOKED' },
       data: { status: 'COMPLETED' },
     });
-    return true;
+    return result.count > 0;
   }
   return false;
 };
