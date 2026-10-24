@@ -373,6 +373,40 @@ export const usersAPI = {
     return res.json();
   },
 
+  exportMembersExcel: async () => {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`${API_BASE}/users/export-excel`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Xuất file Excel thất bại');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    const disposition = res.headers.get('content-disposition');
+    let filename = 'Danh_sach_thanh_vien_CSE.xlsx';
+    if (disposition) {
+      const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    return { success: true, filename };
+  },
+
   updateTier: async (userId, tier) => {
     const res = await fetchWithAuth(`/users/${userId}/tier`, {
       method: 'PUT',

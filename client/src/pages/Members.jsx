@@ -36,6 +36,7 @@ export default function Members() {
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState('');
   const [reviewingId, setReviewingId] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -79,6 +80,21 @@ export default function Members() {
     } finally {
       setReviewingId(null);
       window.dispatchEvent(new Event('membership-requests-changed'));
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!isAdmin) return;
+    setExporting(true);
+    setError('');
+    try {
+      const result = await usersAPI.exportMembersExcel();
+      setSuccess(`Đã xuất file "${result.filename}" thành công!`);
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err) {
+      setError(err.message || 'Xuất file Excel danh sách thành viên thất bại');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -206,12 +222,30 @@ export default function Members() {
   return (
     <div className="members-page animate-fade-in">
       <div className="members-header">
-        <div>
+        <div className="members-header-title">
           <h1 className="page-title">Thành viên câu lạc bộ</h1>
           <p className="page-subtitle">
             {stats.total} thành viên · {stats.goalkeepers} thủ môn · {stats.withTier} đã xếp hạng trình độ
           </p>
         </div>
+        {isAdmin && (
+          <div className="members-header-actions">
+            <Button
+              className="btn btn-primary btn-export-excel"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              id="btn-export-members-excel"
+              title="Xuất danh sách thành viên ra file Excel"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>{exporting ? 'Đang xuất Excel...' : 'Xuất file Excel'}</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {isAdmin && (

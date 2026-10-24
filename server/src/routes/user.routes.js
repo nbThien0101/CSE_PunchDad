@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getAllMembers, updateUserTier, updateUserGoalkeeper, deleteMember, updateProfile, uploadQRCode, getQRCode, deleteQRCode, uploadAvatar, deleteAvatar, changePassword } = require('../controllers/user.controller');
+const { getAllMembers, exportMembersExcel, updateUserTier, updateUserGoalkeeper, deleteMember, updateProfile, uploadQRCode, getQRCode, deleteQRCode, uploadAvatar, deleteAvatar, changePassword } = require('../controllers/user.controller');
 const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 const { getMembershipRequests, getMembershipRequestCount, reviewMembershipRequest } = require('../controllers/user.controller');
 
@@ -7,6 +7,7 @@ const { getMembershipRequests, getMembershipRequestCount, reviewMembershipReques
 router.use(authenticate);
 
 router.get('/members', getAllMembers);
+router.get('/export-excel', requireAdmin, exportMembersExcel);
 router.get('/membership-requests', requireAdmin, getMembershipRequests);
 router.get('/membership-requests/count', requireAdmin, getMembershipRequestCount);
 router.put('/membership-requests/:userId', requireAdmin, reviewMembershipRequest);

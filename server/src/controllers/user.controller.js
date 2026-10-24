@@ -489,11 +489,90 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/users/export-excel
+ * Xuất danh sách thành viên ra file Excel (Chỉ dành cho ADMIN)
+ */
+const exportMembersExcel = async (req, res, next) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Chỉ ban cán sự (Admin) mới có quyền xuất file danh sách thành viên' });
+    }
+
+    const [members, pendingRequests] = await Promise.all([
+      prisma.user.findMany({
+        where: { membershipStatus: 'APPROVED' },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          displayName: true,
+          role: true,
+          tier: true,
+          isGoalkeeper: true,
+          phone: true,
+          bankInfo: true,
+          membershipStatus: true,
+          createdAt: true,
+          _count: {
+            select: {
+              votes: {
+                where: {
+                  status: 'JOIN',
+                  isCheckedIn: true,
+                  session: { status: 'COMPLETED' },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ role: 'asc' }, { displayName: 'asc' }],
+      }),
+      prisma.user.findMany({
+        where: { membershipStatus: 'PENDING', role: 'MEMBER' },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          displayName: true,
+          phone: true,
+          createdAt: true,
+          membershipStatus: true,
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      }),
+    ]);
+
+    const { generateMembersExcelWorkbook } = require('../services/excel.service');
+    const buffer = await generateMembersExcelWorkbook({
+      members,
+      pendingRequests,
+      exportedBy: req.user.displayName || req.user.username || 'Admin',
+    });
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const filename = `Danh_sach_thanh_vien_CSE_${timestamp}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMembershipRequests,
   getMembershipRequestCount,
   reviewMembershipRequest,
   getAllMembers,
+  exportMembersExcel,
   updateUserTier,
   updateUserGoalkeeper,
   deleteMember,
