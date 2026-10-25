@@ -6,6 +6,7 @@ const {
   createPayOSLink,
   handlePayOSWebhook,
   checkPayOSStatus,
+  confirmPayOSWebhook,
 } = require('../controllers/payment.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 
@@ -25,6 +26,7 @@ router.put('/:id/mark-paid', markAsPaid);
 router.put('/:id/confirm', confirmPayment);
 
 // PayOS Endpoints
+router.post('/payos-confirm-webhook', confirmPayOSWebhook);
 router.post('/:id/payos-link', createPayOSLink);
 router.get('/:id/payos-status', checkPayOSStatus);
 

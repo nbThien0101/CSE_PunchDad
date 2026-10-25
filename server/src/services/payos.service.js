@@ -126,6 +126,19 @@ const cancelPaymentLink = async (orderCode, cancellationReason = 'Tạo mã than
   }
 };
 
+/**
+ * Đăng ký / Xác nhận Webhook URL với PayOS
+ * @param {string} webhookUrl
+ */
+const confirmWebhook = async (webhookUrl) => {
+  const payos = getPayOS();
+  if (!payos) {
+    throw new Error('Cổng thanh toán PayOS chưa được cấu hình.');
+  }
+
+  return await payos.webhooks.confirm(webhookUrl);
+};
+
 module.exports = {
   getPayOS,
   generateOrderCode,
@@ -134,4 +147,5 @@ module.exports = {
   verifyWebhookData,
   getPaymentLinkInformation,
   cancelPaymentLink,
+  confirmWebhook,
 };

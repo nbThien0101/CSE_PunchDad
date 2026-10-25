@@ -60,6 +60,38 @@ const getSessionPayments = async (req, res, next) => {
       orderBy: { status: 'asc' },
     });
 
+    // Tự động đối soát với PayOS cho các khoản PENDING đã tạo orderCode (phòng trường hợp Webhook bị trễ hoặc user tắt modal)
+    const pendingWithOrderCode = payments.filter(p => p.status === 'PENDING' && p.orderCode);
+    if (pendingWithOrderCode.length > 0) {
+      let anyConfirmed = false;
+      await Promise.all(
+        pendingWithOrderCode.map(async (p) => {
+          try {
+            const info = await payosService.getPaymentLinkInformation(Number(p.orderCode));
+            if (info && info.status === 'PAID') {
+              await prisma.payment.update({
+                where: { id: p.id },
+                data: {
+                  status: 'CONFIRMED',
+                  paidAt: p.paidAt || new Date(),
+                  confirmedAt: new Date(),
+                },
+              });
+              p.status = 'CONFIRMED';
+              p.confirmedAt = new Date();
+              anyConfirmed = true;
+            }
+          } catch (checkErr) {
+            // Không làm gián đoạn API nếu PayOS gặp lỗi kết nối tạm thời
+          }
+        })
+      );
+
+      if (anyConfirmed) {
+        await checkAndCompleteSession(sessionId);
+      }
+    }
+
     const summary = {
       totalCost: session.totalCost,
       pending: payments.filter(p => p.status === 'PENDING').length,
@@ -315,7 +347,10 @@ const handlePayOSWebhook = async (req, res) => {
 
       const payment = await prisma.payment.findFirst({
         where: {
-          orderCode: BigInt(orderCodeNum),
+          OR: [
+            ...(orderCodeNum ? [{ orderCode: BigInt(orderCodeNum) }] : []),
+            ...(webhookData.paymentLinkId ? [{ paymentLinkId: String(webhookData.paymentLinkId) }] : []),
+          ],
         },
       });
 
@@ -425,6 +460,27 @@ const checkPayOSStatus = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/payments/payos-confirm-webhook
+ * Đăng ký / Xác thực Webhook URL với PayOS
+ */
+const confirmPayOSWebhook = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Chỉ Admin mới có quyền cấu hình Webhook' });
+    }
+
+    const defaultBackendUrl = process.env.BACKEND_URL || 'https://cse-punchdad-api.onrender.com';
+    const targetWebhookUrl = req.body?.webhookUrl || `${defaultBackendUrl}/api/payments/payos-webhook`;
+
+    const result = await payosService.confirmWebhook(targetWebhookUrl);
+    res.json({ message: 'Đăng ký Webhook với PayOS thành công', result, webhookUrl: targetWebhookUrl });
+  } catch (error) {
+    console.error('Confirm PayOS Webhook Error:', error);
+    res.status(400).json({ error: error.message || 'Không thể đăng ký Webhook với PayOS' });
+  }
+};
+
 module.exports = {
   getSessionPayments,
   markAsPaid,
@@ -432,4 +488,5 @@ module.exports = {
   createPayOSLink,
   handlePayOSWebhook,
   checkPayOSStatus,
+  confirmPayOSWebhook,
 };

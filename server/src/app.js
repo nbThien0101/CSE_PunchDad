@@ -79,6 +79,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// PayOS Webhook aliases (hỗ trợ nhiều format URL khi cấu hình trên PayOS Dashboard)
+const { handlePayOSWebhook } = require('./controllers/payment.controller');
+app.post('/payos-webhook', handlePayOSWebhook);
+app.post('/api/payos-webhook', handlePayOSWebhook);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/votes', voteRoutes);
