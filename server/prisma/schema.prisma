@@ -244,6 +244,11 @@ model Payment {
   orderCode     BigInt?       @unique @map("order_code")
   checkoutUrl   String?       @map("checkout_url")
   paymentLinkId String?       @map("payment_link_id")
+  accountNumber String?       @map("account_number")
+  accountName   String?       @map("account_name")
+  bin           String?       @map("bin")
+  qrCode        String?       @map("qr_code") @db.Text
+  description   String?       @map("description")
   paidAt        DateTime?     @map("paid_at")
   confirmedAt   DateTime?     @map("confirmed_at")
 

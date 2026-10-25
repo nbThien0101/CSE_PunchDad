@@ -191,7 +191,7 @@ const createPayOSLink = async (req, res, next) => {
     const returnUrl = `${clientUrl}/sessions/${payment.sessionId}?payment_status=success`;
     const cancelUrl = `${clientUrl}/sessions/${payment.sessionId}?payment_status=cancelled`;
 
-    // Nếu đã có orderCode trước đó, thử lấy thông tin link hiện tại
+    // Nếu đã có orderCode trước đó, kiểm tra xem khoản thanh toán đã hoàn tất hoặc có thể tái sử dụng không
     if (payment.orderCode) {
       try {
         const existingInfo = await payosService.getPaymentLinkInformation(Number(payment.orderCode));
@@ -213,23 +213,30 @@ const createPayOSLink = async (req, res, next) => {
             });
           }
 
-          if (existingInfo.status === 'PENDING') {
-            // Vẫn đang chờ thanh toán -> trả về QR & link cũ
+          // Nếu đơn hàng đang PENDING và trong DB ĐÃ LƯU thông tin tài khoản + QR:
+          // Tái sử dụng thông tin từ DB, KHÔNG gọi API tạo link mới (chống spam/DDoS & không tạo rác đơn hàng)
+          if (existingInfo.status === 'PENDING' && payment.accountNumber) {
             return res.json({
               payment,
               orderCode: Number(payment.orderCode),
-              checkoutUrl: payment.checkoutUrl || existingInfo.checkoutUrl,
-              qrCode: existingInfo.qrCode,
-              amount: existingInfo.amount,
-              description: existingInfo.description,
-              accountName: existingInfo.accountName,
-              accountNumber: existingInfo.accountNumber,
-              bin: existingInfo.bin,
+              checkoutUrl: payment.checkoutUrl,
+              qrCode: payment.qrCode,
+              amount: Number(payment.amount),
+              description: payment.description || `CSE ${payment.user?.displayName || 'Tien san'}`,
+              accountName: payment.accountName,
+              accountNumber: payment.accountNumber,
+              bin: payment.bin,
             });
+          }
+
+          // Nếu đơn hàng cũ đang PENDING nhưng thiếu thông tin (dữ liệu cũ tạo trước khi migrate),
+          // hủy link cũ trên PayOS để tạo link mới và lưu vào DB
+          if (existingInfo.status === 'PENDING') {
+            await payosService.cancelPaymentLink(Number(payment.orderCode), 'Tạo mã thanh toán mới');
           }
         }
       } catch (checkErr) {
-        console.warn('Could not reuse existing PayOS link, creating new one:', checkErr.message);
+        console.warn('Could not verify or reuse existing PayOS link, creating fresh link:', checkErr.message);
       }
     }
 
@@ -245,13 +252,18 @@ const createPayOSLink = async (req, res, next) => {
       cancelUrl,
     });
 
-    // Cập nhật payment trong DB
+    // Cập nhật payment trong DB (lưu toàn bộ thông tin thanh toán để tái sử dụng)
     const updatedPayment = await prisma.payment.update({
       where: { id },
       data: {
         orderCode: BigInt(newOrderCode),
         checkoutUrl: linkResponse.checkoutUrl,
         paymentLinkId: linkResponse.paymentLinkId,
+        accountNumber: linkResponse.accountNumber,
+        accountName: linkResponse.accountName,
+        bin: linkResponse.bin,
+        qrCode: linkResponse.qrCode,
+        description: linkResponse.description,
       },
     });
 

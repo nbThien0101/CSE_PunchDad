@@ -109,6 +109,23 @@ const getPaymentLinkInformation = async (orderCode) => {
   return await payos.paymentRequests.get(orderCode);
 };
 
+/**
+ * Hủy link thanh toán PayOS theo orderCode
+ * @param {number} orderCode
+ * @param {string} cancellationReason
+ */
+const cancelPaymentLink = async (orderCode, cancellationReason = 'Tạo mã thanh toán mới') => {
+  const payos = getPayOS();
+  if (!payos) return null;
+
+  try {
+    return await payos.paymentRequests.cancel(orderCode, cancellationReason);
+  } catch (err) {
+    console.warn(`Could not cancel PayOS orderCode ${orderCode}:`, err.message);
+    return null;
+  }
+};
+
 module.exports = {
   getPayOS,
   generateOrderCode,
@@ -116,4 +133,5 @@ module.exports = {
   createPaymentLink,
   verifyWebhookData,
   getPaymentLinkInformation,
+  cancelPaymentLink,
 };
