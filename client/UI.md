@@ -36,6 +36,11 @@ Pages are loaded on demand to reduce initial downloading.
 
 ## Review locally
 
+Xem [báo cáo rà soát UI ngày 30/10/2026](UI_AUDIT.md) và `/tests/ui-audit.html`
+để kiểm tra 14 màn hình ở 5 kích thước viewport. Component xác nhận dùng chung
+ở `src/components/Modal/ConfirmDialog.jsx`; ưu tiên `useConfirmation()` thay cho
+`window.confirm`. Thông báo lỗi/trạng thái dùng Alert hoặc Toast hiện có.
+
 Run `npm run dev` in `client`, then open:
 
 - `/tests/ui-responsive-preview.html`: real dashboard screens inside 390px and
@@ -43,10 +48,9 @@ Run `npm run dev` in `client`, then open:
 - `/tests/ui-preview.html?screen=login`: real login screen with a mock login API.
 - `/tests/ui-controls.html`: forms and dialog interaction checks.
 
-Fixtures intercept requests locally and must be opened on a separate development
-port from any real login session; the application preview uses a demo localStorage
-token. They are not included in the production build. After leaving the preview,
-clear the demo token before opening the real app on that port.
+Fixtures intercept requests locally and are not included in the production build.
+The UI preview uses isolated in-memory storage for its demo token, so it does not
+overwrite a real login session. Keep fixtures on a development server.
 
 Check label-based typing, date selection, form submission, disabled buttons, refs,
 modal focus containment/restoration, Escape, vote and admin approval. Review long

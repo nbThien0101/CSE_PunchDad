@@ -589,7 +589,7 @@ input, select, textarea {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.alert-error {
+.alert-error, .alert-danger {
   background: var(--danger-50);
   color: var(--danger-600);
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -600,6 +600,12 @@ input, select, textarea {
   color: var(--primary-700);
   border: 1px solid rgba(59, 91, 255, 0.2);
 }
+
+.alert-warning { background: var(--warning-50); color: #854d0e; border: 1px solid var(--warning-100); }
+.badge-info { background: var(--primary-50); color: var(--primary-700); border: 1px solid var(--primary-100); }
+.badge-success { background: var(--success-50); color: var(--success-700); border: 1px solid var(--success-100); }
+.badge-warning { background: var(--warning-50); color: #854d0e; border: 1px solid var(--warning-100); }
+.badge-danger { background: var(--danger-50); color: #b91c1c; border: 1px solid var(--danger-100); }
 
 /* ==========================================
    Global Modal & Viewport Backdrop System

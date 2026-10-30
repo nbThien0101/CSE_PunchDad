@@ -21,3 +21,6 @@
 
 @media (max-width: 760px) { .feedback-stats { grid-template-columns: repeat(2, 1fr); }.feedback-admin-header { align-items: flex-start; flex-direction: column; }.feedback-toolbar { align-items: stretch; flex-direction: column; }.feedback-toolbar select { align-self: flex-start; }.feedback-card { align-items: stretch; flex-direction: column; }.feedback-card > .btn { align-self: flex-end; }.feedback-author-row code { display: none; } }
 @media (max-width: 460px) { .feedback-stats { gap: 8px; }.feedback-stat-card { padding: 12px; }.feedback-stat-icon { width: 34px; height: 34px; flex-basis: 34px; }.feedback-card { padding: 14px; }.feedback-rating-summary { display: none; } }
+.feedback-drawer-overlay.modal-overlay { padding: 0 !important; }
+.feedback-drawer-shell.modal-wrapper { height: 100%; justify-content: flex-end !important; }
+.feedback-drawer-shell .feedback-drawer { position: relative; top: auto; right: auto; height: 100dvh; max-height: 100dvh; }

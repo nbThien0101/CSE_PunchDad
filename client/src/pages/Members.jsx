@@ -1,3 +1,4 @@
+import { useConfirmation } from '../components/Modal/ConfirmDialog';
 import { Alert, Badge, Button, Card, Select } from '../components/ui/index.jsx';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,7 @@ const TIER_COLORS = {
 };
 
 export default function Members() {
+  const { confirm, confirmationDialog } = useConfirmation();
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +179,7 @@ export default function Members() {
   };
 
   const handleDeleteMember = async (member) => {
-    if (!window.confirm(`Bạn chắc chắn muốn xóa thành viên "${member.displayName}"?\n\nTất cả dữ liệu votes và payments của người này sẽ bị xóa vĩnh viễn!`)) return;
+    if (!await confirm(`Bạn chắc chắn muốn xóa thành viên "${member.displayName}"?\n\nTất cả dữ liệu votes và payments của người này sẽ bị xóa vĩnh viễn!`)) return;
     try {
       const result = await usersAPI.deleteMember(member.id);
       if (result.error) {
@@ -346,6 +348,7 @@ export default function Members() {
           <Button
             key={tab.key}
             className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
+            aria-pressed={filter === tab.key}
             onClick={() => setFilter(tab.key)}
           >
             {tab.label}
@@ -535,6 +538,7 @@ export default function Members() {
           ))}
         </div>
       )}
+      {confirmationDialog}
     </div>
   );
 }

@@ -128,6 +128,7 @@ export default function Dashboard() {
           <Button
             key={tab.key}
             className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
+            aria-pressed={filter === tab.key}
             onClick={() => setFilter(tab.key)}
           >
             {tab.label}

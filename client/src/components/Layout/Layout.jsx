@@ -95,7 +95,7 @@ export default function Layout() {
   return (
     <div className="layout">
       {user?.role === 'ADMIN' && pendingMembers > 0 && (
-        <NavLink to="/members#membership-requests" className="membership-notification" role="status">
+        <NavLink to="/members#membership-requests" className="membership-notification" aria-live="polite">
           Có {pendingMembers} người đăng ký tham gia CLB đang chờ duyệt · Xem thông tin và duyệt
         </NavLink>
       )}
@@ -104,7 +104,7 @@ export default function Layout() {
           <NavLink to="/" className="header-brand" onClick={() => setIsMenuOpen(false)}>
             <img src="/logo.svg" width="40" height="40" alt="HitDad · CSE Football Club" className="brand-logo-img" />
             <div className="brand-info">
-              <h1 className="brand-name">HitDad</h1>
+              <span className="brand-name">HitDad</span>
               <span className="brand-tag">CSE FC · HCMUT</span>
             </div>
           </NavLink>
@@ -309,6 +309,12 @@ export default function Layout() {
 
                 <div className="menu-divider" />
 
+                <Button type="button" className="menu-item" onClick={() => {
+                  setIsMenuOpen(false);
+                  buttonRef.current?.focus();
+                  setIsFeedbackOpen(true);
+                }}>Gửi phản hồi</Button>
+
                 {/* Logout Button */}
                 <Button
                   type="button"
@@ -334,7 +340,7 @@ export default function Layout() {
         </div>
       </header>
 
-      {noticeSummary.unreadCount > 0 && <NavLink to="/notices" className="club-notice-banner" role="status">
+      {noticeSummary.unreadCount > 0 && <NavLink to="/notices" className="club-notice-banner" aria-live="polite">
         {noticeSummary.unreadCount} thông báo chưa đọc · {noticeSummary.latestUnread?.title} · Xem bảng tin →
       </NavLink>}
       <main className="main-content">

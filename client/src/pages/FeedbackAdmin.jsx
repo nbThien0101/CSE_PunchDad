@@ -2,6 +2,7 @@ import { Button, Card, Select, Textarea } from '../components/ui/index.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { feedbackAPI } from '../services/api';
 import Toast from '../components/Toast/Toast';
+import Modal from '../components/Modal/Modal';
 import './FeedbackAdmin.css';
 
 const CATEGORY_META = {
@@ -118,6 +119,7 @@ export default function FeedbackAdmin() {
             key={item.key}
             type="button"
             className={`feedback-stat-card ${item.key !== 'total' && statusFilter === item.key ? 'active' : ''}`}
+            aria-pressed={item.key === 'total' ? !statusFilter : statusFilter === item.key}
             onClick={() => setStatusFilter(item.key === 'total' || statusFilter === item.key ? '' : item.key)}
           >
             <span className={`feedback-stat-icon ${item.key.toLowerCase()}`}>{item.icon}</span>
@@ -132,7 +134,7 @@ export default function FeedbackAdmin() {
             { value: '', label: 'Tất cả' },
             ...Object.entries(CATEGORY_META).map(([value, meta]) => ({ value, label: `${meta.icon} ${meta.label}` })),
           ].map((item) => (
-            <Button key={item.value || 'all'} type="button" className={categoryFilter === item.value ? 'active' : ''} onClick={() => setCategoryFilter(item.value)}>{item.label}</Button>
+            <Button key={item.value || 'all'} type="button" aria-pressed={categoryFilter === item.value} className={categoryFilter === item.value ? 'active' : ''} onClick={() => setCategoryFilter(item.value)}>{item.label}</Button>
           ))}
         </div>
         <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Lọc trạng thái">
@@ -179,11 +181,11 @@ export default function FeedbackAdmin() {
       )}
 
       {selected && (
-        <div className="feedback-drawer-backdrop" onClick={() => setSelectedId(null)} role="presentation">
-          <aside className="feedback-drawer" onClick={(event) => event.stopPropagation()} aria-label="Chi tiết phản hồi">
+        <Modal onClose={() => !saving && setSelectedId(null)} ariaLabel="Chi tiết phản hồi" overlayClassName="feedback-drawer-overlay" className="feedback-drawer-shell">
+          <aside className="feedback-drawer">
             <div className="feedback-drawer-header">
               <div><span>Chi tiết phản hồi</span><h2>{CATEGORY_META[selected.category]?.icon} {CATEGORY_META[selected.category]?.label}</h2></div>
-              <Button type="button" onClick={() => setSelectedId(null)} aria-label="Đóng">×</Button>
+              <Button type="button" disabled={saving} onClick={() => setSelectedId(null)} aria-label="Đóng">×</Button>
             </div>
             <div className="feedback-drawer-body">
               <div className="feedback-drawer-author"><strong>{selected.user.displayName}</strong><span>@{selected.user.username} · {formatTime(selected.createdAt)}</span></div>
@@ -200,11 +202,11 @@ export default function FeedbackAdmin() {
               </label>
             </div>
             <div className="feedback-drawer-actions">
-              <Button className="btn btn-ghost" type="button" onClick={() => setSelectedId(null)}>Hủy</Button>
+              <Button className="btn btn-ghost" type="button" disabled={saving} onClick={() => setSelectedId(null)}>Hủy</Button>
               <Button className="btn btn-primary" type="button" onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu cập nhật'}</Button>
             </div>
           </aside>
-        </div>
+        </Modal>
       )}
     </div>
   );

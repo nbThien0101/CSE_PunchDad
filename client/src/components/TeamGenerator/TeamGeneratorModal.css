@@ -410,3 +410,4 @@
     align-items: flex-start;
   }
 }
+.player-row.ui-button { width: 100%; text-align: left; }

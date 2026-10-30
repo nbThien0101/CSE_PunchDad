@@ -47,8 +47,8 @@ const CoreInput = createInput({ Root: Span, Input: InputElement, Icon: Span, Slo
 const CoreTextarea = createTextarea({ Root: Span, Input: TextareaElement });
 const CoreAlert = createAlert({ Root: Div, Text: Span, Icon: Span });
 
-export const Button = forwardRef(({ disabled, isDisabled, className = '', variant, size, ...props }, ref) => (
-  <CoreButton {...props} ref={ref} isDisabled={isDisabled ?? disabled}
+export const Button = forwardRef(({ disabled, isDisabled, className = '', variant, size, type = 'button', ...props }, ref) => (
+  <CoreButton {...props} type={type} ref={ref} isDisabled={isDisabled ?? disabled}
     className={`ui-button ${variant ? `ui-button-${variant}` : ''} ${size ? `ui-button-${size}` : ''} ${className}`} />
 ));
 Button.displayName = 'Button';
@@ -80,7 +80,7 @@ export const Card = forwardRef(({ className = '', ...props }, ref) => <Box {...p
 Card.displayName = 'Card';
 export const Badge = forwardRef(({ className = '', ...props }, ref) => <Box {...props} as="span" ref={ref} className={`ui-badge ${className}`} />);
 Badge.displayName = 'Badge';
-export const Alert = forwardRef(({ className = '', ...props }, ref) => <CoreAlert {...props} ref={ref} className={`ui-alert ${className}`} />);
+export const Alert = forwardRef(({ className = '', role, ...props }, ref) => <CoreAlert {...props} role={role || (/alert-(error|danger)/.test(className) ? 'alert' : 'status')} ref={ref} className={`ui-alert ${className}`} />);
 Alert.displayName = 'Alert';
 
 export const GluestackModal = createModal({ Root: Div, Content: Div, Backdrop: Div,

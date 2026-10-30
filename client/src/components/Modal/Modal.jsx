@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { GluestackModal } from '../ui';
 import './Modal.css';
+
+// A nested dialog must not unlock the page or close its parent on Escape.
+const modalStack = [];
+let savedOverflow;
 
 /**
  * Universal Modal Portal Component
@@ -17,36 +21,45 @@ export default function Modal({
   className = '',
   overlayClassName = '',
   closeOnBackdrop = true,
-  closeOnEsc = true
+  closeOnEsc = true,
+  ariaLabel = 'Hộp thoại HitDad',
+  labelledBy,
 }) {
+  const callbacks = useRef({ onClose, closeOnEsc });
+  callbacks.current = { onClose, closeOnEsc };
   useEffect(() => {
     if (!isOpen) return;
-
-    // Lock page scroll
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalHtmlOverflow = document.documentElement.style.overflow;
-    
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.classList.add('modal-open');
-    document.documentElement.classList.add('modal-open');
+    const token = Symbol('modal');
+    if (!modalStack.length) {
+      savedOverflow = { body: document.body.style.overflow, html: document.documentElement.style.overflow };
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+      document.documentElement.classList.add('modal-open');
+    }
+    modalStack.push(token);
 
     const handleKeyDown = (e) => {
-      if (closeOnEsc && e.key === 'Escape' && onClose) {
-        onClose();
+      if (modalStack.at(-1) === token && callbacks.current.closeOnEsc && e.key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        callbacks.current.onClose?.();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
-      document.body.classList.remove('modal-open');
-      document.documentElement.classList.remove('modal-open');
+      modalStack.splice(modalStack.indexOf(token), 1);
+      if (!modalStack.length) {
+        document.body.style.overflow = savedOverflow.body;
+        document.documentElement.style.overflow = savedOverflow.html;
+        document.body.classList.remove('modal-open');
+        document.documentElement.classList.remove('modal-open');
+      }
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose, closeOnEsc]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -61,7 +74,8 @@ export default function Modal({
       <GluestackModal.Content
         className={`modal-wrapper ${className}`}
         onClick={(e) => e.stopPropagation()}
-        aria-label="Hộp thoại HitDad"
+        aria-label={labelledBy ? undefined : ariaLabel}
+        aria-labelledby={labelledBy}
       >
         {children}
       </GluestackModal.Content>

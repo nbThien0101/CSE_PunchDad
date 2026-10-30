@@ -122,15 +122,14 @@ export default function FeedbackModal({ isOpen, onClose }) {
 
             <fieldset className="feedback-fieldset">
               <legend>Trải nghiệm của bạn <span>(không bắt buộc)</span></legend>
-              <div className="feedback-rating" role="radiogroup" aria-label="Mức độ hài lòng">
+              <div className="feedback-rating" role="group" aria-label="Mức độ hài lòng">
                 {RATINGS.map((item) => (
                   <Button
                     key={item.value}
                     type="button"
                     className={rating === item.value ? 'active' : ''}
                     onClick={() => setRating(rating === item.value ? null : item.value)}
-                    role="radio"
-                    aria-checked={rating === item.value}
+                    aria-pressed={rating === item.value}
                     title={item.label}
                   >
                     <span>{item.emoji}</span><small>{item.label}</small>

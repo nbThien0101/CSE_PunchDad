@@ -1,3 +1,4 @@
+import { useConfirmation } from '../Modal/ConfirmDialog';
 import { Alert, Badge, Button, Card, Input, Select } from '../ui/index.jsx';
 import { useState, useEffect, useRef } from 'react';
 import { attendanceAPI, usersAPI } from '../../services/api';
@@ -12,6 +13,7 @@ export default function AttendanceDashboardModal({
   onSessionUpdated,
   onOpenTeamGenerator,
 }) {
+  const { confirm, confirmationDialog } = useConfirmation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
@@ -100,7 +102,7 @@ export default function AttendanceDashboardModal({
 
   const handleBulkCheckIn = async (isCheckedIn) => {
     if (busy) return;
-    if (!window.confirm(isCheckedIn
+    if (!await confirm(isCheckedIn
       ? 'Đánh dấu TẤT CẢ thành viên đăng ký là có mặt? Chỉ thực hiện khi đã kiểm tra đầy đủ.'
       : 'Hủy điểm danh của TẤT CẢ thành viên đăng ký?')) return;
     setActionLoading('bulk');
@@ -193,7 +195,7 @@ export default function AttendanceDashboardModal({
   };
 
   const handleDeleteGuest = async (guestId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa khách mời này?')) return;
+    if (!await confirm('Bạn có chắc chắn muốn xóa khách mời này?')) return;
     setActionLoading(`guest-delete-${guestId}`);
     try {
       const res = await attendanceAPI.deleteGuest(session.id, guestId);
@@ -249,7 +251,7 @@ export default function AttendanceDashboardModal({
   };
 
   const handleRecalculatePayments = async () => {
-    if (!window.confirm('Bạn có chắc muốn tính lại tiền sân dựa trên số người thực tế ĐÃ ĐIỂM DANH CÓ MẶT?')) return;
+    if (!await confirm('Bạn có chắc muốn tính lại tiền sân dựa trên số người thực tế ĐÃ ĐIỂM DANH CÓ MẶT?')) return;
     setActionLoading('recalc-payment');
     setError('');
     try {
@@ -895,6 +897,7 @@ export default function AttendanceDashboardModal({
           }}
         />
       )}
+      {confirmationDialog}
     </Modal>
   );
 }

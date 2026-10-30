@@ -160,7 +160,7 @@ export default function TeamGeneratorModal({
               Cân bằng lực lượng theo Tier trình độ · Mỗi đội 5 người (1 Thủ môn + 4 Cầu thủ)
             </p>
           </div>
-          <Button className="modal-close-btn" onClick={onClose} type="button">✕</Button>
+          <Button className="modal-close-btn" onClick={onClose} type="button" aria-label="Đóng chia đội">✕</Button>
         </div>
 
         {/* Body */}
@@ -180,6 +180,7 @@ export default function TeamGeneratorModal({
                       key={count}
                       type="button"
                       className={`team-pill ${teamCount === count ? 'active' : ''}`}
+                      aria-pressed={teamCount === count}
                       onClick={() => {
                         if (count === teamCount) return;
                         setTeamCount(count);
@@ -273,6 +274,7 @@ export default function TeamGeneratorModal({
                     <Button
                       type="button"
                       className={`voter-chip-gk-toggle ${isGK ? 'active' : ''}`}
+                      aria-pressed={isGK}
                       onClick={() => handleToggleGK(user.id, user.isGoalkeeper)}
                       title={isGK ? 'Đã chọn làm Thủ môn' : 'Đặt làm Thủ môn'}
                     >
@@ -308,6 +310,7 @@ export default function TeamGeneratorModal({
                       <Button
                         type="button"
                         className={`voter-chip-gk-toggle ${isGK ? 'active' : ''}`}
+                        aria-pressed={isGK}
                         onClick={() => handleToggleGK(guestId, g.isGoalkeeper)}
                         title={isGK ? 'Đã chọn làm Thủ môn' : 'Đặt làm Thủ môn'}
                       >
@@ -383,9 +386,12 @@ export default function TeamGeneratorModal({
                       {team.players?.map((p) => {
                         const isSelectedForSwap = selectedSwapPlayer?.player.userId === p.userId;
                         return (
-                        <div
+                        <Button type="button"
                             key={p.userId}
                             className={`player-row ${isSelectedForSwap ? 'selected-for-swap' : ''}`}
+                            aria-pressed={isSelectedForSwap}
+                            aria-label={`Chọn ${p.displayName} để hoán đổi`}
+                            disabled={loading || saving}
                             onClick={() => handleSelectForSwap(team.id, p, false)}
                             style={{
                               cursor: 'pointer',
@@ -394,13 +400,13 @@ export default function TeamGeneratorModal({
                             }}
                             title="Nhấn để chọn và hoán đổi với cầu thủ khác"
                           >
-                            <div className="player-info-cell">
+                            <span className="player-info-cell">
                               <span className="player-avatar-small">
                                 {p.avatar ? <img src={p.avatar} alt="" /> : p.displayName?.[0]}
                               </span>
                               <span className="player-name-text">{p.displayName}</span>
-                            </div>
-                            <div className="player-tags">
+                            </span>
+                            <span className="player-tags">
                               {p.tier && (
                                 <Badge className={`badge member-tier-badge tier-${p.tier.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '1px 4px' }}>
                                   {p.tier}
@@ -411,8 +417,8 @@ export default function TeamGeneratorModal({
                                   Đang chọn...
                                 </span>
                               )}
-                            </div>
-                          </div>
+                            </span>
+                          </Button>
                         );
                       })}
                     </div>

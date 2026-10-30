@@ -11,6 +11,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [copiedKey, setCopiedKey] = useState('');
   const [checkingManual, setCheckingManual] = useState(false);
+  const [checkMessage, setCheckMessage] = useState('');
 
   const pollIntervalRef = useRef(null);
 
@@ -29,6 +30,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
   const initPaymentLink = async () => {
     setLoading(true);
     setError('');
+    setCheckMessage('');
     try {
       const res = await paymentsAPI.createPayOSLink(payment.id);
 
@@ -75,6 +77,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
 
   const handlePaidSuccess = () => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    setCheckMessage('');
     setIsSuccess(true);
     setTimeout(() => {
       if (onSuccess) onSuccess();
@@ -85,15 +88,16 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
   // Nút kiểm tra thủ công
   const handleCheckManual = async () => {
     setCheckingManual(true);
+    setCheckMessage('');
     try {
       const res = await paymentsAPI.getPayOSStatus(payment.id);
       if (res.status === 'CONFIRMED' || res.isPaid) {
         handlePaidSuccess();
       } else {
-        alert('Hệ thống chưa nhận được tiền từ ngân hàng. Nếu bạn vừa chuyển, vui lòng đợi 5-10 giây để ngân hàng xử lý nhé!');
+        setCheckMessage('Hệ thống chưa nhận được tiền từ ngân hàng. Nếu vừa chuyển, vui lòng đợi 5–10 giây rồi kiểm tra lại.');
       }
     } catch (err) {
-      alert('Lỗi kiểm tra: ' + (err.message || 'Không thể kết nối'));
+      setCheckMessage('Chưa thể kiểm tra: ' + (err.message || 'Không thể kết nối. Vui lòng thử lại.'));
     } finally {
       setCheckingManual(false);
     }
@@ -143,6 +147,7 @@ export default function PayOSModal({ payment, session, onClose, onSuccess }) {
 
         {/* Body */}
         <div className="payos-modal-body">
+          {checkMessage && <Alert className="alert alert-info" role="status">{checkMessage}</Alert>}
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
               <span className="spinner"></span> Đang tạo mã VietQR thanh toán...

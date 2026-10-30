@@ -613,3 +613,5 @@
     width: 100%;
   }
 }
+.qr-upload-area { width: 100%; }
+.qr-upload-area > span { display: block; }

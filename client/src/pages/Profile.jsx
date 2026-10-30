@@ -1,3 +1,4 @@
+import { useConfirmation } from '../components/Modal/ConfirmDialog';
 import { Alert, Badge, Button, Card, Input } from '../components/ui/index.jsx';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +7,7 @@ import Modal from '../components/Modal/Modal';
 import './Profile.css';
 
 export default function Profile() {
+  const { confirm, confirmationDialog } = useConfirmation();
   const { user, logout, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -197,7 +199,7 @@ export default function Profile() {
   };
 
   const handleDeleteAvatar = async () => {
-    if (!confirm('Bạn có chắc muốn xóa ảnh đại diện?')) return;
+    if (!await confirm('Bạn có chắc muốn xóa ảnh đại diện?')) return;
 
     setError('');
     try {
@@ -340,7 +342,7 @@ export default function Profile() {
   };
 
   const handleDeleteQR = async () => {
-    if (!confirm('Bạn có chắc muốn xóa ảnh QR code?')) return;
+    if (!await confirm('Bạn có chắc muốn xóa ảnh QR code?')) return;
 
     try {
       const data = await usersAPI.deleteQRCode();
@@ -390,7 +392,7 @@ export default function Profile() {
       <Card className="profile-card card">
         <div className="profile-header">
           <div className="profile-avatar-wrapper">
-            <div
+            <Button type="button" aria-label="Đổi ảnh đại diện"
               className={`profile-avatar ${avatarPreview ? 'has-preview' : ''}`}
               onClick={() => avatarInputRef.current?.click()}
               title="Nhấn để đổi ảnh đại diện"
@@ -404,13 +406,13 @@ export default function Profile() {
               ) : (
                 user?.displayName?.[0]?.toUpperCase()
               )}
-              <div className="profile-avatar-badge" title="Đổi ảnh đại diện">
+              <span className="profile-avatar-badge" title="Đổi ảnh đại diện">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                   <circle cx="12" cy="13" r="4"></circle>
                 </svg>
-              </div>
-            </div>
+              </span>
+            </Button>
 
             <Input
               ref={avatarInputRef}
@@ -490,7 +492,7 @@ export default function Profile() {
         {editing ? (
           <form onSubmit={handleSaveProfile} className="profile-edit-form animate-fade-in">
             <div className="form-group">
-              <label className="form-label">Tên hiển thị <span className="required">*</span></label>
+              <label className="form-label" htmlFor="input-display-name">Tên hiển thị <span className="required">*</span></label>
               <Input
                 type="text"
                 name="displayName"
@@ -505,7 +507,7 @@ export default function Profile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Số điện thoại</label>
+              <label className="form-label" htmlFor="input-phone">Số điện thoại</label>
               <Input
                 type="tel"
                 name="phone"
@@ -518,7 +520,7 @@ export default function Profile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Thông tin ngân hàng</label>
+              <label className="form-label" htmlFor="input-bank-info">Thông tin ngân hàng</label>
               <Input
                 type="text"
                 name="bankInfo"
@@ -718,20 +720,20 @@ export default function Profile() {
 
             {/* Upload area when no image and no preview */}
             {!qrImage && !qrPreview && (
-              <div
+              <Button type="button" aria-label="Tải lên ảnh mã QR"
                 className="qr-upload-area"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="qr-upload-icon">
+                <span className="qr-upload-icon">
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                   </svg>
-                </div>
-                <p className="qr-upload-text">Nhấn để tải lên ảnh mã QR</p>
-                <p className="qr-upload-hint">PNG, JPEG, WebP • Tối đa 2MB</p>
-              </div>
+                </span>
+                <span className="qr-upload-text">Nhấn để tải lên ảnh mã QR</span>
+                <span className="qr-upload-hint">PNG, JPEG, WebP • Tối đa 2MB</span>
+              </Button>
             )}
 
             <Input
@@ -864,8 +866,7 @@ export default function Profile() {
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowCurrentPw(!showCurrentPw)}
-                    title={showCurrentPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                    tabIndex={-1}
+                    title={showCurrentPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-label={showCurrentPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showCurrentPw}
                   >
                     {showCurrentPw ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -901,8 +902,7 @@ export default function Profile() {
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowNewPw(!showNewPw)}
-                    title={showNewPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                    tabIndex={-1}
+                    title={showNewPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-label={showNewPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showNewPw}
                   >
                     {showNewPw ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -939,8 +939,7 @@ export default function Profile() {
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowConfirmPw(!showConfirmPw)}
-                    title={showConfirmPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                    tabIndex={-1}
+                    title={showConfirmPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-label={showConfirmPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showConfirmPw}
                   >
                     {showConfirmPw ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -984,6 +983,7 @@ export default function Profile() {
           </form>
         </Card>
       </Modal>
+      {confirmationDialog}
     </div>
   );
 }

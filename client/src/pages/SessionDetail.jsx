@@ -1,3 +1,4 @@
+import { useConfirmation } from '../components/Modal/ConfirmDialog';
 import { Alert, Badge, Button, Card, Input, Select, Textarea } from '../components/ui/index.jsx';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ const STATUS_CONFIG = {
 };
 
 export default function SessionDetail() {
+  const { confirm, confirmationDialog } = useConfirmation();
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -346,8 +348,7 @@ export default function SessionDetail() {
   };
 
   const handleForceDelete = async () => {
-    if (!window.confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN session này?\n\nTất cả dữ liệu (votes, payments) sẽ bị xóa và KHÔNG THỂ khôi phục!')) return;
-    if (!window.confirm('Xác nhận lần cuối: Xóa vĩnh viễn session này?')) return;
+    if (!await confirm({ title: 'Xóa vĩnh viễn trận đấu', message: 'Tất cả bình chọn và khoản thanh toán của trận sẽ bị xóa. Không thể khôi phục dữ liệu này.', confirmLabel: 'Xóa vĩnh viễn', requiredText: 'XÓA' })) return;
     setActionLoading('forceDelete');
     try {
       await sessionsAPI.forceDelete(id);
@@ -360,7 +361,7 @@ export default function SessionDetail() {
   };
 
   const handleDeleteTeams = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy danh sách đội đã chia?')) return;
+    if (!await confirm('Bạn có chắc chắn muốn hủy danh sách đội đã chia?')) return;
     setActionLoading('deleteTeams');
     try {
       const res = await sessionsAPI.deleteTeams(id);
@@ -1802,8 +1803,9 @@ export default function SessionDetail() {
                 : 'Bạn đang xác nhận không thể tham gia trận đấu này. Vui lòng cho Admin biết lý do (nếu có).'}
             </p>
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Lý do báo vắng (tùy chọn):</label>
+              <label className="form-label" htmlFor="decline-reason" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Lý do báo vắng (tùy chọn):</label>
               <Textarea
+                id="decline-reason"
                 className="form-input"
                 rows={3}
                 placeholder="VD: Bận việc đột xuất, chấn thương, ốm sốt..."
@@ -1880,6 +1882,7 @@ export default function SessionDetail() {
           }}
         />
       )}
+      {confirmationDialog}
     </div>
   );
 }

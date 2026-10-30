@@ -370,8 +370,7 @@ export default function ForgotPassword() {
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                  tabIndex={-1}
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword}
                 >
                   {showPassword ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -407,8 +406,7 @@ export default function ForgotPassword() {
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  title={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                  tabIndex={-1}
+                  title={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showConfirmPassword}
                 >
                   {showConfirmPassword ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

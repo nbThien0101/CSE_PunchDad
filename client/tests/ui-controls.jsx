@@ -3,10 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { Button, Input, Textarea, Select, Card, Alert } from '../src/components/ui';
 import HitDadUIProvider from '../src/components/ui/Provider';
 import Modal from '../src/components/Modal/Modal';
+import { useConfirmation } from '../src/components/Modal/ConfirmDialog';
 import '../src/index.css';
 import '../src/components/ui/theme.css';
 
 function Controls() {
+  const { confirm, confirmationDialog } = useConfirmation();
   const [result, setResult] = useState('Chưa gửi form');
   const [open, setOpen] = useState(false);
   const [events, setEvents] = useState(0);
@@ -39,8 +41,10 @@ function Controls() {
         <h2>Điểm danh HitDad</h2>
         <label htmlFor="modal-note">Ghi chú điểm danh</label>
         <Input id="modal-note" className="form-input" />
+        <Button type="button" className="btn btn-outline" onClick={async () => { if (await confirm('Xác nhận dữ liệu mẫu?')) setResult('Đã xác nhận mẫu'); }}>Mở xác nhận lồng</Button>
         <Button className="btn btn-primary" onClick={() => setOpen(false)} style={{ marginTop: 16 }}>Đóng modal</Button>
       </Card>
+      {confirmationDialog}
     </Modal>
   </main>;
 }
