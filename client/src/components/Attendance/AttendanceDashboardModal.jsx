@@ -621,11 +621,7 @@ export default function AttendanceDashboardModal({
                         id="select-guest-tier"
                         aria-label="Trình độ khách mời"
                       >
-                        <option value="S">Tier S (Rất hay)</option>
-                        <option value="A">Tier A (Hay)</option>
-                        <option value="B">Tier B (Khá)</option>
-                        <option value="C">Tier C (Trung bình)</option>
-                        <option value="D">Tier D (Mới chơi)</option>
+                        {['S+', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D'].map(t => <option key={t} value={t}>Tier {t}</option>)}
                       </Select>
 
                       <label className="guest-gk-checkbox-label">

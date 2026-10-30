@@ -1,5 +1,6 @@
-const WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const WEIGHTS = { 'S+': 5.5, S: 5, 'A+': 4.5, A: 4, 'B+': 3.5, B: 3, 'C+': 2.5, C: 2, 'D+': 1.5, D: 1 };
 const score = tier => WEIGHTS[String(tier || '').trim().toUpperCase()] || 2;
+export { score as getTierScore };
 
 export function recalculateTeams(data) {
   const teams = data.teams.map(team => {

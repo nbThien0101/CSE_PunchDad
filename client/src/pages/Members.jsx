@@ -6,14 +6,20 @@ import './Members.css';
 
 const TIER_OPTIONS = [
   { value: '', label: 'Chưa xếp hạng', color: '' },
+  { value: 'S+', label: 'S+', color: 'tier-s' },
   { value: 'S', label: 'S', color: 'tier-s' },
+  { value: 'A+', label: 'A+', color: 'tier-a' },
   { value: 'A', label: 'A', color: 'tier-a' },
+  { value: 'B+', label: 'B+', color: 'tier-b' },
   { value: 'B', label: 'B', color: 'tier-b' },
+  { value: 'C+', label: 'C+', color: 'tier-c' },
   { value: 'C', label: 'C', color: 'tier-c' },
+  { value: 'D+', label: 'D+', color: 'tier-d' },
   { value: 'D', label: 'D', color: 'tier-d' },
 ];
 
 const TIER_COLORS = {
+  'S+': 'tier-s', 'A+': 'tier-a', 'B+': 'tier-b', 'C+': 'tier-c', 'D+': 'tier-d',
   S: 'tier-s',
   A: 'tier-a',
   B: 'tier-b',
@@ -329,6 +335,7 @@ export default function Members() {
           { key: 'all', label: 'Tất cả' },
           { key: 'admin', label: 'Ban cán sự' },
           { key: 'gk', label: `🧤 Thủ môn (${stats.goalkeepers})` },
+          ...['S+', 'A+', 'B+', 'C+', 'D+'].map(t => ({ key: t, label: `Tier ${t}` })),
           { key: 'S', label: 'Tier S' },
           { key: 'A', label: 'Tier A' },
           { key: 'B', label: 'Tier B' },

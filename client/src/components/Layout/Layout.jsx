@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import FeedbackModal from '../Feedback/FeedbackModal';
-import { usersAPI } from '../../services/api';
+import { usersAPI, noticesAPI } from '../../services/api';
 import './Layout.css';
 
 export default function Layout() {
@@ -13,8 +13,22 @@ export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [pendingMembers, setPendingMembers] = useState(0);
+  const [noticeSummary, setNoticeSummary] = useState({ unreadCount: 0, latestUnread: null });
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try { const data = await noticesAPI.summary(); if (active) setNoticeSummary(data); }
+      catch { /* The board remains available after connectivity returns. */ }
+    };
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('club-notices-changed', refresh);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('club-notices-changed', refresh); window.removeEventListener('focus', refresh); };
+  }, []);
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') return;
@@ -105,6 +119,13 @@ export default function Layout() {
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
               <span>Lịch đá</span>
+            </NavLink>
+            <NavLink to="/tournaments" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <svg className="nav-svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3h8v6a4 4 0 0 1-8 0V3ZM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 13v6m-4 2h8" /></svg>
+              <span>Giải đấu</span>
+            </NavLink>
+            <NavLink to="/notices" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <span>Thông báo{noticeSummary.unreadCount > 0 ? ` (${noticeSummary.unreadCount})` : ''}</span>
             </NavLink>
             {user?.role === 'ADMIN' && (
               <NavLink to="/sessions/new" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -198,6 +219,12 @@ export default function Layout() {
                 {/* Navigation shown only on Mobile (since desktop already has them in the header bar) */}
                 <div className="menu-mobile-nav">
                   <div className="menu-divider" />
+                  <NavLink to="/notices" className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}>
+                    <span className="menu-item-text">Thông báo CLB{noticeSummary.unreadCount > 0 ? ` (${noticeSummary.unreadCount})` : ''}</span>
+                  </NavLink>
+                  <NavLink to="/tournaments" className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}>
+                    <span className="menu-item-text">Giải đấu CLB</span>
+                  </NavLink>
                   <NavLink
                     to="/"
                     className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
@@ -307,6 +334,9 @@ export default function Layout() {
         </div>
       </header>
 
+      {noticeSummary.unreadCount > 0 && <NavLink to="/notices" className="club-notice-banner" role="status">
+        {noticeSummary.unreadCount} thông báo chưa đọc · {noticeSummary.latestUnread?.title} · Xem bảng tin →
+      </NavLink>}
       <main className="main-content">
         <div className="container">
           <Outlet />
@@ -323,6 +353,10 @@ export default function Layout() {
         <NavLink to="/" end>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>
           <span>Lịch đá</span>
+        </NavLink>
+        <NavLink to="/tournaments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 3h8v6a4 4 0 0 1-8 0V3ZM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 13v6m-4 2h8" /></svg>
+          <span>Giải đấu</span>
         </NavLink>
         <NavLink to="/members">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6m1 3a5 5 0 0 1 3 5v2"/></svg>

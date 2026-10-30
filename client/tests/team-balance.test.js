@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { swapFieldPlayers, recalculateTeams } from '../src/utils/teamBalance.js';
+import { swapFieldPlayers, recalculateTeams, getTierScore } from '../src/utils/teamBalance.js';
+
+test('plus tiers use the same half-step weights when recalculating edited rosters', () => {
+  assert.deepEqual(['D', 'D+', 'C', 'C+', 'B', 'B+', 'A', 'A+', 'S', 'S+'].map(getTierScore),
+    [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5]);
+  const result = recalculateTeams({ teams: [{ id: 'one', goalkeeper: { tier: 'S+' }, players: [{ tier: 'C+' }] }] });
+  assert.equal(result.teams[0].totalTierScore, 8);
+  assert.equal(result.teams[0].averageTierScore, 4);
+});
 
 {
 const roster = () => ({ reserves: [{ userId: 'reserve' }], teams: [

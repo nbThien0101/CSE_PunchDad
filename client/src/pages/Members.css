@@ -179,35 +179,35 @@
   letter-spacing: 0.02em;
 }
 
-.tier-s {
+.tier-s, [class~="tier-s+"] {
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   color: #78350f;
   border: 1px solid rgba(251, 191, 36, 0.3);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
 }
 
-.tier-a {
+.tier-a, [class~="tier-a+"] {
   background: linear-gradient(135deg, #a78bfa, #8b5cf6);
   color: white;
   border: 1px solid rgba(139, 92, 246, 0.3);
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
-.tier-b {
+.tier-b, [class~="tier-b+"] {
   background: linear-gradient(135deg, #60a5fa, #3b82f6);
   color: white;
   border: 1px solid rgba(59, 130, 246, 0.3);
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
-.tier-c {
+.tier-c, [class~="tier-c+"] {
   background: linear-gradient(135deg, #34d399, #10b981);
   color: white;
   border: 1px solid rgba(16, 185, 129, 0.3);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
-.tier-d {
+.tier-d, [class~="tier-d+"] {
   background: var(--gray-200);
   color: var(--gray-700);
   border: 1px solid var(--gray-300);

@@ -11,6 +11,9 @@ const CreateSession = lazy(() => import('./pages/CreateSession'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Members = lazy(() => import('./pages/Members'));
 const FeedbackAdmin = lazy(() => import('./pages/FeedbackAdmin'));
+const Tournaments = lazy(() => import('./pages/Tournaments'));
+const TournamentDetail = lazy(() => import('./pages/TournamentDetail'));
+const Notices = lazy(() => import('./pages/Notices'));
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -73,6 +76,9 @@ function App() {
           />
           <Route path="/profile" element={<Profile />} />
           <Route path="/members" element={<Members />} />
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/tournaments/:id" element={<TournamentDetail />} />
+          <Route path="/notices" element={<Notices />} />
           <Route path="/feedback" element={<AdminRoute><FeedbackAdmin /></AdminRoute>} />
         </Route>
 

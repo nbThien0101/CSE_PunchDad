@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "node --test tests/auth-security.test.js tests/team-balancer.test.js tests/member-match-count.test.js tests/member-email.test.js tests/membership-approval.test.js tests/member-export-excel.test.js"
+    "test": "node --test tests/auth-security.test.js tests/team-balancer.test.js tests/tournament.test.js tests/notice.test.js tests/member-match-count.test.js tests/member-email.test.js tests/membership-approval.test.js tests/member-export-excel.test.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",

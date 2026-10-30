@@ -18,6 +18,8 @@ Bản 1.2.4 tích hợp giao diện gluestack UI mới, luồng admin duyệt th
 | Thành viên | Tài khoản mới chờ admin duyệt trước khi truy cập CLB. Admin xem email và xử lý yêu cầu; thành viên thường không thấy email đăng ký của người khác. Hồ sơ hỗ trợ avatar, điện thoại, ngân hàng và QR. Số trận chỉ tính lượt đã điểm danh trong trận hoàn tất. |
 | Điểm danh | Khóa bình chọn, điểm danh riêng lẻ/hàng loạt, quản lý khách mời, trạng thái thi đấu và thanh toán của khách. |
 | Đội hình | Chia đội theo tier, ưu tiên lượt vote sớm, thủ môn và dự bị; xáo trộn và chỉnh phương án trước khi lưu. |
+| Giải đấu CLB | Số đội/quân số đăng ký tùy chỉnh cho futsal 5 người, form vị trí bắt buộc bằng sơ đồ, đội trưởng, BTC chốt vị trí/đội, vòng tròn → bán kết → chung kết, dashboard realtime và pen tùy chọn. Xem [hướng dẫn giải đấu](TOURNAMENTS.md). |
+| Thông báo CLB | Admin đăng thông báo cho toàn CLB, liên kết tới form giải đấu, dấu đã đọc/chưa đọc riêng từng thành viên và lưu trữ thông báo cũ. |
 | Thanh toán | Chia chi phí, đánh dấu đã chuyển tiền, người trả sân/admin xác nhận; tạo link VietQR PayOS và nhận webhook có kiểm tra chữ ký. |
 | Phản hồi | Thành viên gửi lỗi/đề xuất/đánh giá; admin lọc phản hồi, cập nhật trạng thái và ghi chú xử lý. |
 

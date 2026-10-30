@@ -1,5 +1,87 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+async function noticeRequest(path, options) {
+  const response = await fetchWithAuth(`/notices${path}`, options);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Không thể tải thông báo');
+  return data;
+}
+export const noticesAPI = {
+  list: cursor => noticeRequest(cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''),
+  summary: () => noticeRequest('/summary'),
+  create: values => noticeRequest('', { method: 'POST', body: JSON.stringify(values) }),
+  markRead: id => noticeRequest(`/${id}/read`, { method: 'PUT' }),
+  archive: id => noticeRequest(`/${id}/archive`, { method: 'PUT' }),
+};
+
+async function tournamentRequest(path, options) {
+  const response = await fetchWithAuth(`/tournaments${path}`, options);
+  const data = await response.json();
+  if (!response.ok) throw Object.assign(new Error(data.error || 'Không thể tải giải đấu'), { status: response.status });
+  return data;
+}
+
+export const tournamentsAPI = {
+  list: () => tournamentRequest(''),
+  get: id => tournamentRequest(`/${id}`),
+  create: data => tournamentRequest('', { method: 'POST', body: JSON.stringify(data) }),
+  command: (id, revision, action, payload = {}) => tournamentRequest(`/${id}/commands`, {
+    method: 'POST', body: JSON.stringify({ revision, action, payload }),
+  }),
+  // Fetch streaming carries the normal bearer header and can refresh expired tokens.
+  watch: async (id, signal, onData, onStatus) => {
+    let delay = 2000;
+    while (!signal.aborted) {
+      const connection = new AbortController();
+      const stop = () => connection.abort();
+      signal.addEventListener('abort', stop, { once: true });
+      let watchdog;
+      const touch = () => { clearTimeout(watchdog); watchdog = setTimeout(stop, 25000); };
+      let reader;
+      try {
+        onStatus('connecting');
+        touch();
+        const response = await fetchWithAuth(`/tournaments/${id}/stream`, { signal: connection.signal });
+        if (!response.ok || !response.body) throw new Error('Mất kết nối realtime');
+        reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (!signal.aborted) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          touch();
+          buffer += decoder.decode(value, { stream: true });
+          let end;
+          while ((end = buffer.indexOf('\n\n')) !== -1) {
+            const packet = buffer.slice(0, end);
+            buffer = buffer.slice(end + 2);
+            if (packet.startsWith('data: ')) {
+              onData(JSON.parse(packet.slice(6)).tournament);
+              onStatus('live');
+              delay = 2000;
+            }
+          }
+        }
+      } catch { /* Reconnect below; the dashboard retains its last committed snapshot. */ }
+      finally {
+        clearTimeout(watchdog);
+        connection.abort();
+        if (reader) await reader.cancel().catch(() => {});
+        signal.removeEventListener('abort', stop);
+      }
+      if (signal.aborted) return;
+      onStatus('offline');
+      await new Promise(resolve => {
+        const finish = () => { clearTimeout(timer); signal.removeEventListener('abort', finish); resolve(); };
+        const timer = setTimeout(finish, delay);
+        signal.addEventListener('abort', finish, { once: true });
+        if (signal.aborted) finish();
+      });
+      delay = Math.min(delay * 2, 30000);
+    }
+  },
+};
+
 /**
  * Base fetch wrapper with auth token
  */

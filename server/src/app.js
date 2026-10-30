@@ -90,6 +90,8 @@ app.use('/api/votes', voteRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/tournaments', require('./routes/tournament.routes'));
+app.use('/api/notices', require('./routes/notice.routes'));
 
 // ==========================================
 // Error Handling

@@ -75,9 +75,57 @@ model User {
   payments        Payment[]
   absenceLogs     AbsenceLog[]
   feedbacks       Feedback[]
+  tournaments     Tournament[]
+  notices         Notice[]
+  noticeReads     NoticeRead[]
 
   @@index([membershipStatus, createdAt])
   @@map("users")
+}
+
+// Tournament state is one versioned aggregate: roster, fixtures and results commit atomically.
+model Tournament {
+  id           String   @id @default(uuid())
+  title        String
+  createdById  String   @map("created_by")
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  organizerIds Json     @default("[]") @map("organizer_ids")
+  state        Json
+  revision     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  notices      Notice[]
+
+  @@index([createdAt])
+  @@map("tournaments")
+}
+
+model Notice {
+  id           String   @id @default(uuid())
+  title        String
+  body         String   @db.Text
+  authorId     String   @map("author_id")
+  author       User     @relation(fields: [authorId], references: [id])
+  tournamentId String?  @map("tournament_id")
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  archivedAt   DateTime? @map("archived_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  reads        NoticeRead[]
+
+  @@index([archivedAt, createdAt])
+  @@map("notices")
+}
+
+model NoticeRead {
+  noticeId String   @map("notice_id")
+  userId   String   @map("user_id")
+  readAt   DateTime @default(now()) @map("read_at")
+  notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([noticeId, userId])
+  @@index([userId])
+  @@map("notice_reads")
 }
 
 model Feedback {

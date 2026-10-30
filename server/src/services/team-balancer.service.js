@@ -1,5 +1,5 @@
 /** Balance five-a-side rosters, preserving vote priority and every participant. */
-const TIER_WEIGHTS = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+const TIER_WEIGHTS = { 'S+': 5.5, S: 5, 'A+': 4.5, A: 4, 'B+': 3.5, B: 3, 'C+': 2.5, C: 2, 'D+': 1.5, D: 1 };
 const MAX_TEAMS = 6;
 const TEAM_COLORS = [
   ['#2563eb', '#eff6ff'], ['#ea580c', '#fff7ed'], ['#16a34a', '#f0fdf4'],

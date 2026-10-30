@@ -526,3 +526,4 @@
   font-weight: 600;
   text-decoration: underline;
 }
+.club-notice-banner { display: block; padding: 12px 20px; text-align: center; background: #eaf3fc; color: #164d7d; font-size: .85rem; font-weight: 600; overflow-wrap: anywhere; }
