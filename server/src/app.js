@@ -52,8 +52,6 @@ app.use(cors({
     const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
       .split(',')
       .map(s => s.trim());
-    // Fixed assignment docs origin; never allow arbitrary *.vercel.app sites.
-    allowedOrigins.push('https://swaggerdocsmockhitdad.vercel.app');
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     // In dev mode, allow any localhost origin (Vite may pick different ports)
@@ -96,11 +94,10 @@ app.get(['/swagger.json', '/api-docs/swagger.json'], (req, res) => {
 app.use(
   '/api-docs',
   swaggerUi.serve,
-  swaggerUi.setup(null, {
+  swaggerUi.setup(swaggerDoc, {
     customSiteTitle: 'CSE HitDad - API Documentation',
     customCss: '.swagger-ui .topbar { display: none }',
     swaggerOptions: {
-      url: '/swagger.json',
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,

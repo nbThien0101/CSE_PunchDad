@@ -82,7 +82,7 @@ async function runTests() {
 
     // 4. Admin chốt danh sách vote (Lock vote)
     let reqLock = {
-      params: { sessionId: session.id },
+      params: { id: session.id },
       body: { isLocked: true },
       user: admin,
     };
@@ -136,7 +136,7 @@ async function runTests() {
 
     // 7. Thêm khách mời (Guest Player) và điểm danh
     let reqGuest = {
-      params: { sessionId: session.id },
+      params: { id: session.id },
       body: {
         name: 'Bạn Hùng (Khách)',
         tier: 'A',
@@ -171,7 +171,7 @@ async function runTests() {
     // 8. Tính lại tiền sân theo người có mặt
     let recalcData;
     let reqRecalc = {
-      params: { sessionId: session.id },
+      params: { id: session.id },
       user: admin,
     };
     let resRecalc = {

@@ -1,9 +1,0 @@
-// Preserve request bodies and authorization by dispatching aliases in-process.
-const deprecate = canonicalPath => (req, res, next) => {
-  const target = canonicalPath.replace(/:([A-Za-z]+Id)/g, (_, key) => encodeURIComponent(req.params[key]));
-  res.set('X-API-Deprecated', 'true');
-  res.set('Link', `<${target}>; rel="alternate"`);
-  next();
-};
-
-module.exports = { deprecate };

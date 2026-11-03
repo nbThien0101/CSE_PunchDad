@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const { deprecate } = require('../middleware/deprecation.middleware');
 const { castVote, updateVote, getSessionVotes, adminAdjustVote } = require('../controllers/vote.controller');
 const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 
@@ -7,8 +6,7 @@ router.use(authenticate);
 
 router.post('/', castVote);
 router.post('/admin/adjust', requireAdmin, adminAdjustVote);
-router.patch('/:voteId', updateVote);
-router.put('/:voteId', deprecate('/api/votes/:voteId'), updateVote);
-router.get('/session/:sessionId', deprecate('/api/sessions/:sessionId/votes'), getSessionVotes);
+router.put('/:id', updateVote);
+router.get('/session/:sessionId', getSessionVotes);
 
 module.exports = router;

@@ -3,7 +3,7 @@
   "info": {
     "title": "CSE HitDad - Football Club Management API",
     "version": "1.2.4",
-    "description": "\nTài liệu RESTful API chính thức của hệ thống quản lý câu lạc bộ bóng đá **CSE HitDad**.\n\nTài liệu này bao gồm 2 API Collections trọng tâm:\n1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.\n2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.\n\n---\n### Hướng dẫn Xác thực (Authentication)\nĐa số các endpoint yêu cầu gửi JWT Access Token trong HTTP Request Header:\n```http\nAuthorization: Bearer <your_access_token>\n```\n- Quyền **MEMBER**: Được truy cập các thông tin cá nhân và thanh toán liên quan đến chính mình.\n- Quyền **ADMIN**: Ban Cán Sự có toàn quyền phê duyệt thành viên, cập nhật tier/thủ môn, xuất Excel và cấu hình PayOS.\n    \n\nUse Auth → login, copy accessToken and paste the raw token in Authorize (do not include Bearer). User and Payment remain the two assignment collections. Deprecated operations are kept for existing clients. Profile PATCH requires displayName; membership approval uses decision. Payment commands use POST because they may update timestamps and session state.",
+    "description": "\nTài liệu RESTful API chính thức của hệ thống quản lý câu lạc bộ bóng đá **CSE HitDad**.\n\nTài liệu này bao gồm 2 API Collections trọng tâm:\n1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.\n2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.\n\n---\n### Hướng dẫn Xác thực (Authentication)\nĐa số các endpoint yêu cầu gửi JWT Access Token trong HTTP Request Header:\n```http\nAuthorization: Bearer <your_access_token>\n```\n- Quyền **MEMBER**: Được truy cập các thông tin cá nhân và thanh toán liên quan đến chính mình.\n- Quyền **ADMIN**: Ban Cán Sự có toàn quyền phê duyệt thành viên, cập nhật tier/thủ môn, xuất Excel và cấu hình PayOS.\n    ",
     "contact": {
       "name": "CSE HitDad Tech Team",
       "email": "admin@cse-hitdad.internal"
@@ -25,10 +25,6 @@
   ],
   "tags": [
     {
-      "name": "Auth",
-      "description": "Login to obtain a token for the User and Payment collections."
-    },
-    {
       "name": "User",
       "description": "Quản lý thành viên, hồ sơ cá nhân, avatar, QR ngân hàng và quy trình duyệt thành viên"
     },
@@ -43,7 +39,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Paste the raw accessToken from POST /api/auth/login. Swagger adds the Bearer prefix."
+        "description": "Nhập JWT access token có dạng: `Bearer <token>`"
       }
     },
     "schemas": {
@@ -500,7 +496,7 @@
           "User"
         ],
         "summary": "Lấy danh sách tất cả thành viên CLB",
-        "description": "Trả về danh sách thành viên đã được phê duyệt (`membershipStatus = APPROVED`). Nếu người gọi là ADMIN, thông tin `email` sẽ được trả về đầy đủ; nếu là MEMBER thông thường, `email` sẽ bị ẩn.\n\nDeprecated: use GET /api/users. The original response and authorization are preserved.",
+        "description": "Trả về danh sách thành viên đã được phê duyệt (`membershipStatus = APPROVED`). Nếu người gọi là ADMIN, thông tin `email` sẽ được trả về đầy đủ; nếu là MEMBER thông thường, `email` sẽ bị ẩn.",
         "security": [
           {
             "BearerAuth": []
@@ -544,15 +540,8 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
-        },
-        "deprecated": true
+        }
       }
     },
     "/api/users/export-excel": {
@@ -598,12 +587,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
@@ -658,12 +641,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
@@ -702,103 +679,12 @@
           },
           "403": {
             "description": "Yêu cầu quyền Admin"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
     "/api/users/membership-requests/{userId}": {
       "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Phê duyệt hoặc từ chối đơn gia nhập CLB",
-        "description": "Chỉ dành cho ADMIN. Quyết định duyệt (`APPROVED`) đưa tài khoản vào CLB hoặc từ chối (`REJECTED`). Thao tác nguyên tử, lưu vết thời gian và người duyệt.\n\nDeprecated: use PATCH /api/users/membership-requests/{userId}. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "description": "ID người dùng đang chờ duyệt (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewMembershipBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Xử lý đơn thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Đã duyệt thành viên vào CLB"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Quyết định duyệt không hợp lệ",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Yêu cầu quyền Admin"
-          },
-          "409": {
-            "description": "Yêu cầu không còn chờ duyệt hoặc không tồn tại",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "patch": {
         "tags": [
           "User"
         ],
@@ -873,108 +759,12 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
     "/api/users/{userId}/tier": {
       "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Cập nhật phân hạng trình độ (Tier) của thành viên",
-        "description": "Chỉ dành cho ADMIN. Thiết lập xếp loại trình độ chuyên môn đá bóng (ví dụ: A, B, C, D) phục vụ việc thuật toán tự động chia 2 đội cân bằng trình độ.\n\nDeprecated: use PATCH /api/users/{userId}/tier. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "description": "ID thành viên (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTierBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Cập nhật tier thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Cập nhật tier thành công"
-                    },
-                    "user": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "username": {
-                          "type": "string"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string"
-                        },
-                        "tier": {
-                          "type": "string",
-                          "nullable": true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Yêu cầu quyền Admin"
-          },
-          "404": {
-            "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "patch": {
         "tags": [
           "User"
         ],
@@ -1054,110 +844,12 @@
           },
           "404": {
             "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
     "/api/users/{userId}/goalkeeper": {
       "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Cập nhật vai trò thủ môn cho thành viên",
-        "description": "Chỉ dành cho ADMIN. Đánh dấu hoặc bỏ đánh dấu thành viên là thủ môn của CLB.\n\nDeprecated: use PATCH /api/users/{userId}/goalkeeper. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateGoalkeeperBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Cập nhật vai trò thủ môn thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Cập nhật vai trò thủ môn thành công"
-                    },
-                    "user": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "username": {
-                          "type": "string"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string"
-                        },
-                        "tier": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "isGoalkeeper": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Yêu cầu quyền Admin"
-          },
-          "404": {
-            "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "patch": {
         "tags": [
           "User"
         ],
@@ -1239,761 +931,12 @@
           },
           "404": {
             "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
     "/api/users/profile": {
       "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Cập nhật thông tin hồ sơ cá nhân",
-        "description": "Người dùng cập nhật tên hiển thị (bắt buộc, tối đa 50 ký tự), số điện thoại VN, thông tin ngân hàng và vị trí thủ môn.\n\nDeprecated: use PATCH /api/users/me. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Cập nhật thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Cập nhật thông tin thành công"
-                    },
-                    "user": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "username": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string"
-                        },
-                        "phone": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "bankInfo": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "avatar": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "tier": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "isGoalkeeper": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Tên hiển thị trống, quá 50 ký tự hoặc số điện thoại không hợp lệ",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      }
-    },
-    "/api/users/change-password": {
-      "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Đổi mật khẩu tài khoản",
-        "description": "Xác thực mật khẩu cũ và băm mật khẩu mới với bcrypt (salt 12 rounds). Tự động tăng `authVersion` nhằm lập tức vô hiệu hoá toàn bộ token cũ trên các thiết bị khác.\n\nDeprecated: use PUT /api/users/me/password. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Đổi mật khẩu thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Đổi mật khẩu thành công"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Mật khẩu hiện tại sai hoặc mật khẩu mới dưới 6 ký tự / trùng mật khẩu cũ",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "409": {
-            "description": "Mật khẩu vừa bị thay đổi"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      }
-    },
-    "/api/users/avatar": {
-      "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Tải lên ảnh đại diện (Base64)",
-        "description": "Tải lên ảnh avatar cá nhân dạng Data URI Base64. Hỗ trợ PNG, JPEG, WebP, giới hạn kích thước tối đa 2MB.\n\nDeprecated: use PUT /api/users/me/avatar. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadAvatarBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Cập nhật avatar thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Cập nhật ảnh đại diện thành công"
-                    },
-                    "avatar": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ảnh trống, định dạng không được hỗ trợ hoặc vượt quá 2MB",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "delete": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Xóa ảnh đại diện",
-        "description": "Xóa ảnh avatar cá nhân của tài khoản hiện tại.\n\nDeprecated: use DELETE /api/users/me/avatar. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Xóa avatar thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Xóa ảnh đại diện thành công"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      }
-    },
-    "/api/users/qr-code": {
-      "put": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Tải lên mã QR thanh toán cá nhân (Base64)",
-        "description": "Tải lên mã QR ngân hàng cá nhân dưới dạng Data URI Base64 (PNG, JPEG, WebP, tối đa 2MB) để các thành viên khác quét chuyển tiền khi cần.\n\nDeprecated: use PUT /api/users/me/qr-code. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadQRCodeBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Upload mã QR thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Upload QR code thành công"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ảnh không hợp lệ hoặc quá 2MB"
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "delete": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Xóa mã QR thanh toán cá nhân",
-        "description": "Xóa mã QR chuyển khoản cá nhân của tài khoản hiện tại.\n\nDeprecated: use DELETE /api/users/me/qr-code. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Xóa QR code thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Xóa QR code thành công"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      }
-    },
-    "/api/users/{userId}": {
-      "delete": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Xóa thành viên khỏi CLB",
-        "description": "Chỉ dành cho ADMIN. Xóa vĩnh viễn thành viên khỏi cơ sở dữ liệu cùng các votes, payments liên quan. Không cho phép Admin tự xóa chính mình hoặc xóa Admin khác.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Đã xóa thành viên",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Đã xóa thành viên Nguyễn Văn An"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Không thể tự xóa chính mình"
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Không thể xóa tài khoản Admin"
-          },
-          "404": {
-            "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        }
-      }
-    },
-    "/api/payments/session/{sessionId}": {
-      "get": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "Lấy danh sách các khoản thanh toán của buổi đấu",
-        "description": "Lấy toàn bộ danh sách tiền sân của trận đấu (`sessionId`), thông tin người ứng tiền (Payer) và bảng tổng kết các trạng thái (PENDING, PAID, CONFIRMED). Tự động đối soát realtime với PayOS cho các giao dịch PENDING có orderCode.\n\nDeprecated: use GET /api/sessions/{sessionId}/payments. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "sessionId",
-            "in": "path",
-            "required": true,
-            "description": "ID buổi đấu (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Chi tiết các khoản thanh toán và tổng kết",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "session": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "totalCost": {
-                          "type": "number",
-                          "example": 500000
-                        },
-                        "status": {
-                          "type": "string",
-                          "example": "BOOKED"
-                        },
-                        "payer": {
-                          "type": "object",
-                          "nullable": true,
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "displayName": {
-                              "type": "string",
-                              "example": "Nguyễn Hoàng Phúc"
-                            },
-                            "bankInfo": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "phone": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "avatar": {
-                              "type": "string",
-                              "nullable": true
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "payments": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PaymentItem"
-                      }
-                    },
-                    "summary": {
-                      "type": "object",
-                      "properties": {
-                        "totalCost": {
-                          "type": "number",
-                          "example": 500000
-                        },
-                        "pending": {
-                          "type": "integer",
-                          "example": 2
-                        },
-                        "paid": {
-                          "type": "integer",
-                          "example": 1
-                        },
-                        "confirmed": {
-                          "type": "integer",
-                          "example": 7
-                        },
-                        "total": {
-                          "type": "integer",
-                          "example": 10
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "404": {
-            "description": "Session không tồn tại"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      }
-    },
-    "/api/payments/payos-confirm-webhook": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "Đăng ký và xác thực Webhook URL với PayOS",
-        "description": "Chỉ dành cho ADMIN. Cấu hình endpoint Webhook trên hệ thống PayOS để nhận callback khi có giao dịch chuyển khoản thành công.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "webhookUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "example": "https://cse-punchdad-api.onrender.com/api/payments/payos-webhook"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Đăng ký webhook thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Đăng ký Webhook với PayOS thành công"
-                    },
-                    "result": {
-                      "type": "object"
-                    },
-                    "webhookUrl": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Lỗi cấu hình từ PayOS"
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Chỉ Admin mới có quyền cấu hình Webhook"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        }
-      }
-    },
-    "/api/payments/payos-webhook": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "Webhook nhận thông báo giao dịch thành công từ máy chủ PayOS",
-        "description": "Endpoint công khai (Public) dành riêng cho cổng PayOS gửi kết quả thanh toán. Bảo mật bằng xác thực chữ ký điện tử HMAC-SHA256 (checksum). Khi mã kết quả `code === \"00\"`, hệ thống tự động cập nhật payment sang `CONFIRMED` và hoàn tất session nếu đã đủ tiền.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayOSWebhookBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Webhook đã được ghi nhận và xử lý",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Webhook processed"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Chữ ký webhook không hợp lệ (Signature verification failed)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "security": []
-      }
-    },
-    "/api/users": {
-      "get": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Lấy danh sách tất cả thành viên CLB",
-        "description": "Trả về danh sách thành viên đã được phê duyệt (`membershipStatus = APPROVED`). Nếu người gọi là ADMIN, thông tin `email` sẽ được trả về đầy đủ; nếu là MEMBER thông thường, `email` sẽ bị ẩn.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Danh sách thành viên",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "members": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/UserMember"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa đăng nhập hoặc token không hợp lệ",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Tài khoản chưa được duyệt gia nhập CLB",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        }
-      }
-    },
-    "/api/users/me": {
-      "patch": {
         "tags": [
           "User"
         ],
@@ -2084,17 +1027,11 @@
           },
           "401": {
             "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/users/me/password": {
+    "/api/users/change-password": {
       "put": {
         "tags": [
           "User"
@@ -2148,17 +1085,11 @@
           },
           "409": {
             "description": "Mật khẩu vừa bị thay đổi"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/users/me/avatar": {
+    "/api/users/avatar": {
       "put": {
         "tags": [
           "User"
@@ -2212,12 +1143,6 @@
           },
           "401": {
             "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       },
@@ -2251,17 +1176,11 @@
           },
           "401": {
             "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/users/me/qr-code": {
+    "/api/users/qr-code": {
       "put": {
         "tags": [
           "User"
@@ -2305,12 +1224,6 @@
           },
           "401": {
             "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       },
@@ -2344,17 +1257,11 @@
           },
           "401": {
             "description": "Chưa xác thực"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/users/{userId}/qr-code": {
+    "/api/users/{id}/qr-code": {
       "get": {
         "tags": [
           "User"
@@ -2368,7 +1275,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "id",
             "in": "path",
             "required": true,
             "description": "ID người dùng (UUID)",
@@ -2407,17 +1314,66 @@
           },
           "404": {
             "description": "Không tìm thấy người dùng"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/sessions/{sessionId}/payments": {
+    "/api/users/{userId}": {
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Xóa thành viên khỏi CLB",
+        "description": "Chỉ dành cho ADMIN. Xóa vĩnh viễn thành viên khỏi cơ sở dữ liệu cùng các votes, payments liên quan. Không cho phép Admin tự xóa chính mình hoặc xóa Admin khác.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa thành viên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã xóa thành viên Nguyễn Văn An"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Không thể tự xóa chính mình"
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          },
+          "403": {
+            "description": "Không thể xóa tài khoản Admin"
+          },
+          "404": {
+            "description": "Không tìm thấy người dùng"
+          }
+        }
+      }
+    },
+    "/api/payments/session/{sessionId}": {
       "get": {
         "tags": [
           "Payment"
@@ -2533,79 +1489,12 @@
           },
           "404": {
             "description": "Session không tồn tại"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/payments/{paymentId}/mark-paid": {
+    "/api/payments/{id}/mark-paid": {
       "put": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "Đánh dấu đã chuyển tiền mặt / thủ công",
-        "description": "Người tham gia tự đánh dấu mình đã chuyển khoản hoặc đưa tiền mặt cho thủ quỹ (trạng thái chuyển sang `PAID`). Chỉ chính chủ sở hữu khoản thanh toán mới được thao tác.\n\nDeprecated: use POST /api/payments/{paymentId}/mark-paid. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "paymentId",
-            "in": "path",
-            "required": true,
-            "description": "Payment ID (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Đã đánh dấu đã chuyển tiền",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Payment marked as paid"
-                    },
-                    "payment": {
-                      "$ref": "#/components/schemas/PaymentItem"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Chỉ được phép đánh dấu khoản thanh toán của chính mình"
-          },
-          "404": {
-            "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "post": {
         "tags": [
           "Payment"
         ],
@@ -2618,7 +1507,7 @@
         ],
         "parameters": [
           {
-            "name": "paymentId",
+            "name": "id",
             "in": "path",
             "required": true,
             "description": "Payment ID (UUID)",
@@ -2656,83 +1545,12 @@
           },
           "404": {
             "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/payments/{paymentId}/confirm": {
+    "/api/payments/{id}/confirm": {
       "put": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "Xác nhận đã nhận được tiền sân",
-        "description": "Chỉ dành cho người ứng tiền của session (Payer) hoặc ADMIN. Chuyển trạng thái khoản thanh toán sang `CONFIRMED`. Nếu toàn bộ người tham gia đều đã hoàn tất nộp tiền, session sẽ tự động chuyển thành `COMPLETED`.\n\nDeprecated: use POST /api/payments/{paymentId}/confirm. The original response and authorization are preserved.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "paymentId",
-            "in": "path",
-            "required": true,
-            "description": "Payment ID (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Xác nhận đã nhận tiền thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Payment confirmed! All payments completed - session marked as COMPLETED"
-                    },
-                    "payment": {
-                      "$ref": "#/components/schemas/PaymentItem"
-                    },
-                    "sessionCompleted": {
-                      "type": "boolean",
-                      "example": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Chưa xác thực"
-          },
-          "403": {
-            "description": "Chỉ Payer của buổi đấu hoặc Admin mới có quyền xác nhận"
-          },
-          "404": {
-            "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
-          }
-        },
-        "deprecated": true
-      },
-      "post": {
         "tags": [
           "Payment"
         ],
@@ -2745,7 +1563,7 @@
         ],
         "parameters": [
           {
-            "name": "paymentId",
+            "name": "id",
             "in": "path",
             "required": true,
             "description": "Payment ID (UUID)",
@@ -2787,17 +1605,11 @@
           },
           "404": {
             "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/payments/{paymentId}/payos-link": {
+    "/api/payments/{id}/payos-link": {
       "post": {
         "tags": [
           "Payment"
@@ -2811,7 +1623,7 @@
         ],
         "parameters": [
           {
-            "name": "paymentId",
+            "name": "id",
             "in": "path",
             "required": true,
             "description": "Payment ID (UUID)",
@@ -2850,17 +1662,11 @@
           },
           "404": {
             "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/payments/{paymentId}/payos-status": {
+    "/api/payments/{id}/payos-status": {
       "get": {
         "tags": [
           "Payment"
@@ -2874,7 +1680,7 @@
         ],
         "parameters": [
           {
-            "name": "paymentId",
+            "name": "id",
             "in": "path",
             "required": true,
             "description": "Payment ID (UUID)",
@@ -2923,43 +1729,32 @@
           },
           "404": {
             "description": "Không tìm thấy khoản thanh toán"
-          },
-          "429": {
-            "description": "Rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }
     },
-    "/api/auth/login": {
+    "/api/payments/payos-confirm-webhook": {
       "post": {
         "tags": [
-          "Auth"
+          "Payment"
         ],
-        "summary": "Login with username or email",
-        "description": "Approved club accounts only. Pending/rejected membership is denied with HTTP 403. No demo password is bundled; use an approved test account provided by the project owner.",
-        "security": [],
+        "summary": "Đăng ký và xác thực Webhook URL với PayOS",
+        "description": "Chỉ dành cho ADMIN. Cấu hình endpoint Webhook trên hệ thống PayOS để nhận callback khi có giao dịch chuyển khoản thành công.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "username",
-                  "password"
-                ],
                 "properties": {
-                  "username": {
+                  "webhookUrl": {
                     "type": "string",
-                    "example": "your-approved-username"
-                  },
-                  "password": {
-                    "type": "string",
-                    "format": "password",
-                    "minLength": 1
+                    "format": "uri",
+                    "example": "https://cse-punchdad-api.onrender.com/api/payments/payos-webhook"
                   }
                 }
               }
@@ -2968,75 +1763,20 @@
         },
         "responses": {
           "200": {
-            "description": "Authenticated account and token pair",
+            "description": "Đăng ký webhook thành công",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "user",
-                    "accessToken",
-                    "refreshToken"
-                  ],
                   "properties": {
                     "message": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "Đăng ký Webhook với PayOS thành công"
                     },
-                    "user": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "username": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": [
-                            "ADMIN",
-                            "MEMBER"
-                          ]
-                        },
-                        "membershipStatus": {
-                          "type": "string",
-                          "enum": [
-                            "APPROVED"
-                          ]
-                        },
-                        "phone": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "bankInfo": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "tier": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "isGoalkeeper": {
-                          "type": "boolean"
-                        },
-                        "avatar": {
-                          "type": "string",
-                          "nullable": true
-                        }
-                      }
+                    "result": {
+                      "type": "object"
                     },
-                    "accessToken": {
-                      "type": "string"
-                    },
-                    "refreshToken": {
+                    "webhookUrl": {
                       "type": "string"
                     }
                   }
@@ -3045,10 +1785,57 @@
             }
           },
           "400": {
-            "description": "Validation error; errors array from express-validator"
+            "description": "Lỗi cấu hình từ PayOS"
           },
           "401": {
-            "description": "Invalid credentials",
+            "description": "Chưa xác thực"
+          },
+          "403": {
+            "description": "Chỉ Admin mới có quyền cấu hình Webhook"
+          }
+        }
+      }
+    },
+    "/api/payments/payos-webhook": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Webhook nhận thông báo giao dịch thành công từ máy chủ PayOS",
+        "description": "Endpoint công khai (Public) dành riêng cho cổng PayOS gửi kết quả thanh toán. Bảo mật bằng xác thực chữ ký điện tử HMAC-SHA256 (checksum). Khi mã kết quả `code === \"00\"`, hệ thống tự động cập nhật payment sang `CONFIRMED` và hoàn tất session nếu đã đủ tiền.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayOSWebhookBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook đã được ghi nhận và xử lý",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chữ ký webhook không hợp lệ (Signature verification failed)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3056,15 +1843,6 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Membership pending or rejected; {code,error}"
-          },
-          "429": {
-            "description": "Authentication rate limit exceeded"
-          },
-          "500": {
-            "description": "Unexpected server failure"
           }
         }
       }

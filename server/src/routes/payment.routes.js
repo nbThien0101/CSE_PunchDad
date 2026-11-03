@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const { deprecate } = require('../middleware/deprecation.middleware');
 const {
   getSessionPayments,
   markAsPaid,
@@ -22,15 +21,13 @@ router.post('/payos-webhook', handlePayOSWebhook);
 // ==========================================
 router.use(authenticate);
 
-router.get('/session/:sessionId', deprecate('/api/sessions/:sessionId/payments'), getSessionPayments);
-router.post('/:paymentId/mark-paid', markAsPaid);
-router.put('/:paymentId/mark-paid', deprecate('/api/payments/:paymentId/mark-paid'), markAsPaid);
-router.post('/:paymentId/confirm', confirmPayment);
-router.put('/:paymentId/confirm', deprecate('/api/payments/:paymentId/confirm'), confirmPayment);
+router.get('/session/:sessionId', getSessionPayments);
+router.put('/:id/mark-paid', markAsPaid);
+router.put('/:id/confirm', confirmPayment);
 
 // PayOS Endpoints
 router.post('/payos-confirm-webhook', confirmPayOSWebhook);
-router.post('/:paymentId/payos-link', createPayOSLink);
-router.get('/:paymentId/payos-status', checkPayOSStatus);
+router.post('/:id/payos-link', createPayOSLink);
+router.get('/:id/payos-status', checkPayOSStatus);
 
 module.exports = router;

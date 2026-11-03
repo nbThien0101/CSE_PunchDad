@@ -117,9 +117,7 @@
         <span>⚽</span> CSE HitDad - API Documentation
       </h1>
       <p class="hero-subtitle">
-        Hai API collections: <strong>User</strong> (15 operations chuẩn) & <strong>Payment</strong> (7 operations chuẩn).
-        Mở <strong>Auth → Login</strong>, lấy accessToken rồi dán token vào <strong>Authorize</strong> để gọi thử.
-        Các operations deprecated được giữ để tương thích client cũ.
+        Tài liệu đặc tả tương tác trực tiếp RESTful API gồm 2 API Collections: <strong>User</strong> (15 endpoints) & <strong>Payment</strong> (7 endpoints).
       </p>
       <div class="hero-badges">
         <span class="badge badge-success">● OpenAPI 3.0.3</span>
@@ -140,8 +138,22 @@
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.18.2/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = function() {
+      // Tải spec từ file openapi.json
+      fetch('./openapi.json')
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(spec) {
+          initSwagger(spec);
+        })
+        .catch(function(err) {
+          console.warn('Could not fetch openapi.json, loading via relative url:', err);
+          initSwagger('./openapi.json');
+        });
+
+      function initSwagger(specOrUrl) {
         var config = {
-          url: './openapi.json',
           dom_id: '#swagger-ui',
           deepLinking: true,
           presets: [
@@ -159,7 +171,14 @@
           docExpansion: 'list'
         };
 
+        if (typeof specOrUrl === 'string') {
+          config.url = specOrUrl;
+        } else {
+          config.spec = specOrUrl;
+        }
+
         SwaggerUIBundle(config);
+      }
     };
   </script>
 </body>

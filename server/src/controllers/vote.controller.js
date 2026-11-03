@@ -263,12 +263,12 @@ const castVote = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/votes/:voteId
+ * PUT /api/votes/:id
  * Cập nhật vote
  */
 const updateVote = async (req, res, next) => {
   try {
-    const { voteId: id } = req.params;
+    const { id } = req.params;
     const { status, reason, timeSlotIds = [] } = req.body;
 
     if (!['JOIN', 'DECLINE'].includes(status)) {
@@ -391,7 +391,7 @@ const updateVote = async (req, res, next) => {
 };
 
 /**
- * GET /api/sessions/:sessionId/votes
+ * GET /api/votes/session/:sessionId
  * Lấy danh sách votes của một session
  */
 const getSessionVotes = async (req, res, next) => {

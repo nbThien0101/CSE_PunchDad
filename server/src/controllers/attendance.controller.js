@@ -34,12 +34,12 @@ function checkIsLateDecline(session, targetDate = new Date()) {
 }
 
 /**
- * POST /api/sessions/:sessionId/lock-vote
+ * POST /api/sessions/:id/lock-vote
  * Admin chốt danh sách vote hoặc mở lại bình chọn
  */
 const toggleLockVote = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
     const { isLocked } = req.body;
 
     const session = await prisma.session.findUnique({
@@ -72,12 +72,12 @@ const toggleLockVote = async (req, res, next) => {
 };
 
 /**
- * GET /api/sessions/:sessionId/attendance
+ * GET /api/sessions/:id/attendance
  * Lấy toàn bộ dữ liệu cho Matchday Attendance Dashboard
  */
 const getAttendanceDashboard = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -200,12 +200,12 @@ const getAttendanceDashboard = async (req, res, next) => {
 };
 
 /**
- * POST /api/sessions/:sessionId/attendance
+ * POST /api/sessions/:id/attendance
  * Admin điểm danh 1 thành viên (Có mặt / Chưa có mặt)
  */
 const updateAttendance = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
     const { userId, isCheckedIn, checkInNote } = req.body;
 
     if (!userId) {
@@ -266,12 +266,12 @@ const updateAttendance = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/sessions/:sessionId/attendance
+ * POST /api/sessions/:id/attendance/bulk
  * Admin điểm danh nhanh tất cả người đã vote JOIN hoặc hủy tất cả
  */
 const bulkAttendance = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
     const { isCheckedIn } = req.body;
 
     const checked = Boolean(isCheckedIn);
@@ -297,13 +297,13 @@ const bulkAttendance = async (req, res, next) => {
 };
 
 /**
- * POST /api/sessions/:sessionId/guests
+ * POST /api/sessions/:id/guests
  * Admin thêm khách mời mới (Guest player)
  * Mặc định nằm trong danh sách Dự bị (status = RESERVE)
  */
 const addGuest = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
     const { name, phone, tier, isGoalkeeper, note, status, isCheckedIn } = req.body;
 
     if (!name || !name.trim()) {
@@ -341,12 +341,12 @@ const addGuest = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/sessions/:sessionId/guests/:guestId
+ * PUT /api/sessions/:id/guests/:guestId
  * Admin cập nhật thông tin khách mời (đổi trạng thái dự bị / đá chính, điểm danh, sửa thông tin)
  */
 const updateGuest = async (req, res, next) => {
   try {
-    const { sessionId: id, guestId } = req.params;
+    const { id, guestId } = req.params;
     const { name, phone, tier, isGoalkeeper, status, isCheckedIn, note } = req.body;
 
     const existingGuest = await prisma.guestPlayer.findUnique({
@@ -389,12 +389,12 @@ const updateGuest = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/sessions/:sessionId/guests/:guestId
+ * DELETE /api/sessions/:id/guests/:guestId
  * Admin xóa khách mời khỏi trận đấu
  */
 const deleteGuest = async (req, res, next) => {
   try {
-    const { sessionId: id, guestId } = req.params;
+    const { id, guestId } = req.params;
 
     const existing = await prisma.guestPlayer.findUnique({
       where: { id: guestId },
@@ -415,12 +415,12 @@ const deleteGuest = async (req, res, next) => {
 };
 
 /**
- * POST /api/sessions/:sessionId/recalculate-payments
+ * POST /api/sessions/:id/recalculate-payments
  * Tính toán lại tiền sân dựa trên số người THỰC TẾ CÓ MẶT (Attended Members + Attended Guests)
  */
 const recalculatePayments = async (req, res, next) => {
   try {
-    const { sessionId: id } = req.params;
+    const { id } = req.params;
 
     const session = await prisma.session.findUnique({
       where: { id },

@@ -84,7 +84,7 @@ const getFeedbacks = async (req, res, next) => {
 
 const updateFeedback = async (req, res, next) => {
   try {
-    const { feedbackId: id } = req.params;
+    const { id } = req.params;
     const status = String(req.body.status || '').toUpperCase();
     const adminNote = String(req.body.adminNote || '').trim();
 
