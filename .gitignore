@@ -31,4 +31,7 @@ server/prisma/migrations/**/migration_lock.toml
 # Coverage
 coverage/
 
-docs/
+# Documentation
+/docs/assignment-1/
+!server/src/docs/
+!docs/swagger-web/

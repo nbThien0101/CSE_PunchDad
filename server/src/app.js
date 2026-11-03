@@ -31,6 +31,14 @@ app.set('trust proxy', 1);
 // HTTP Security Headers (OWASP standards: chống XSS, MIME sniffing, Clickjacking, v.v.)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'script-src': ["'self'", "'unsafe-inline'"],
+      'style-src': ["'self'", "'unsafe-inline'"],
+      'img-src': ["'self'", 'data:', 'https://validator.swagger.io'],
+    },
+  },
 }));
 
 // Chống tấn công HTTP Parameter Pollution (HPP)
@@ -73,6 +81,31 @@ app.use(speedLimiter);
 app.use('/api', globalLimiter);
 
 // ==========================================
+// Swagger Documentation
+// ==========================================
+const swaggerUi = require('swagger-ui-express');
+const swaggerDoc = require('./docs/swaggerDoc');
+
+app.get(['/swagger.json', '/api-docs/swagger.json'], (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerDoc);
+});
+
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDoc, {
+    customSiteTitle: 'CSE HitDad - API Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+    },
+  })
+);
+
+// ==========================================
 // Routes
 // ==========================================
 app.get('/api/health', (req, res) => {
@@ -101,6 +134,7 @@ app.use(errorHandler);
 // ==========================================
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📖 Swagger API Docs: http://localhost:${PORT}/api-docs`);
   console.log(`🛡️  DoS/DDoS Protection active: Helmet, HPP, RateLimiters & SpeedBumps`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
 });
