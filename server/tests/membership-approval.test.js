@@ -198,14 +198,16 @@ test('all approval routes require authenticated admin access', async () => {
       use(handler) { authentication = handler; },
       get(route, ...handlers) { routes.push({ route, handlers }); },
       put(route, ...handlers) { routes.push({ route, handlers }); },
+      patch(route, ...handlers) { routes.push({ route, handlers }); },
       delete() {},
     }) },
     '../controllers/user.controller': controller,
     '../middleware/auth.middleware': middleware,
+    '../middleware/deprecation.middleware': require('../src/middleware/deprecation.middleware'),
   });
   assert.equal(authentication, middleware.authenticate);
   const approvals = routes.filter(route => route.route.startsWith('/membership-requests'));
-  assert.equal(approvals.length, 3);
+  assert.equal(approvals.length, 4);
   for (const { handlers } of approvals) {
     assert.equal(handlers[0], middleware.requireAdmin);
     const member = await invoke(handlers[0], { user: { role: 'MEMBER' } });

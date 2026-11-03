@@ -12,7 +12,10 @@ async function invoke(session = baseSession, body = { startTime: '19:00', endTim
   const created = [];
   const registrations = [];
   const tx = {
-    session: { findUnique: async () => session },
+    session: { findUnique: async ({ where }) => {
+      assert.equal(where.id, 'session-1');
+      return session;
+    } },
     sessionTimeSlot: { create: async ({ data }) => {
       const slot = { id: `new-${created.length}`, ...data };
       created.push(slot);
@@ -27,7 +30,7 @@ async function invoke(session = baseSession, body = { startTime: '19:00', endTim
     return fn(tx);
   } };
   const res = { code: 200, status(code) { this.code = code; return this; }, json(data) { this.data = data; return this; } };
-  await addTimeSlot({ params: { id: 'session-1' }, user: { id: 'member', role: 'MEMBER' }, body }, res, error => { throw error; }, db);
+  await addTimeSlot({ params: { sessionId: 'session-1' }, user: { id: 'member', role: 'MEMBER' }, body }, res, error => { throw error; }, db);
   return { res, created, registrations };
 }
 

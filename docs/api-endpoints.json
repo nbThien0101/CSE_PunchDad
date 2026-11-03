@@ -1,0 +1,515 @@
+[
+  {
+    "method": "POST",
+    "old": "/api/auth/register",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/register",
+    "handler": "register",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/login",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/login",
+    "handler": "login",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/refresh",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/refresh",
+    "handler": "refresh",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "GET",
+    "old": "/api/auth/me",
+    "canonicalMethod": "GET",
+    "canonical": "/api/auth/me",
+    "handler": "getMe",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/send-otp",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/send-otp",
+    "handler": "sendOTP",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/verify-otp",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/verify-otp",
+    "handler": "verifyOTP",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/forgot-password/send-otp",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/forgot-password/send-otp",
+    "handler": "forgotPasswordSendOTP",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/forgot-password/verify-otp",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/forgot-password/verify-otp",
+    "handler": "forgotPasswordVerifyOTP",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "POST",
+    "old": "/api/auth/forgot-password/reset",
+    "canonicalMethod": "POST",
+    "canonical": "/api/auth/forgot-password/reset",
+    "handler": "resetPassword",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "GET",
+    "old": "/api/users/members",
+    "canonicalMethod": "GET",
+    "canonical": "/api/users",
+    "handler": "getAllMembers",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/users/export-excel",
+    "canonicalMethod": "GET",
+    "canonical": "/api/users/export-excel",
+    "handler": "exportMembersExcel",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/users/membership-requests",
+    "canonicalMethod": "GET",
+    "canonical": "/api/users/membership-requests",
+    "handler": "getMembershipRequests",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/users/membership-requests/count",
+    "canonicalMethod": "GET",
+    "canonical": "/api/users/membership-requests/count",
+    "handler": "getMembershipRequestCount",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/membership-requests/:userId",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/users/membership-requests/:userId",
+    "handler": "reviewMembershipRequest",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/:userId/tier",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/users/:userId/tier",
+    "handler": "updateUserTier",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/:userId/goalkeeper",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/users/:userId/goalkeeper",
+    "handler": "updateUserGoalkeeper",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/profile",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/users/me",
+    "handler": "updateProfile",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/change-password",
+    "canonicalMethod": "PUT",
+    "canonical": "/api/users/me/password",
+    "handler": "changePassword",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/avatar",
+    "canonicalMethod": "PUT",
+    "canonical": "/api/users/me/avatar",
+    "handler": "uploadAvatar",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/users/avatar",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/users/me/avatar",
+    "handler": "deleteAvatar",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/users/qr-code",
+    "canonicalMethod": "PUT",
+    "canonical": "/api/users/me/qr-code",
+    "handler": "uploadQRCode",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/users/:id/qr-code",
+    "canonicalMethod": "GET",
+    "canonical": "/api/users/:userId/qr-code",
+    "handler": "getQRCode",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/users/qr-code",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/users/me/qr-code",
+    "handler": "deleteQRCode",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/users/:userId",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/users/:userId",
+    "handler": "deleteMember",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/sessions",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions",
+    "handler": "getSessions",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/sessions/:id",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions/:sessionId",
+    "handler": "getSession",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions",
+    "handler": "createSession",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/time-slots",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/time-slots",
+    "handler": "addTimeSlot",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/sessions/:id",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/sessions/:sessionId",
+    "handler": "updateSession",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/sessions/:id/force",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/sessions/:sessionId/force",
+    "handler": "adminDeleteSession",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/sessions/:id",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/cancel",
+    "handler": "deleteSession",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/sessions/:id/teams/suggestions",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions/:sessionId/teams/suggestions",
+    "handler": "getTeamSuggestions",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/teams/generate",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/teams/generate",
+    "handler": "generateTeams",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/sessions/:id/teams",
+    "canonicalMethod": "PUT",
+    "canonical": "/api/sessions/:sessionId/teams",
+    "handler": "saveTeams",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/sessions/:id/teams",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/sessions/:sessionId/teams",
+    "handler": "deleteTeams",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/sessions/:id/attendance",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions/:sessionId/attendance",
+    "handler": "getAttendanceDashboard",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/lock-vote",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/lock-vote",
+    "handler": "toggleLockVote",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/attendance",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/attendance",
+    "handler": "updateAttendance",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/attendance/bulk",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/sessions/:sessionId/attendance",
+    "handler": "bulkAttendance",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/guests",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/guests",
+    "handler": "addGuest",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/sessions/:id/guests/:guestId",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/sessions/:sessionId/guests/:guestId",
+    "handler": "updateGuest",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "DELETE",
+    "old": "/api/sessions/:id/guests/:guestId",
+    "canonicalMethod": "DELETE",
+    "canonical": "/api/sessions/:sessionId/guests/:guestId",
+    "handler": "deleteGuest",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/sessions/:id/recalculate-payments",
+    "canonicalMethod": "POST",
+    "canonical": "/api/sessions/:sessionId/recalculate-payments",
+    "handler": "recalculatePayments",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/votes",
+    "canonicalMethod": "POST",
+    "canonical": "/api/votes",
+    "handler": "castVote",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/votes/admin/adjust",
+    "canonicalMethod": "POST",
+    "canonical": "/api/votes/admin/adjust",
+    "handler": "adminAdjustVote",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/votes/:id",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/votes/:voteId",
+    "handler": "updateVote",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/votes/session/:sessionId",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions/:sessionId/votes",
+    "handler": "getSessionVotes",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/payments/payos-webhook",
+    "canonicalMethod": "POST",
+    "canonical": "/api/payments/payos-webhook",
+    "handler": "handlePayOSWebhook",
+    "admin": false,
+    "public": true
+  },
+  {
+    "method": "GET",
+    "old": "/api/payments/session/:sessionId",
+    "canonicalMethod": "GET",
+    "canonical": "/api/sessions/:sessionId/payments",
+    "handler": "getSessionPayments",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/payments/:id/mark-paid",
+    "canonicalMethod": "POST",
+    "canonical": "/api/payments/:paymentId/mark-paid",
+    "handler": "markAsPaid",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/payments/:id/confirm",
+    "canonicalMethod": "POST",
+    "canonical": "/api/payments/:paymentId/confirm",
+    "handler": "confirmPayment",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/payments/payos-confirm-webhook",
+    "canonicalMethod": "POST",
+    "canonical": "/api/payments/payos-confirm-webhook",
+    "handler": "confirmPayOSWebhook",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/payments/:id/payos-link",
+    "canonicalMethod": "POST",
+    "canonical": "/api/payments/:paymentId/payos-link",
+    "handler": "createPayOSLink",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/payments/:id/payos-status",
+    "canonicalMethod": "GET",
+    "canonical": "/api/payments/:paymentId/payos-status",
+    "handler": "checkPayOSStatus",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "POST",
+    "old": "/api/feedback",
+    "canonicalMethod": "POST",
+    "canonical": "/api/feedback",
+    "handler": "createFeedback",
+    "admin": false,
+    "public": false
+  },
+  {
+    "method": "GET",
+    "old": "/api/feedback",
+    "canonicalMethod": "GET",
+    "canonical": "/api/feedback",
+    "handler": "getFeedbacks",
+    "admin": true,
+    "public": false
+  },
+  {
+    "method": "PUT",
+    "old": "/api/feedback/:id",
+    "canonicalMethod": "PATCH",
+    "canonical": "/api/feedback/:feedbackId",
+    "handler": "updateFeedback",
+    "admin": true,
+    "public": false
+  }
+]

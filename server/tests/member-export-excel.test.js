@@ -1,6 +1,23 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { exportMembersExcel } = require('../src/controllers/user.controller');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { createRequire } = require('node:module');
+const filename = path.resolve(__dirname, '../src/controllers/user.controller.js');
+const ownRequire = createRequire(filename);
+const context = {
+  module: { exports: {} }, Buffer,
+  require(name) {
+    // Export formatting is tested with real ExcelJS; persistence is an external boundary.
+    if (name === '@prisma/client') return { PrismaClient: function () {
+      return { user: { findMany: async () => [] } };
+    } };
+    return ownRequire(name);
+  },
+};
+vm.runInNewContext(fs.readFileSync(filename, 'utf8'), context, { filename });
+const { exportMembersExcel } = context.module.exports;
 const ExcelJS = require('exceljs');
 
 test('member excel export rejects non-admin users with 403', async () => {

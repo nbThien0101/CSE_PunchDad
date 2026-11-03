@@ -4,7 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 /**
- * GET /api/users/members
+ * GET /api/users
  * Lấy danh sách tất cả thành viên CLB
  */
 const getAllMembers = async (req, res, next) => {
@@ -94,7 +94,7 @@ const reviewMembershipRequest = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/:userId/tier
+ * PATCH /api/users/:userId/tier
  * Admin cập nhật tier cho thành viên
  */
 const updateUserTier = async (req, res, next) => {
@@ -132,7 +132,7 @@ const updateUserTier = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/profile
+ * PATCH /api/users/me
  * Cập nhật thông tin cá nhân
  */
 const updateProfile = async (req, res, next) => {
@@ -200,7 +200,7 @@ const updateProfile = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/qr-code
+ * PUT /api/users/me/qr-code
  * Upload ảnh QR code (Base64)
  */
 const uploadQRCode = async (req, res, next) => {
@@ -240,12 +240,12 @@ const uploadQRCode = async (req, res, next) => {
 };
 
 /**
- * GET /api/users/:id/qr-code
+ * GET /api/users/:userId/qr-code
  * Lấy ảnh QR code của user
  */
 const getQRCode = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { userId: id } = req.params;
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -271,7 +271,7 @@ const getQRCode = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/users/qr-code
+ * DELETE /api/users/me/qr-code
  * Xóa ảnh QR code
  */
 const deleteQRCode = async (req, res, next) => {
@@ -335,7 +335,7 @@ const deleteMember = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/avatar
+ * PUT /api/users/me/avatar
  * Upload ảnh đại diện (Base64)
  */
 const uploadAvatar = async (req, res, next) => {
@@ -383,7 +383,7 @@ const uploadAvatar = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/users/avatar
+ * DELETE /api/users/me/avatar
  * Xóa ảnh đại diện
  */
 const deleteAvatar = async (req, res, next) => {
@@ -400,7 +400,7 @@ const deleteAvatar = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/:userId/goalkeeper
+ * PATCH /api/users/:userId/goalkeeper
  * Admin cập nhật vai trò thủ môn cho thành viên
  */
 const updateUserGoalkeeper = async (req, res, next) => {
@@ -439,7 +439,7 @@ const updateUserGoalkeeper = async (req, res, next) => {
 };
 
 /**
- * PUT /api/users/change-password
+ * PUT /api/users/me/password
  * Đổi mật khẩu người dùng
  */
 const changePassword = async (req, res, next) => {

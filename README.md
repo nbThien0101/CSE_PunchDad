@@ -8,6 +8,8 @@
 
 Bản 1.2.4 tích hợp giao diện gluestack UI mới, luồng admin duyệt thành viên, cải tiến chia đội và bản vá JWT/OTP của **CSE HitDad**. Khi nâng cấp, các phiên đăng nhập cũ và các bước xác thực OTP đang dở sẽ hết hiệu lực. Xem [hướng dẫn phát hành và nâng cấp 1.2.4](docs/releases/v1.2.4.md).
 
+API được chuẩn hóa với alias cũ tương thích; xem [hợp đồng và migration API](docs/api-normalization.md). Đặc tả nguồn là `server/src/docs/swagger.json`; chạy `npm run docs:sync` trong `server/` khi sửa. [Hướng dẫn Swagger và cập nhật URL bài nộp cố định](docs/swagger-web/README.md) mô tả luồng Login → Authorize → Try it out.
+
 ## Tính năng hiện tại
 
 | Nhóm | Chức năng |

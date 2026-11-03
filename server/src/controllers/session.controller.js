@@ -53,7 +53,7 @@ const addTimeSlot = async (req, res, next, dbClient = prisma) => {
     }
     const result = await dbClient.$transaction(async tx => {
       const session = await tx.session.findUnique({
-        where: { id: req.params.id },
+        where: { id: req.params.sessionId },
         include: { timeSlots: true },
       });
       if (!session) return { code: 404, error: 'Không tìm thấy trận đấu' };
@@ -141,13 +141,13 @@ const getSessions = async (req, res, next) => {
 };
 
 /**
- * GET /api/sessions/:id
+ * GET /api/sessions/:sessionId
  * Lấy chi tiết một session
  */
 const getSession = async (req, res, next) => {
   try {
     const session = await prisma.session.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.sessionId },
       include: {
         createdBy: {
           select: { id: true, displayName: true, avatar: true },
@@ -270,12 +270,12 @@ const createSession = async (req, res, next) => {
 };
 
 /**
- * PUT /api/sessions/:id
+ * PATCH /api/sessions/:sessionId
  * Admin cập nhật session (đặt sân, chọn người thanh toán, v.v.)
  */
 const updateSession = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
     const updateData = {};
     let normalizedTimeSlots;
     const existingSession = await prisma.session.findUnique({
@@ -450,7 +450,7 @@ const updateSession = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/sessions/:id
+ * POST /api/sessions/:sessionId/cancel
  * Admin hủy session
  */
 const deleteSession = async (req, res, next) => {
@@ -464,7 +464,7 @@ const deleteSession = async (req, res, next) => {
     }
 
     const session = await prisma.session.update({
-      where: { id: req.params.id },
+      where: { id: req.params.sessionId },
       data: { status: 'CANCELLED', cancellationNote },
     });
 
@@ -475,12 +475,12 @@ const deleteSession = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/sessions/:id/force
+ * DELETE /api/sessions/:sessionId/force
  * Admin xóa vĩnh viễn session (hard delete) cùng tất cả votes và payments liên quan
  */
 const adminDeleteSession = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
 
     // Kiểm tra session có tồn tại không
     const session = await prisma.session.findUnique({
@@ -503,12 +503,12 @@ const adminDeleteSession = async (req, res, next) => {
 };
 
 /**
- * GET /api/sessions/:id/teams/suggestions
+ * GET /api/sessions/:sessionId/teams/suggestions
  * Gợi ý số lượng đội có thể chia dựa trên số người vote
  */
 const getTeamSuggestions = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
     const attendedOnly = req.query.useAttendedOnly === 'true';
     const joinCount = await prisma.vote.count({
       where: { sessionId: id, status: 'JOIN', ...(attendedOnly ? { isCheckedIn: true } : {}) },
@@ -525,12 +525,12 @@ const getTeamSuggestions = async (req, res, next) => {
 };
 
 /**
- * POST /api/sessions/:id/teams/generate
+ * POST /api/sessions/:sessionId/teams/generate
  * Chạy thuật toán chia team cân bằng theo Tier & Thủ môn
  */
 const generateTeams = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
     const { teamCount, goalkeeperOverrides, useAttendedOnly } = req.body;
 
     const session = await prisma.session.findUnique({
@@ -604,12 +604,12 @@ const generateTeams = async (req, res, next) => {
 };
 
 /**
- * PUT /api/sessions/:id/teams
+ * PUT /api/sessions/:sessionId/teams
  * Lưu cấu hình chia đội chính thức vào Session
  */
 const saveTeams = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
     const { teams } = req.body;
 
     const session = await prisma.session.findUnique({
@@ -648,12 +648,12 @@ const saveTeams = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/sessions/:id/teams
+ * DELETE /api/sessions/:sessionId/teams
  * Xóa danh sách đội đã chia
  */
 const deleteTeams = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { sessionId: id } = req.params;
 
     const session = await prisma.session.findUnique({
       where: { id },

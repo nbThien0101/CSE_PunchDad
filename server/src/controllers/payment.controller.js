@@ -27,7 +27,7 @@ const checkAndCompleteSession = async (sessionId) => {
 };
 
 /**
- * GET /api/payments/session/:sessionId
+ * GET /api/sessions/:sessionId/payments
  * Lấy danh sách payments của một session
  */
 const getSessionPayments = async (req, res, next) => {
@@ -107,12 +107,12 @@ const getSessionPayments = async (req, res, next) => {
 };
 
 /**
- * PUT /api/payments/:id/mark-paid
+ * POST /api/payments/:paymentId/mark-paid
  * User đánh dấu đã chuyển tiền
  */
 const markAsPaid = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { paymentId: id } = req.params;
 
     const payment = await prisma.payment.findUnique({ where: { id } });
 
@@ -140,12 +140,12 @@ const markAsPaid = async (req, res, next) => {
 };
 
 /**
- * PUT /api/payments/:id/confirm
+ * POST /api/payments/:paymentId/confirm
  * Người thanh toán (payer) hoặc Admin xác nhận đã nhận tiền
  */
 const confirmPayment = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { paymentId: id } = req.params;
 
     const payment = await prisma.payment.findUnique({
       where: { id },
@@ -191,12 +191,12 @@ const confirmPayment = async (req, res, next) => {
 };
 
 /**
- * POST /api/payments/:id/payos-link
+ * POST /api/payments/:paymentId/payos-link
  * Tạo link và mã VietQR thanh toán PayOS cho payment
  */
 const createPayOSLink = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { paymentId: id } = req.params;
 
     const payment = await prisma.payment.findUnique({
       where: { id },
@@ -389,12 +389,12 @@ const handlePayOSWebhook = async (req, res) => {
 };
 
 /**
- * GET /api/payments/:id/payos-status
+ * GET /api/payments/:paymentId/payos-status
  * Cho phép Client polling kiểm tra trạng thái thanh toán PayOS theo thời gian thực
  */
 const checkPayOSStatus = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { paymentId: id } = req.params;
 
     const payment = await prisma.payment.findUnique({
       where: { id },
