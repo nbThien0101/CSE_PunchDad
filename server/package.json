@@ -1,6 +1,6 @@
 {
   "name": "cse-hitdad-server",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "CSE HitDad Backend API",
   "main": "src/app.js",
   "scripts": {

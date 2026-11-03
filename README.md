@@ -2,11 +2,11 @@
 
 # CSE HitDad · Sports Club Management Platform
 
-![Version](https://img.shields.io/badge/version-v1.2.4-blue.svg?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.3.0-blue.svg?style=flat-square)
 
-**Phiên bản hiện tại: `v1.2.4` — 17/10/2026.** Ứng dụng quản lý câu lạc bộ thể thao: lên lịch, bình chọn khung giờ, điểm danh, chia đội, chia tiền sân và quản lý thành viên.
+**Phiên bản hiện tại: `v1.3.0` — 01/11/2026.** Ứng dụng quản lý câu lạc bộ thể thao: lên lịch, bình chọn khung giờ, điểm danh, chia đội, giải đấu thường niên, bảng tin CLB, chia tiền sân và quản lý thành viên.
 
-Bản 1.2.4 tích hợp giao diện gluestack UI mới, luồng admin duyệt thành viên, cải tiến chia đội và bản vá JWT/OTP của **CSE HitDad**. Khi nâng cấp, các phiên đăng nhập cũ và các bước xác thực OTP đang dở sẽ hết hiệu lực. Xem [hướng dẫn phát hành và nâng cấp 1.2.4](docs/releases/v1.2.4.md).
+Bản 1.3.0 ra mắt **Hệ thống Giải đấu CLB & Arena Dashboard realtime**, **Cân bằng đội bằng tay cho Admin**, **Thống kê Vua phá lưới / Vua kiến tạo / Bình chọn MVP giải đấu**, **Bảng tin thông báo CLB (`Notice`)**, **Xuất danh sách thành viên ra Excel** và **lưu đệm/tự đối soát thanh toán PayOS**. Xem [hướng dẫn phát hành và nâng cấp 1.3.0](docs/releases/v1.3.0.md).
 
 ## Tính năng hiện tại
 
@@ -18,7 +18,7 @@ Bản 1.2.4 tích hợp giao diện gluestack UI mới, luồng admin duyệt th
 | Thành viên | Tài khoản mới chờ admin duyệt trước khi truy cập CLB. Admin xem email và xử lý yêu cầu; thành viên thường không thấy email đăng ký của người khác. Hồ sơ hỗ trợ avatar, điện thoại, ngân hàng và QR. Số trận chỉ tính lượt đã điểm danh trong trận hoàn tất. |
 | Điểm danh | Khóa bình chọn, điểm danh riêng lẻ/hàng loạt, quản lý khách mời, trạng thái thi đấu và thanh toán của khách. |
 | Đội hình | Chia đội theo tier, ưu tiên lượt vote sớm, thủ môn và dự bị; xáo trộn và chỉnh phương án trước khi lưu. |
-| Giải đấu CLB | Số đội/quân số đăng ký tùy chỉnh cho futsal 5 người, form vị trí bắt buộc bằng sơ đồ, đội trưởng, BTC chốt vị trí/đội, vòng tròn → bán kết → chung kết, dashboard realtime và pen tùy chọn. Xem [hướng dẫn giải đấu](TOURNAMENTS.md). |
+| Giải đấu CLB | Số đội/quân số đăng ký tùy chỉnh cho futsal 5 người, form vị trí bắt buộc trên sơ đồ sân, cân bằng đội tự động & chỉnh tay cho Admin, Arena Dashboard hiển thị lịch thi đấu & bảng xếp hạng (Điểm → Đối đầu → Hiệu số → Bàn thắng), tự động phân nhánh Knockout (1A-2B, 1B-2A, Chung kết, Hạng 3), gán cầu thủ ghi bàn/kiến tạo và mở form bình chọn MVP giải đấu. |
 | Thông báo CLB | Admin đăng thông báo cho toàn CLB, liên kết tới form giải đấu, dấu đã đọc/chưa đọc riêng từng thành viên và lưu trữ thông báo cũ. |
 | Thanh toán | Chia chi phí, đánh dấu đã chuyển tiền, người trả sân/admin xác nhận; tạo link VietQR PayOS và nhận webhook có kiểm tra chữ ký. |
 | Phản hồi | Thành viên gửi lỗi/đề xuất/đánh giá; admin lọc phản hồi, cập nhật trạng thái và ghi chú xử lý. |
@@ -81,6 +81,7 @@ CSE_PunchDad/
 │   ├── src/services/         # Token, email, PayOS, chia đội
 │   ├── src/app.js
 │   └── tests/auth-security.test.js
+├── docs/releases/v1.3.0.md   # Thay đổi, migration và triển khai bản 1.3.0
 ├── docs/releases/v1.2.4.md   # Thay đổi, migration và triển khai bản 1.2.4
 ├── docs/security-audit-2026-10-17.md
 ├── render.yaml              # Backend Render
@@ -278,6 +279,7 @@ Ví dụ tham gia: `{ "sessionId": "<id>", "status": "JOIN", "timeSlotIds": ["<s
 | Phương thức | Endpoint | Quyền | Chức năng |
 | --- | --- | --- | --- |
 | GET | `/api/users/members` | Đăng nhập | Thành viên đã duyệt; chỉ admin nhận thêm email |
+| GET | `/api/users/members/export` | Admin | Xuất danh sách thành viên ra file Excel (`.xlsx`) |
 | GET | `/api/users/membership-requests` | Admin | Danh sách yêu cầu chờ duyệt |
 | GET | `/api/users/membership-requests/count` | Admin | Số yêu cầu chờ duyệt |
 | PUT | `/api/users/membership-requests/:userId` | Admin | Duyệt/từ chối với `decision=APPROVED/REJECTED` |
@@ -292,6 +294,23 @@ Ví dụ tham gia: `{ "sessionId": "<id>", "status": "JOIN", "timeSlotIds": ["<s
 | POST | `/api/feedback` | Đăng nhập | Gửi phản hồi |
 | GET | `/api/feedback` | Admin | Danh sách và thống kê phản hồi |
 | PUT | `/api/feedback/:id` | Admin | Cập nhật trạng thái/ghi chú phản hồi |
+
+### Giải đấu CLB và Bảng tin thông báo
+
+| Phương thức | Endpoint | Quyền | Chức năng |
+| --- | --- | --- | --- |
+| GET | `/api/tournaments` | Đăng nhập | Danh sách giải đấu CLB |
+| POST | `/api/tournaments` | Admin | Tạo giải đấu mới |
+| GET | `/api/tournaments/:id` | Đăng nhập | Chi tiết giải đấu, lịch thi đấu, bảng xếp hạng, thống kê cầu thủ và bình chọn MVP |
+| GET | `/api/tournaments/:id/stream` | Đăng nhập (SSE) | Luồng cập nhật giải đấu trực tiếp theo thời gian thực |
+| POST | `/api/tournaments/:id/commands` | Đăng nhập / Admin | Thực thi lệnh giải đấu (đăng ký, chia đội tự động/thủ công, cập nhật trận đấu/bàn thắng/kiến tạo, chuyển vòng Knockout, bình chọn MVP) |
+| DELETE | `/api/tournaments/:id` | Admin | Xóa giải đấu |
+| GET | `/api/notices` | Đăng nhập | Danh sách thông báo CLB và trạng thái đã đọc |
+| GET | `/api/notices/summary` | Đăng nhập | Số lượng thông báo chưa đọc và thông báo mới nhất |
+| POST | `/api/notices` | Admin | Đăng thông báo mới (có thể đính kèm liên kết giải đấu) |
+| POST | `/api/notices/:id/read` | Đăng nhập | Đánh dấu đã đọc thông báo |
+| POST | `/api/notices/:id/archive` | Admin | Lưu trữ thông báo |
+| DELETE | `/api/notices/:id` | Admin | Xóa thông báo |
 
 Ảnh avatar/QR nhận data URL PNG, JPEG hoặc WebP, tối đa 2 MB dữ liệu ảnh. Phản hồi nhận `category` là `BUG`, `FEATURE`, `UX`, `OTHER`; `message` dài 10–2.000 ký tự; `rating` tùy chọn từ 1–5. Trạng thái xử lý là `NEW`, `REVIEWING`, `RESOLVED`.
 
@@ -315,7 +334,24 @@ Enum `MAYBE` vẫn tồn tại để tương thích dữ liệu cũ; giao diện
 
 ## Lịch sử phiên bản
 
-### `v1.2.4` — 17/10/2026 (phiên bản hiện tại)
+### `v1.3.0` — 01/11/2026 (phiên bản hiện tại)
+
+- **Hệ thống Giải đấu Thường niên CLB (`Tournament`)**:
+  - Hỗ trợ cấu hình số đội (`4`, `6`, `8` đội) và số cầu thủ mỗi đội (`5`–`10` người), đăng ký vị trí trực quan trên sơ đồ sân Futsal (`GK`, `FIXO`, `ALA`, `PIVOT`) và nguyện vọng Đội trưởng.
+  - Chia đội tự động cân bằng điểm Tier kết hợp **Chế độ Cân bằng đội bằng tay cho Admin** (đổi chỗ cầu thủ 1 chạm giữa các đội, chuyển đội, đổi vị trí, chỉ định đội trưởng, sửa tên đội/bảng đấu và tự động tính lại tổng điểm Tier).
+  - **Arena Dashboard (SSE Realtime)**: Hiển thị trực tiếp Lịch thi đấu & Bảng xếp hạng ngay khi giải đấu diễn ra.
+  - **Xếp hạng Vòng bảng chuẩn giải đấu**: Ưu tiên Điểm số → Thành tích đối đầu trực tiếp (`Head-to-Head`) → Hiệu số bàn thắng bại → Tổng số bàn thắng.
+  - **Tự động phân nhánh & tiến trình Vòng Knockout**: Nhất Bảng A gặp Nhì Bảng B, Nhất Bảng B gặp Nhì Bảng A, tùy chọn trận tranh hạng cuối bảng; tự động đưa 2 đội thắng Bán kết vào Chung kết và 2 đội thua vào trận Tranh hạng 3.
+  - **Quản lý chi tiết trận đấu & Gán bàn thắng / kiến tạo**: Hợp nhất bảng nhập tỉ số và danh sách cầu thủ ghi bàn (⚽) / kiến tạo (👟) với cơ chế tự động đồng bộ 2 chiều, tối ưu thao tác trên cả Desktop và Mobile.
+  - **Đua danh hiệu cá nhân & Bình chọn MVP Giải đấu**: Bảng xếp hạng Vua Phá Lưới, Vua Kiến Tạo và tính năng tạo Form Bình chọn MVP giải đấu cho toàn bộ thành viên khi trận Chung kết kết thúc.
+- **Bảng tin & Thông báo CLB (`Notice` & `NoticeRead`)**:
+  - Admin đăng thông báo toàn CLB, gắn liên kết giải đấu, lưu trữ thông báo cũ; theo dõi trạng thái đã đọc/chưa đọc riêng từng thành viên.
+- **Quản lý Thành viên & Thanh toán PayOS**:
+  - Bổ sung tính năng xuất danh sách thành viên ra file Excel (`.xlsx`) dành cho Admin.
+  - Lưu đệm thông tin link thanh toán PayOS đang chờ và tự động đối soát trạng thái thanh toán.
+- Đồng bộ version `1.3.0` tại root, client, server, lockfile, Footer và tài liệu. Chi tiết: [release notes 1.3.0](docs/releases/v1.3.0.md).
+
+### `v1.2.4` — 17/10/2026
 
 - Siết cấu hình và xác thực JWT; phân biệt access/refresh, mặc định access token 15 phút.
 - Thêm `authVersion`, kiểm tra user/phiên khi refresh; thu hồi mọi phiên sau đổi/reset mật khẩu.

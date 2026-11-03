@@ -36,6 +36,29 @@
   outline-offset: 2px;
 }
 .ui-input, .ui-select, .ui-textarea { max-width: 100%; }
+.ui-select, .form-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 36px 10px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.ui-select:focus, .form-select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(37, 65, 204, 0.15);
+}
 .ui-button-primary { background: var(--primary-500); color: white; }
 .ui-button-outline { background: white; color: var(--primary-600); border: 1px solid var(--border-color); }
 .ui-card { box-shadow: var(--shadow-sm); }
