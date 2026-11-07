@@ -11,6 +11,7 @@ const normalizeTimeSlots = (timeSlots, fallbackStartTime, fallbackEndTime) => {
     : [{ startTime: fallbackStartTime, endTime: fallbackEndTime }];
 
   const normalized = slots.map(slot => ({
+    ...(slot.id ? { id: String(slot.id).trim() } : {}),
     startTime: String(slot.startTime || '').trim(),
     endTime: String(slot.endTime || '').trim(),
   }));
@@ -24,6 +25,112 @@ const normalizeTimeSlots = (timeSlots, fallbackStartTime, fallbackEndTime) => {
 
   if (hasInvalid || uniqueKeys.size !== normalized.length || normalized.length > 20) return null;
   return normalized;
+};
+
+/**
+ * Đồng bộ các khung giờ của session mà không xóa mất vote của các khung giờ được giữ lại hoặc chỉnh sửa.
+ */
+const syncSessionTimeSlots = async (tx, sessionId, candidateSlots) => {
+  const existingSlots = await tx.sessionTimeSlot.findMany({
+    where: { sessionId },
+    orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+  });
+
+  const matchedExistingIds = new Set();
+  const slotsToUpdate = [];
+  const slotsToCreate = [];
+
+  // Kiểm tra xem request có truyền id của slot không
+  const hasClientIds = candidateSlots.some(s => Boolean(s.id));
+
+  if (hasClientIds) {
+    // 1. Client có truyền id:
+    // - Candidate có id hợp lệ -> cập nhật slot cũ (bảo toàn vote)
+    // - Candidate không có id -> tạo mới slot được thêm
+    // - Existing slot nào không nằm trong candidate -> xóa slot bị loại bỏ
+    for (const candidate of candidateSlots) {
+      if (candidate.id && existingSlots.some(e => e.id === candidate.id)) {
+        matchedExistingIds.add(candidate.id);
+        slotsToUpdate.push({
+          id: candidate.id,
+          startTime: candidate.startTime,
+          endTime: candidate.endTime,
+        });
+      } else {
+        slotsToCreate.push({
+          startTime: candidate.startTime,
+          endTime: candidate.endTime,
+        });
+      }
+    }
+  } else {
+    // 2. Client không truyền id (payload cũ / 3rd party):
+    // Ưu tiên 2.1: Khớp chính xác startTime và endTime nếu có
+    const unmatchedCandidates = [];
+    for (const candidate of candidateSlots) {
+      const exactMatch = existingSlots.find(
+        e => !matchedExistingIds.has(e.id) && e.startTime === candidate.startTime && e.endTime === candidate.endTime
+      );
+      if (exactMatch) {
+        matchedExistingIds.add(exactMatch.id);
+      } else {
+        unmatchedCandidates.push(candidate);
+      }
+    }
+
+    // Ưu tiên 2.2: Ghép 1-1 theo thứ tự cho các existing slot còn lại (đặc biệt khi 1 slot đổi giờ)
+    const remainingExistingSlots = existingSlots.filter(e => !matchedExistingIds.has(e.id));
+    for (let i = 0; i < unmatchedCandidates.length; i++) {
+      const candidate = unmatchedCandidates[i];
+      if (i < remainingExistingSlots.length) {
+        const existing = remainingExistingSlots[i];
+        matchedExistingIds.add(existing.id);
+        slotsToUpdate.push({
+          id: existing.id,
+          startTime: candidate.startTime,
+          endTime: candidate.endTime,
+        });
+      } else {
+        slotsToCreate.push({
+          startTime: candidate.startTime,
+          endTime: candidate.endTime,
+        });
+      }
+    }
+  }
+
+  // Bước 3: Xóa các existing slot không còn tồn tại trong danh sách mới
+  const slotsToDelete = existingSlots.filter(e => !matchedExistingIds.has(e.id));
+  if (slotsToDelete.length > 0) {
+    await tx.sessionTimeSlot.deleteMany({
+      where: { id: { in: slotsToDelete.map(s => s.id) } },
+    });
+  }
+
+  // Bước 4: Cập nhật các slot đã ghép (chỉ update nếu startTime hoặc endTime thay đổi)
+  for (const slot of slotsToUpdate) {
+    const existing = existingSlots.find(e => e.id === slot.id);
+    if (existing && (existing.startTime !== slot.startTime || existing.endTime !== slot.endTime)) {
+      await tx.sessionTimeSlot.update({
+        where: { id: slot.id },
+        data: {
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        },
+      });
+    }
+  }
+
+  // Bước 5: Tạo mới các slot bổ sung
+  if (slotsToCreate.length > 0) {
+    await tx.sessionTimeSlot.createMany({
+      data: slotsToCreate.map(s => ({
+        sessionId,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })),
+    });
+  }
 };
 
 const isGoogleMapsUrl = (value) => {
@@ -253,7 +360,9 @@ const createSession = async (req, res, next) => {
         maxPlayers: parseInt(maxPlayers),
         voteDeadline: voteDeadline ? new Date(voteDeadline) : null,
         createdById: req.user.id,
-        timeSlots: { create: normalizedTimeSlots },
+        timeSlots: {
+          create: normalizedTimeSlots.map(s => ({ startTime: s.startTime, endTime: s.endTime })),
+        },
       },
       include: {
         createdBy: {
@@ -273,12 +382,12 @@ const createSession = async (req, res, next) => {
  * PUT /api/sessions/:id
  * Admin cập nhật session (đặt sân, chọn người thanh toán, v.v.)
  */
-const updateSession = async (req, res, next) => {
+const updateSession = async (req, res, next, dbClient = prisma) => {
   try {
     const { id } = req.params;
     const updateData = {};
     let normalizedTimeSlots;
-    const existingSession = await prisma.session.findUnique({
+    const existingSession = await dbClient.session.findUnique({
       where: { id },
       select: { id: true, status: true, cancellationNote: true },
     });
@@ -342,9 +451,9 @@ const updateSession = async (req, res, next) => {
       if (!candidateTimeSlots) {
         return res.status(400).json({ error: 'Danh sách khung giờ không hợp lệ hoặc bị trùng' });
       }
-      const existingTimeSlots = await prisma.sessionTimeSlot.findMany({
+      const existingTimeSlots = await dbClient.sessionTimeSlot.findMany({
         where: { sessionId: id },
-        select: { startTime: true, endTime: true },
+        select: { id: true, startTime: true, endTime: true },
         orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
       });
       const slotKey = slots => slots
@@ -359,7 +468,6 @@ const updateSession = async (req, res, next) => {
         }
         updateData.startTime = normalizedTimeSlots[0].startTime;
         updateData.endTime = normalizedTimeSlots[0].endTime;
-        updateData.selectedTimeSlotId = null;
       } else {
         delete updateData.startTime;
         delete updateData.endTime;
@@ -367,7 +475,7 @@ const updateSession = async (req, res, next) => {
     }
 
     if (updateData.status === 'BOOKED') {
-      const rankedSlots = await prisma.sessionTimeSlot.findMany({
+      const rankedSlots = await dbClient.sessionTimeSlot.findMany({
         where: { sessionId: id },
         include: {
           _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
@@ -391,36 +499,33 @@ const updateSession = async (req, res, next) => {
       }
     }
 
-    const session = await prisma.$transaction(async tx => {
+    const session = await dbClient.$transaction(async tx => {
       if (normalizedTimeSlots) {
-        await tx.sessionTimeSlot.deleteMany({ where: { sessionId: id } });
+        await syncSessionTimeSlots(tx, id, normalizedTimeSlots);
       }
       return tx.session.update({
-      where: { id },
-      data: {
-        ...updateData,
-        ...(normalizedTimeSlots ? { timeSlots: { create: normalizedTimeSlots } } : {}),
-      },
-      include: {
-        createdBy: {
-          select: { id: true, displayName: true, avatar: true },
-        },
-        payer: {
-          select: { id: true, displayName: true, bankInfo: true, avatar: true },
-        },
-        timeSlots: {
-          include: {
-            _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
+        where: { id },
+        data: updateData,
+        include: {
+          createdBy: {
+            select: { id: true, displayName: true, avatar: true },
           },
-          orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+          payer: {
+            select: { id: true, displayName: true, bankInfo: true, avatar: true },
+          },
+          timeSlots: {
+            include: {
+              _count: { select: { votes: { where: { vote: { status: 'JOIN' } } } } },
+            },
+            orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
+          },
         },
-      },
       });
     });
 
     // Nếu session chuyển sang BOOKED và có totalCost, tạo payment records
     if (updateData.status === 'BOOKED' && updateData.totalCost) {
-      const joinedVotes = await prisma.vote.findMany({
+      const joinedVotes = await dbClient.vote.findMany({
         where: { sessionId: id, status: 'JOIN' },
       });
 
@@ -436,7 +541,7 @@ const updateSession = async (req, res, next) => {
         }));
 
       if (paymentData.length > 0) {
-        await prisma.payment.createMany({
+        await dbClient.payment.createMany({
           data: paymentData,
           skipDuplicates: true,
         });
@@ -702,4 +807,5 @@ module.exports = {
   generateTeams,
   saveTeams,
   deleteTeams,
+  syncSessionTimeSlots,
 };

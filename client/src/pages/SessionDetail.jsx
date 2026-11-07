@@ -396,7 +396,7 @@ export default function SessionDetail() {
       totalCost: session.totalCost ? String(session.totalCost) : '',
       voteDeadline: voteDeadlineStr,
       timeSlots: session.timeSlots?.length
-        ? session.timeSlots.map(slot => ({ startTime: slot.startTime, endTime: slot.endTime }))
+        ? session.timeSlots.map(slot => ({ id: slot.id, startTime: slot.startTime, endTime: slot.endTime }))
         : [{ startTime: session.startTime || '17:00', endTime: session.endTime || '19:00' }],
     });
     setShowEditModal(true);
@@ -1654,7 +1654,7 @@ export default function SessionDetail() {
                     ))}
                   </div>
                   {session.votes?.some(v => v.timeSlotVotes?.length) && (
-                    <span className="form-hint text-danger">Lưu thay đổi khung giờ sẽ xóa các lựa chọn giờ hiện tại; thành viên cần chọn lại.</span>
+                    <span className="form-hint text-muted">Lưu ý: Các lượt bình chọn của khung giờ chỉnh sửa sẽ được tự động giữ nguyên.</span>
                   )}
                 </div>
 
