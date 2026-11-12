@@ -89,3 +89,40 @@ test('Swagger Components: Schemas and SecuritySchemes are valid', () => {
     assert.ok(schemas[schemaName], `Schema ${schemaName} must be defined in components`);
   }
 });
+
+test('Swagger Coverage: every Express route is documented and every $ref resolves', () => {
+  const mounts = {
+    '/api/auth': require('../src/routes/auth.routes'),
+    '/api/sessions': require('../src/routes/session.routes'),
+    '/api/votes': require('../src/routes/vote.routes'),
+    '/api/payments': require('../src/routes/payment.routes'),
+    '/api/users': require('../src/routes/user.routes'),
+    '/api/feedback': require('../src/routes/feedback.routes'),
+  };
+  // Các route khai báo trực tiếp trong app.js
+  const routes = [
+    ['get', '/api/health'],
+    ['post', '/payos-webhook'],
+    ['post', '/api/payos-webhook'],
+  ];
+  for (const [prefix, router] of Object.entries(mounts)) {
+    for (const layer of router.stack) {
+      if (!layer.route) continue;
+      const openApiPath = (prefix + layer.route.path).replace(/\/$/, '').replace(/:(\w+)/g, '{$1}');
+      for (const method of Object.keys(layer.route.methods)) routes.push([method, openApiPath]);
+    }
+  }
+
+  const tagNames = new Set(swaggerDoc.tags.map(t => t.name));
+  for (const [method, path] of routes) {
+    const op = swaggerDoc.paths[path]?.[method];
+    assert.ok(op, `Route ${method.toUpperCase()} ${path} must be documented in Swagger`);
+    assert.ok(op.summary, `Route ${method.toUpperCase()} ${path} must have summary`);
+    assert.ok(op.tags.every(tag => tagNames.has(tag)), `Route ${path} uses an undeclared tag`);
+  }
+
+  const refs = new Set(JSON.stringify(swaggerDoc).match(/#\/components\/schemas\/\w+/g) || []);
+  for (const ref of refs) {
+    assert.ok(swaggerDoc.components.schemas[ref.split('/').pop()], `Broken $ref ${ref}`);
+  }
+});

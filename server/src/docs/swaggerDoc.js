@@ -1,6 +1,7 @@
 /**
  * OpenAPI 3.0.3 Specification for CSE HitDad Backend API
  * Tập trung 2 API Collections chính: User và Payment
+ * Các collection còn lại (System, Auth, Session, Team, Attendance, Vote, Feedback) nằm trong ./collections
  */
 
 const swaggerDoc = {
@@ -14,6 +15,8 @@ Tài liệu RESTful API chính thức của hệ thống quản lý câu lạc b
 Tài liệu này bao gồm 2 API Collections trọng tâm:
 1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.
 2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.
+
+Ngoài ra còn các collection: **System** (health check, alias webhook), **Auth** (đăng ký/đăng nhập/OTP/quên mật khẩu), **Session** (trận đấu & khung giờ), **Vote** (bình chọn), **Team** (chia đội), **Attendance** (điểm danh, khách mời, tính lại tiền sân) và **Feedback** (góp ý).
 
 ---
 ### Hướng dẫn Xác thực (Authentication)
@@ -1105,4 +1108,28 @@ Authorization: Bearer <your_access_token>
 };
 
 module.exports = swaggerDoc;
+
+// ==========================================
+// Gộp thêm các API Collections còn lại (System, Auth, Session/Team/Attendance, Vote, Feedback)
+// ==========================================
+const extraCollections = [
+  require('./collections/system'),
+  require('./collections/auth'),
+  require('./collections/session'),
+  require('./collections/vote'),
+  require('./collections/feedback'),
+];
+
+for (const collection of extraCollections) {
+  const tags = collection.tags || [collection.tag];
+  swaggerDoc.tags.push(...tags);
+  Object.assign(swaggerDoc.components.schemas, collection.schemas);
+  for (const [path, operations] of Object.entries(collection.paths)) {
+    swaggerDoc.paths[path] = { ...(swaggerDoc.paths[path] || {}), ...operations };
+  }
+}
+
+// Sắp xếp tag theo luồng sử dụng
+const TAG_ORDER = ['System', 'Auth', 'User', 'Session', 'Vote', 'Team', 'Attendance', 'Payment', 'Feedback'];
+swaggerDoc.tags.sort((a, b) => TAG_ORDER.indexOf(a.name) - TAG_ORDER.indexOf(b.name));
 
