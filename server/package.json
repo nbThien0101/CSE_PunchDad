@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "test": "node --test tests/auth-security.test.js tests/team-balancer.test.js tests/member-match-count.test.js tests/member-email.test.js tests/membership-approval.test.js tests/member-export-excel.test.js tests/swagger-docs.test.js tests/update-session-time-slots.test.js"
+    "vapid:generate": "node -e \"import('web-push').then(m => { const k = (m.default || m).generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY=' + k.publicKey); console.log('VAPID_PRIVATE_KEY=' + k.privateKey); })\"",
+    "swagger:sync": "node -e \"const fs=require('fs'),path=require('path');const d=JSON.stringify(require('./src/docs/swaggerDoc'),null,2)+'\\n';fs.writeFileSync(path.join(__dirname,'src/docs/swagger.json'),d);fs.writeFileSync(path.join(__dirname,'../docs/swagger-web/openapi.json'),d);\"",
+    "test": "node --test tests/auth-security.test.js tests/team-balancer.test.js tests/member-match-count.test.js tests/member-email.test.js tests/membership-approval.test.js tests/member-export-excel.test.js tests/swagger-docs.test.js tests/update-session-time-slots.test.js tests/notifications.test.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",
@@ -19,11 +21,13 @@
     "express-rate-limit": "^8.7.0",
     "express-slow-down": "^3.1.1",
     "express-validator": "^7.2.1",
+    "firebase-admin": "^13.10.0",
     "helmet": "^8.3.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^9.0.3",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",

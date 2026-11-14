@@ -6,6 +6,17 @@ const { membershipAccessError } = require('../utils/membership');
 
 const prisma = new PrismaClient();
 
+const safeNotify = (callback) => {
+  try {
+    const notificationService = require('../services/notification.service');
+    Promise.resolve(callback(notificationService)).catch((err) => {
+      console.error('⚠️ Push notification error:', err.message);
+    });
+  } catch {
+    // Skip in isolated VM tests without notification service in module allowlist
+  }
+};
+
 /**
  * POST /api/auth/register
  * Đăng ký tài khoản mới (yêu cầu OTP đã xác thực)
@@ -80,6 +91,8 @@ const register = async (req, res, next) => {
     if (!user) return res.status(400).json({ error: 'Token xác thực đã được sử dụng hoặc hết hạn' });
 
     const { authVersion, ...publicUser } = user;
+
+    safeNotify((svc) => svc.notifyAdminsNewMembershipRequest(publicUser));
 
     res.status(201).json({
       message: 'Đăng ký thành công. Yêu cầu tham gia CLB đã được gửi đến admin và đang chờ duyệt.',

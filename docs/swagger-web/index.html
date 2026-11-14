@@ -2,9 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>CSE HitDad - API Documentation (User & Payment)</title>
+  <title>CSE HitDad - API Documentation (Swagger UI)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Tài liệu Swagger RESTful API 2 Collections: User và Payment của CSE HitDad FC">
+  <meta name="description" content="Tài liệu Swagger RESTful API đầy đủ của CSE HitDad FC: Auth, User, Session, Vote, Team, Attendance, Payment, Push Notification và Feedback">
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.18.2/swagger-ui.css">
   <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.18.2/favicon-32x32.png" />
   <style>
@@ -117,13 +117,15 @@
         <span>⚽</span> CSE HitDad - API Documentation
       </h1>
       <p class="hero-subtitle">
-        Tài liệu đặc tả tương tác trực tiếp RESTful API gồm 2 API Collections: <strong>User</strong> (15 endpoints) & <strong>Payment</strong> (7 endpoints).
+        Tài liệu đặc tả tương tác trực tiếp RESTful API của <strong>CSE HitDad</strong> (đồng bộ từ backend), bao gồm: <strong>Auth</strong>, <strong>User</strong>, <strong>Session &amp; Team</strong>, <strong>Payment (PayOS)</strong>, <strong>Notification (Push Android APK &amp; iOS PWA)</strong> và <strong>Feedback</strong>.
       </p>
       <div class="hero-badges">
         <span class="badge badge-success">● OpenAPI 3.0.3</span>
         <span class="badge badge-info">👤 Collection: User</span>
         <span class="badge badge-info">💳 Collection: Payment (PayOS)</span>
-        <span class="badge">🔒 Bearer JWT</span>
+        <span class="badge badge-info">🔔 Collection: Notification (APK &amp; iOS PWA)</span>
+        <span class="badge">🔐 Auth &amp; Matchday APIs</span>
+        <span id="spec-summary" class="badge">🔒 Bearer JWT</span>
         <div class="links-bar">
           <a class="btn-link" href="./openapi.json" target="_blank" download="cse-punchdad-openapi.json">⬇ Tải openapi.json</a>
           <a class="btn-link" href="./redoc.html">📖 Chế độ Redoc</a>
@@ -145,6 +147,15 @@
           return res.json();
         })
         .then(function(spec) {
+          var summaryEl = document.getElementById('spec-summary');
+          if (summaryEl && spec && spec.paths) {
+            var pathKeys = Object.keys(spec.paths);
+            var opCount = pathKeys.reduce(function(sum, p) {
+              return sum + Object.keys(spec.paths[p]).length;
+            }, 0);
+            var tagCount = Array.isArray(spec.tags) ? spec.tags.length : 0;
+            summaryEl.textContent = '🔒 Bearer JWT · ' + tagCount + ' Collections · ' + opCount + ' Operations';
+          }
           initSwagger(spec);
         })
         .catch(function(err) {

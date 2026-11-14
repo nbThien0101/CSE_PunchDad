@@ -1,12 +1,12 @@
 # 📖 Hướng Dẫn Triển Khai (Deploy) Web Swagger Docs - CSE HitDad
 
-Tài liệu này hướng dẫn chi tiết các phương án triển khai web Swagger Documentation cho 2 API Collections: **User** và **Payment**.
+Tài liệu này hướng dẫn chi tiết các phương án triển khai web Swagger Documentation cho toàn bộ hệ thống API **CSE HitDad** (đồng bộ từ `server/src/docs/swagger.json`), bao gồm các collection trọng tâm: **User**, **Payment**, **Notification (Push Android APK & iOS PWA)** cùng **Auth**, **Session**, **Vote**, **Team**, **Attendance**, **Feedback** và **System**.
 
-Thư mục này (`docs/swagger-web/`) chứa toàn bộ mã nguồn web tĩnh của trang tài liệu API độc lập, bao gồm cả giao diện **Swagger UI** (`index.html`) và **Redoc** (`redoc.html`).
+Thư mục này (`docs/swagger-web/`) chứa toàn bộ mã nguồn web tĩnh của trang tài liệu API độc lập, bao gồm cả giao diện **Swagger UI** (`index.html`) và **Redoc** (`redoc.html`). Chạy `cd server && npm run swagger:sync` bất cứ khi nào cập nhật API docs để đồng bộ cả `server/src/docs/swagger.json` và `docs/swagger-web/openapi.json`.
 
 ---
 
-## 🌟 Tổng Quan 2 API Collections Đã Xây Dựng
+## 🌟 Tổng Quan Các API Collections Trọng Tâm & Đồng Bộ
 
 1. **User Collection (15 Endpoints)**
    - `GET /api/users/members`: Lấy danh sách thành viên chính thức của CLB (ẩn/hiện email theo role).
@@ -33,6 +33,22 @@ Thư mục này (`docs/swagger-web/`) chứa toàn bộ mã nguồn web tĩnh c�
    - `GET /api/payments/{id}/payos-status`: Polling kiểm tra trạng thái thanh toán từ cổng PayOS theo thời gian thực.
    - `POST /api/payments/payos-confirm-webhook`: Admin đăng ký và xác thực Webhook URL với máy chủ PayOS.
    - `POST /api/payments/payos-webhook`: Webhook công khai (Public) nhận thông báo thanh toán thành công từ PayOS bằng Checksum HMAC-SHA256.
+
+3. **Notification Collection (Push Android APK / iOS PWA & Inbox - 12 Operations)**
+   - `GET /api/notifications/config`: Public endpoint trả về `vapidPublicKey` và trạng thái hỗ trợ của `WEB_PUSH`, `FCM`, `EXPO`.
+   - `GET /api/notifications/subscriptions`: Liệt kê các thiết bị đang đăng ký nhận push của tài khoản hiện tại.
+   - `POST /api/notifications/subscriptions`: Đăng ký hoặc làm mới thiết bị (`WEB_PUSH` cho iOS PWA Add to Home Screen, `FCM` / `EXPO` cho Android APK).
+   - `DELETE /api/notifications/subscriptions`: Hủy đăng ký thiết bị theo `subscriptionId`, `endpoint` hoặc `token` (khi đăng xuất).
+   - `DELETE /api/notifications/subscriptions/{id}`: Xóa một đăng ký thiết bị theo ID.
+   - `POST /api/notifications/test`: Gửi push thử nghiệm tới các thiết bị của chính mình và trả báo cáo gửi (`summary`, `results`).
+   - `POST /api/notifications/send`: Admin gửi thông báo tùy chỉnh / nhắc đóng tiền (`ALL`, `USERS`, `SESSION_JOINED`, `SESSION_UNPAID`).
+   - `GET /api/notifications`: Lấy danh sách thông báo in-app có phân trang (`?page=1&limit=20&unreadOnly=true`).
+   - `GET /api/notifications/unread-count`: Đếm số thông báo chưa đọc.
+   - `PUT /api/notifications/read-all`: Đánh dấu tất cả thông báo là đã đọc.
+   - `PUT /api/notifications/{id}/read`: Đánh dấu một thông báo là đã đọc.
+   - `DELETE /api/notifications/{id}`: Xóa một thông báo của mình.
+
+4. **Các Collection Khác Đã Đồng Bộ**: **System**, **Auth**, **Session**, **Vote**, **Team**, **Attendance**, **Feedback** (giúp bạn test trực tiếp `POST /api/auth/login` ngay trên Swagger UI để lấy `accessToken`).
 
 ---
 
@@ -130,5 +146,7 @@ Nếu đội ngũ phát triển muốn dùng Postman để test API:
    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
    ```
 4. Nhấn **Authorize** -> **Close**.
-5. Bây giờ bạn có thể mở bất kỳ endpoint nào (ví dụ `GET /api/users/members` hoặc `POST /api/payments/{id}/payos-link`), nhấn **Try it out** và **Execute** để gửi request và xem response trực tiếp.
+5. Bây giờ bạn có thể mở bất kỳ endpoint nào (ví dụ `GET /api/users/members`, `POST /api/payments/{id}/payos-link`, hoặc `POST /api/notifications/test`), nhấn **Try it out** và **Execute** để gửi request và xem response trực tiếp.
+
+> **Lưu ý CORS nếu test API Production từ Vercel/Netlify riêng**: Nếu trang `docs/swagger-web` chạy ở domain riêng (ví dụ `https://cse-hitdad-api-docs.vercel.app`) và bạn bấm **Try it out** gọi sang Render Production (`https://cse-punchdad-api.onrender.com`), hãy thêm domain trang Swagger đó vào `CLIENT_URL` hoặc `MOBILE_CLIENT_URL` trên Render (hoặc test trực tiếp trên `/api-docs` của server Render).
 

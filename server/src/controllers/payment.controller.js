@@ -3,6 +3,17 @@ const payosService = require('../services/payos.service');
 
 const prisma = new PrismaClient();
 
+const safeNotify = (callback) => {
+  try {
+    const notificationService = require('../services/notification.service');
+    Promise.resolve(callback(notificationService)).catch((err) => {
+      console.error('⚠️ Push notification error:', err.message);
+    });
+  } catch {
+    // Skip in isolated VM tests
+  }
+};
+
 /**
  * Kiểm tra xem tất cả payments của session đã CONFIRMED chưa.
  * Nếu đã hoàn tất, tự động chuyển session sang COMPLETED.
@@ -38,6 +49,7 @@ const getSessionPayments = async (req, res, next) => {
       where: { id: sessionId },
       select: {
         id: true,
+        title: true,
         totalCost: true,
         status: true,
         payer: {
@@ -80,6 +92,10 @@ const getSessionPayments = async (req, res, next) => {
               p.status = 'CONFIRMED';
               p.confirmedAt = new Date();
               anyConfirmed = true;
+              safeNotify((svc) => svc.notifyPaymentConfirmed({
+                payment: p,
+                sessionTitle: session.title,
+              }));
             }
           } catch (checkErr) {
             // Không làm gián đoạn API nếu PayOS gặp lỗi kết nối tạm thời
@@ -114,7 +130,14 @@ const markAsPaid = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const payment = await prisma.payment.findUnique({ where: { id } });
+    const payment = await prisma.payment.findUnique({
+      where: { id },
+      include: {
+        session: {
+          select: { payerId: true, title: true },
+        },
+      },
+    });
 
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });
@@ -132,6 +155,13 @@ const markAsPaid = async (req, res, next) => {
         paidAt: new Date(),
       },
     });
+
+    safeNotify((svc) => svc.notifyPaymentMarkedPaid({
+      payment: updated,
+      payerId: payment.session?.payerId,
+      senderName: req.user?.displayName,
+      sessionTitle: payment.session?.title,
+    }));
 
     res.json({ message: 'Payment marked as paid', payment: updated });
   } catch (error) {
@@ -151,7 +181,7 @@ const confirmPayment = async (req, res, next) => {
       where: { id },
       include: {
         session: {
-          select: { payerId: true },
+          select: { payerId: true, title: true },
         },
       },
     });
@@ -177,6 +207,11 @@ const confirmPayment = async (req, res, next) => {
     });
 
     const sessionCompleted = await checkAndCompleteSession(payment.sessionId);
+
+    safeNotify((svc) => svc.notifyPaymentConfirmed({
+      payment: updated,
+      sessionTitle: payment.session?.title,
+    }));
 
     res.json({
       message: sessionCompleted
@@ -238,6 +273,10 @@ const createPayOSLink = async (req, res, next) => {
               },
             });
             await checkAndCompleteSession(payment.sessionId);
+            safeNotify((svc) => svc.notifyPaymentConfirmed({
+              payment: updated,
+              sessionTitle: payment.session?.title,
+            }));
             return res.json({
               status: 'CONFIRMED',
               message: 'Khoản thanh toán đã hoàn tất!',
@@ -352,6 +391,9 @@ const handlePayOSWebhook = async (req, res) => {
             ...(webhookData.paymentLinkId ? [{ paymentLinkId: String(webhookData.paymentLinkId) }] : []),
           ],
         },
+        include: {
+          session: { select: { title: true } },
+        },
       });
 
       if (!payment) {
@@ -377,6 +419,11 @@ const handlePayOSWebhook = async (req, res) => {
         if (sessionCompleted) {
           console.log(`🎉 Session ${payment.sessionId} COMPLETED! All members have paid.`);
         }
+
+        safeNotify((svc) => svc.notifyPaymentConfirmed({
+          payment,
+          sessionTitle: payment.session?.title,
+        }));
       }
     }
 
@@ -400,6 +447,7 @@ const checkPayOSStatus = async (req, res, next) => {
       where: { id },
       include: {
         user: { select: { id: true, displayName: true } },
+        session: { select: { title: true } },
       },
     });
 
@@ -431,6 +479,11 @@ const checkPayOSStatus = async (req, res, next) => {
           });
 
           await checkAndCompleteSession(payment.sessionId);
+
+          safeNotify((svc) => svc.notifyPaymentConfirmed({
+            payment: updated,
+            sessionTitle: payment.session?.title,
+          }));
 
           return res.json({
             status: 'CONFIRMED',

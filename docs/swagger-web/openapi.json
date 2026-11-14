@@ -3,7 +3,7 @@
   "info": {
     "title": "CSE HitDad - Football Club Management API",
     "version": "1.2.4",
-    "description": "\nTài liệu RESTful API chính thức của hệ thống quản lý câu lạc bộ bóng đá **CSE HitDad**.\n\nTài liệu này bao gồm 2 API Collections trọng tâm:\n1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.\n2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.\n\n---\n### Hướng dẫn Xác thực (Authentication)\nĐa số các endpoint yêu cầu gửi JWT Access Token trong HTTP Request Header:\n```http\nAuthorization: Bearer <your_access_token>\n```\n- Quyền **MEMBER**: Được truy cập các thông tin cá nhân và thanh toán liên quan đến chính mình.\n- Quyền **ADMIN**: Ban Cán Sự có toàn quyền phê duyệt thành viên, cập nhật tier/thủ môn, xuất Excel và cấu hình PayOS.\n    ",
+    "description": "\nTài liệu RESTful API chính thức của hệ thống quản lý câu lạc bộ bóng đá **CSE HitDad**.\n\nTài liệu này bao gồm 2 API Collections trọng tâm:\n1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.\n2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.\n\nNgoài ra còn các collection: **System** (health check, alias webhook), **Auth** (đăng ký/đăng nhập/OTP/quên mật khẩu), **Session** (trận đấu & khung giờ), **Vote** (bình chọn), **Team** (chia đội), **Attendance** (điểm danh, khách mời, tính lại tiền sân), **Notification** (push notification cho Android APK & iOS PWA) và **Feedback** (góp ý).\n\n---\n### Hướng dẫn Xác thực (Authentication)\nĐa số các endpoint yêu cầu gửi JWT Access Token trong HTTP Request Header:\n```http\nAuthorization: Bearer <your_access_token>\n```\n- Quyền **MEMBER**: Được truy cập các thông tin cá nhân và thanh toán liên quan đến chính mình.\n- Quyền **ADMIN**: Ban Cán Sự có toàn quyền phê duyệt thành viên, cập nhật tier/thủ môn, xuất Excel và cấu hình PayOS.\n    ",
     "contact": {
       "name": "CSE HitDad Tech Team",
       "email": "admin@cse-hitdad.internal"
@@ -25,12 +25,44 @@
   ],
   "tags": [
     {
+      "name": "System",
+      "description": "Health check hệ thống và các alias Webhook PayOS"
+    },
+    {
+      "name": "Auth",
+      "description": "Xác thực người dùng: đăng ký (qua OTP email), đăng nhập, refresh token, quên mật khẩu"
+    },
+    {
       "name": "User",
       "description": "Quản lý thành viên, hồ sơ cá nhân, avatar, QR ngân hàng và quy trình duyệt thành viên"
     },
     {
+      "name": "Session",
+      "description": "Quản lý trận đấu (buổi đá bóng) và khung giờ bình chọn"
+    },
+    {
+      "name": "Vote",
+      "description": "Bình chọn tham gia / báo vắng trận đấu và chọn khung giờ thi đấu"
+    },
+    {
+      "name": "Team",
+      "description": "Gợi ý số đội, chia đội cân bằng theo tier và lưu đội hình"
+    },
+    {
+      "name": "Attendance",
+      "description": "Matchday dashboard: chốt bình chọn, điểm danh, khách mời và tính lại tiền sân"
+    },
+    {
       "name": "Payment",
       "description": "Quản lý tiền sân, đối soát thanh toán PayOS VietQR và webhook giao dịch"
+    },
+    {
+      "name": "Notification",
+      "description": "Push notification đa nền tảng (Android APK qua FCM/Expo, iOS PWA qua Web Push VAPID) và hộp thư thông báo in-app"
+    },
+    {
+      "name": "Feedback",
+      "description": "Thành viên gửi góp ý / báo lỗi, ADMIN xem và xử lý phản hồi"
     }
   ],
   "components": {
@@ -484,6 +516,1448 @@
             "type": "string",
             "example": "9c5f87a32b6e7d91...",
             "description": "Chữ ký số HMAC-SHA256 để máy chủ kiểm tra tính toàn vẹn dữ liệu từ PayOS"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "field"
+                },
+                "msg": {
+                  "type": "string",
+                  "example": "Username must be 3-30 characters"
+                },
+                "path": {
+                  "type": "string",
+                  "example": "username"
+                },
+                "location": {
+                  "type": "string",
+                  "example": "body"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MembershipErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "MEMBERSHIP_PENDING",
+              "MEMBERSHIP_REJECTED"
+            ],
+            "example": "MEMBERSHIP_PENDING"
+          },
+          "error": {
+            "type": "string",
+            "example": "Tài khoản đang chờ admin duyệt. Bạn chỉ có thể vào CLB sau khi được chấp thuận."
+          }
+        }
+      },
+      "AuthUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "example": "nguyenvanan"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true,
+            "example": "an.nguyen@example.com"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Nguyễn Văn An"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "0901234567"
+          },
+          "bankInfo": {
+            "type": "string",
+            "nullable": true,
+            "example": "MBBank - 0987654321 - NGUYEN VAN AN"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "MEMBER"
+            ],
+            "example": "MEMBER"
+          },
+          "membershipStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "APPROVED"
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true,
+            "example": "B"
+          },
+          "isGoalkeeper": {
+            "type": "boolean",
+            "example": false
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      },
+      "RegisterBody": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "displayName",
+          "email",
+          "verificationToken"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 30,
+            "example": "nguyenvanan",
+            "description": "Chỉ gồm chữ và số (3-30 ký tự)"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 6,
+            "example": "Secret@123"
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "example": "Nguyễn Văn An"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "an.nguyen@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0901234567",
+            "description": "Tuỳ chọn - số điện thoại Việt Nam"
+          },
+          "verificationToken": {
+            "type": "string",
+            "example": "a3f1...e9",
+            "description": "Token nhận được từ `POST /api/auth/verify-otp`"
+          }
+        }
+      },
+      "LoginBody": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "nguyenvanan",
+            "description": "Tên đăng nhập hoặc email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "Secret@123"
+          }
+        }
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Nguyễn Văn An"
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TimeSlot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "19:30"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "votes": {
+                "type": "integer",
+                "example": 8,
+                "description": "Số lượt JOIN chọn khung giờ này"
+              }
+            }
+          }
+        }
+      },
+      "TimeSlotInput": {
+        "type": "object",
+        "required": [
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "19:30"
+          }
+        }
+      },
+      "SessionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Đá bóng tối thứ 5"
+          },
+          "playDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-20T00:00:00.000Z"
+          },
+          "startTime": {
+            "type": "string",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "19:30"
+          },
+          "location": {
+            "type": "string",
+            "example": "Sân bóng Chảo Lửa"
+          },
+          "googleMapsUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://maps.app.goo.gl/abc"
+          },
+          "minPlayers": {
+            "type": "integer",
+            "example": 10
+          },
+          "maxPlayers": {
+            "type": "integer",
+            "example": 20
+          },
+          "totalCost": {
+            "type": "number",
+            "nullable": true,
+            "example": 600000
+          },
+          "splitCount": {
+            "type": "integer",
+            "nullable": true,
+            "example": 12
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "VOTING",
+              "CONFIRMED",
+              "BOOKED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "VOTING"
+          },
+          "cancellationNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "teams": {
+            "type": "object",
+            "nullable": true,
+            "description": "Đội hình đã lưu (JSON tự do)"
+          },
+          "voteDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isVoteLocked": {
+            "type": "boolean",
+            "example": false
+          },
+          "voteLockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "selectedTimeSlotId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "payer": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "bankInfo": {
+                "type": "string",
+                "nullable": true
+              },
+              "phone": {
+                "type": "string",
+                "nullable": true
+              },
+              "avatar": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "votes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VoteItem"
+            }
+          },
+          "timeSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSlot"
+            }
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "votes": {
+                "type": "integer",
+                "example": 12,
+                "description": "Số lượt JOIN"
+              }
+            }
+          }
+        }
+      },
+      "CreateSessionBody": {
+        "type": "object",
+        "required": [
+          "title",
+          "playDate",
+          "startTime",
+          "endTime",
+          "location",
+          "minPlayers",
+          "maxPlayers"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "example": "Đá bóng tối thứ 5"
+          },
+          "playDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-20"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+            "example": "19:30"
+          },
+          "timeSlots": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/TimeSlotInput"
+            },
+            "description": "Danh sách khung giờ cho thành viên bình chọn (mặc định dùng startTime/endTime)"
+          },
+          "location": {
+            "type": "string",
+            "example": "Sân bóng Chảo Lửa"
+          },
+          "googleMapsUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://maps.app.goo.gl/abc",
+            "description": "Link Google Maps (https)"
+          },
+          "minPlayers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 30,
+            "example": 10
+          },
+          "maxPlayers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 30,
+            "example": 20
+          },
+          "voteDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-20T08:00:00.000Z"
+          }
+        }
+      },
+      "UpdateSessionBody": {
+        "type": "object",
+        "description": "Chỉ gửi các field cần cập nhật",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "playDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$"
+          },
+          "location": {
+            "type": "string"
+          },
+          "googleMapsUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "minPlayers": {
+            "type": "integer"
+          },
+          "maxPlayers": {
+            "type": "integer"
+          },
+          "totalCost": {
+            "type": "number",
+            "nullable": true,
+            "example": 600000
+          },
+          "splitCount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "payerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "VOTING",
+              "CONFIRMED",
+              "BOOKED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "voteDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancellationNote": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "description": "Bắt buộc khi status = CANCELLED"
+          },
+          "timeSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSlotInput"
+            },
+            "description": "Không thể thay đổi sau khi trận đã BOOKED/COMPLETED"
+          },
+          "selectedTimeSlotId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Khung giờ được chốt (mặc định chọn khung có nhiều vote nhất)"
+          }
+        }
+      },
+      "TeamPlayer": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Nguyễn Văn An"
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true,
+            "example": "B"
+          },
+          "tierScore": {
+            "type": "number",
+            "example": 3
+          },
+          "isGoalkeeper": {
+            "type": "boolean",
+            "example": false
+          },
+          "votedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "voteOrder": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "TeamBalanceResult": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "teamCount": {
+            "type": "integer",
+            "example": 2
+          },
+          "totalVoters": {
+            "type": "integer",
+            "example": 12
+          },
+          "activePlayersCount": {
+            "type": "integer",
+            "example": 10
+          },
+          "reservesCount": {
+            "type": "integer",
+            "example": 2
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Thông tin đội gồm danh sách cầu thủ và tổng điểm"
+            }
+          },
+          "reserves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamPlayer"
+            }
+          },
+          "variance": {
+            "type": "number",
+            "example": 0.25,
+            "description": "Độ lệch điểm giữa các đội (càng nhỏ càng cân bằng)"
+          }
+        }
+      },
+      "GuestPlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Anh Tuấn"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true,
+            "example": "C"
+          },
+          "isGoalkeeper": {
+            "type": "boolean",
+            "example": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESERVE",
+              "PLAYING"
+            ],
+            "example": "RESERVE"
+          },
+          "isCheckedIn": {
+            "type": "boolean",
+            "example": false
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPaid": {
+            "type": "boolean",
+            "example": false
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GuestBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Anh Tuấn",
+            "description": "Bắt buộc khi thêm mới"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0909123456"
+          },
+          "tier": {
+            "type": "string",
+            "example": "C"
+          },
+          "isGoalkeeper": {
+            "type": "boolean",
+            "example": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESERVE",
+              "PLAYING"
+            ],
+            "example": "RESERVE"
+          },
+          "isCheckedIn": {
+            "type": "boolean",
+            "example": false
+          },
+          "note": {
+            "type": "string"
+          },
+          "isPaid": {
+            "type": "boolean",
+            "description": "Chỉ áp dụng khi cập nhật khách mời"
+          }
+        }
+      },
+      "VoteItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "JOIN",
+              "DECLINE",
+              "MAYBE"
+            ],
+            "example": "JOIN"
+          },
+          "votedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isCheckedIn": {
+            "type": "boolean",
+            "example": false
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "checkInNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "timeSlotVotes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timeSlotId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AbsenceLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "example": "Bận việc gia đình"
+          },
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isLate": {
+            "type": "boolean",
+            "example": false,
+            "description": "Báo vắng sát giờ (dưới 2 tiếng hoặc sau khi chốt danh sách)"
+          },
+          "minutesBeforeMatch": {
+            "type": "integer",
+            "nullable": true,
+            "example": 300
+          }
+        }
+      },
+      "CastVoteBody": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "status"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "JOIN",
+              "DECLINE"
+            ],
+            "example": "JOIN"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Bận đi công tác",
+            "description": "Lý do báo vắng (khi status = DECLINE)"
+          },
+          "timeSlotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Danh sách khung giờ muốn tham gia (bắt buộc ít nhất 1 khi trận có nhiều khung giờ và status = JOIN)"
+          }
+        }
+      },
+      "UpdateVoteBody": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "JOIN",
+              "DECLINE"
+            ],
+            "example": "DECLINE"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Đau chân"
+          },
+          "timeSlotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "AdminAdjustVoteBody": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "userId",
+          "status"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "JOIN",
+              "DECLINE",
+              "MAYBE",
+              "NONE"
+            ],
+            "example": "JOIN",
+            "description": "`NONE` để xoá lượt bình chọn của thành viên"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "timeSlotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "FeedbackItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "BUG",
+              "FEATURE",
+              "UX",
+              "OTHER"
+            ],
+            "example": "BUG"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "nullable": true,
+            "example": 4
+          },
+          "message": {
+            "type": "string",
+            "example": "Nút bình chọn không phản hồi trên Safari iOS"
+          },
+          "pagePath": {
+            "type": "string",
+            "nullable": true,
+            "example": "/sessions/abc"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "REVIEWING",
+              "RESOLVED"
+            ],
+            "example": "NEW"
+          },
+          "adminNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "displayName": {
+                "type": "string",
+                "example": "Nguyễn Văn An"
+              },
+              "username": {
+                "type": "string",
+                "example": "nguyenvanan"
+              },
+              "avatar": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "CreateFeedbackBody": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "BUG",
+              "FEATURE",
+              "UX",
+              "OTHER"
+            ],
+            "default": "OTHER"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000,
+            "example": "Nút bình chọn không phản hồi trên Safari iOS"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "nullable": true,
+            "example": 4
+          },
+          "pagePath": {
+            "type": "string",
+            "maxLength": 300,
+            "example": "/sessions/abc"
+          }
+        }
+      },
+      "UpdateFeedbackBody": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "REVIEWING",
+              "RESOLVED"
+            ],
+            "example": "RESOLVED"
+          },
+          "adminNote": {
+            "type": "string",
+            "maxLength": 2000,
+            "example": "Đã fix ở bản 1.2.5"
+          }
+        }
+      },
+      "PushConfigResponse": {
+        "type": "object",
+        "properties": {
+          "webPushEnabled": {
+            "type": "boolean",
+            "example": true,
+            "description": "true nếu server đã cấu hình VAPID keys cho iOS PWA / Web Push"
+          },
+          "vapidPublicKey": {
+            "type": "string",
+            "nullable": true,
+            "example": "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8"
+          },
+          "fcmEnabled": {
+            "type": "boolean",
+            "example": true,
+            "description": "true nếu server đã cấu hình Firebase Admin SDK cho Android APK"
+          },
+          "expoEnabled": {
+            "type": "boolean",
+            "example": true,
+            "description": "Hỗ trợ Expo Push Token (ExponentPushToken[...])"
+          },
+          "supportedChannels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "WEB_PUSH",
+                "FCM",
+                "EXPO"
+              ]
+            },
+            "example": [
+              "WEB_PUSH",
+              "FCM",
+              "EXPO"
+            ]
+          }
+        }
+      },
+      "PushSubscriptionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "WEB_PUSH",
+              "FCM",
+              "EXPO"
+            ],
+            "example": "WEB_PUSH"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS_PWA",
+              "ANDROID_APK",
+              "WEB",
+              "OTHER"
+            ],
+            "example": "IOS_PWA"
+          },
+          "deviceName": {
+            "type": "string",
+            "nullable": true,
+            "example": "iPhone 15 Safari PWA"
+          },
+          "appVersion": {
+            "type": "string",
+            "nullable": true,
+            "example": "1.0.0"
+          },
+          "endpointOrigin": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://web.push.apple.com"
+          },
+          "tokenPreview": {
+            "type": "string",
+            "nullable": true,
+            "example": "…abcd1234"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "failureCount": {
+            "type": "integer",
+            "example": 0
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSuccessAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RegisterPushSubscriptionBody": {
+        "type": "object",
+        "description": "Đăng ký thiết bị nhận push: truyền `subscription` (cho iOS PWA / Web Push) hoặc `token` (cho Android APK FCM / Expo).",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "WEB_PUSH",
+              "FCM",
+              "EXPO"
+            ],
+            "example": "WEB_PUSH",
+            "description": "Tuỳ chọn, server tự suy luận nếu bỏ trống"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS_PWA",
+              "ANDROID_APK",
+              "WEB",
+              "OTHER"
+            ],
+            "example": "IOS_PWA"
+          },
+          "deviceName": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "iPhone 15 Safari PWA"
+          },
+          "appVersion": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "1.0.0"
+          },
+          "token": {
+            "type": "string",
+            "example": "fcm_device_token_or_ExponentPushToken[...]",
+            "description": "Dùng cho kênh FCM hoặc EXPO trên Android APK"
+          },
+          "subscription": {
+            "type": "object",
+            "description": "Dữ liệu PushSubscription.toJSON() trả về từ browser/iOS PWA",
+            "properties": {
+              "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://web.push.apple.com/Q1234567890"
+              },
+              "keys": {
+                "type": "object",
+                "properties": {
+                  "p256dh": {
+                    "type": "string",
+                    "example": "BK_HYU6aHDsRCGpbhREzIIrYNchnvvfo0EHUa0WtY1tkJZeKpJawVKULk76ZSbz2G9Sudg3_y7cIsXqvo7iZgcQ"
+                  },
+                  "auth": {
+                    "type": "string",
+                    "example": "3G4tVWgTxzrrHdkFzgqhdA"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "UnregisterPushSubscriptionBody": {
+        "type": "object",
+        "description": "Truyền ít nhất một trong các trường để hủy đăng ký thiết bị hiện tại khi logout.",
+        "properties": {
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "token": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "WEB_PUSH",
+              "FCM",
+              "EXPO"
+            ]
+          }
+        }
+      },
+      "NotificationItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "example": "SESSION_BOOKED"
+          },
+          "title": {
+            "type": "string",
+            "example": "🏟️ Đã chốt sân thi đấu!"
+          },
+          "body": {
+            "type": "string",
+            "example": "Đá bóng tối thứ 5 lúc 18:00-19:30 tại Sân bóng Chảo Lửa."
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": {
+              "sessionId": "s1234567-89ab-cdef-0123-456789abcdef",
+              "url": "/sessions/s123"
+            }
+          },
+          "isRead": {
+            "type": "boolean",
+            "example": false
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "pushStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SENT",
+              "PARTIAL",
+              "FAILED",
+              "SKIPPED",
+              "NO_DEVICE"
+            ],
+            "example": "SENT"
+          },
+          "pushSentCount": {
+            "type": "integer",
+            "example": 2
+          },
+          "pushFailedCount": {
+            "type": "integer",
+            "example": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TestPushBody": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "🔔 Thử nghiệm thông báo CSE HitDad"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Kiểm tra push notification trên Android APK / iOS PWA"
+          },
+          "url": {
+            "type": "string",
+            "example": "/sessions/123"
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tuỳ chọn: chỉ test một thiết bị cụ thể"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "SendAdminNotificationBody": {
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120,
+            "example": "📢 Nhắc đóng tiền sân"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 1000,
+            "example": "Anh em vui lòng chuyển khoản tiền sân trận tối thứ 5 nhé!"
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "USERS",
+              "SESSION_JOINED",
+              "SESSION_UNPAID"
+            ],
+            "default": "ALL"
+          },
+          "userIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Bắt buộc khi target = USERS"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Bắt buộc khi target = SESSION_JOINED hoặc SESSION_UNPAID"
+          },
+          "type": {
+            "type": "string",
+            "example": "ANNOUNCEMENT"
+          },
+          "url": {
+            "type": "string",
+            "example": "/sessions/abc"
+          },
+          "excludeSelf": {
+            "type": "boolean",
+            "default": false
+          },
+          "data": {
+            "type": "object"
           }
         }
       }
@@ -1836,6 +3310,4162 @@
           },
           "400": {
             "description": "Chữ ký webhook không hợp lệ (Signature verification failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Kiểm tra trạng thái hoạt động của server",
+        "description": "Endpoint công khai dùng cho uptime monitor / Render health check.",
+        "responses": {
+          "200": {
+            "description": "Server đang hoạt động",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2026-11-12T13:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payos-webhook": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Webhook PayOS (alias /payos-webhook)",
+        "description": "Alias của `POST /api/payments/payos-webhook`, hỗ trợ nhiều định dạng URL khi cấu hình trên PayOS Dashboard. Endpoint công khai, bảo mật bằng chữ ký checksum HMAC-SHA256.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayOSWebhookBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook đã được ghi nhận và xử lý",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chữ ký webhook không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payos-webhook": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Webhook PayOS (alias /api/payos-webhook)",
+        "description": "Alias của `POST /api/payments/payos-webhook`, hỗ trợ nhiều định dạng URL khi cấu hình trên PayOS Dashboard. Endpoint công khai, bảo mật bằng chữ ký checksum HMAC-SHA256.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayOSWebhookBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook đã được ghi nhận và xử lý",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chữ ký webhook không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đăng ký tài khoản mới",
+        "description": "Yêu cầu `verificationToken` hợp lệ có được sau bước xác thực OTP email. Tài khoản tạo ra ở trạng thái `PENDING` và cần ADMIN duyệt trước khi đăng nhập.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đăng ký thành công, chờ admin duyệt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đăng ký thành công. Yêu cầu tham gia CLB đã được gửi đến admin và đang chờ duyệt."
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/AuthUser"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu đầu vào không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username / email đã tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt quá giới hạn request xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đăng nhập",
+        "description": "Đăng nhập bằng username hoặc email. Trả về thông tin user kèm cặp access/refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng nhập thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Login successful"
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/AuthUser"
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthTokens"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu đầu vào không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sai tên đăng nhập / email hoặc mật khẩu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tài khoản đang chờ duyệt hoặc đã bị từ chối",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt quá giới hạn request xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Làm mới access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cặp token mới",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token không hợp lệ hoặc phiên đăng nhập đã bị thu hồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tài khoản đang chờ duyệt hoặc đã bị từ chối",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Lấy thông tin người dùng hiện tại",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thông tin user đang đăng nhập",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/AuthUser"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/send-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Gửi mã OTP xác thực email đăng ký",
+        "description": "Kiểm tra trùng username/email/số điện thoại rồi gửi mã OTP 6 số (hiệu lực 5 phút) đến email. Mỗi email chỉ được gửi lại sau 60 giây.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "an.nguyen@example.com"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "0901234567"
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": "nguyenvanan"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã gửi OTP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mã OTP đã được gửi đến email của bạn"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email / số điện thoại không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username hoặc email đã được sử dụng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Gửi OTP quá nhanh, cần đợi trước khi gửi lại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Vui lòng đợi 42 giây trước khi gửi lại"
+                    },
+                    "retryAfter": {
+                      "type": "integer",
+                      "example": 42
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi gửi email OTP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Xác thực mã OTP đăng ký",
+        "description": "Đổi mã OTP lấy `verificationToken` dùng cho `POST /api/auth/register`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "otp"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "an.nguyen@example.com"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Xác thực thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Xác thực OTP thành công"
+                    },
+                    "verificationToken": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mã OTP không hợp lệ hoặc đã hết hạn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password/send-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Gửi OTP khôi phục mật khẩu",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "emailOrUsername"
+                ],
+                "properties": {
+                  "emailOrUsername": {
+                    "type": "string",
+                    "example": "nguyenvanan"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã gửi OTP khôi phục",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "maskedEmail": {
+                      "type": "string",
+                      "example": "a***n@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu email hoặc tên đăng nhập",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài khoản",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Gửi OTP quá nhanh, cần đợi trước khi gửi lại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Vui lòng đợi 42 giây trước khi gửi lại"
+                    },
+                    "retryAfter": {
+                      "type": "integer",
+                      "example": 42
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi gửi email OTP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password/verify-otp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Xác thực OTP khôi phục mật khẩu",
+        "description": "Đổi mã OTP lấy `resetToken` dùng cho bước đặt mật khẩu mới.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "otp"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "an.nguyen@example.com"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Xác thực thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Xác thực OTP thành công"
+                    },
+                    "resetToken": {
+                      "type": "string",
+                      "description": "Chuỗi hex 64 ký tự"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mã OTP không hợp lệ hoặc đã hết hạn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password/reset": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đặt lại mật khẩu mới",
+        "description": "Đặt mật khẩu mới bằng `resetToken`. Toàn bộ phiên đăng nhập cũ sẽ bị thu hồi.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "resetToken",
+                  "newPassword"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "an.nguyen@example.com"
+                  },
+                  "resetToken": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6,
+                    "example": "NewSecret@456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đặt lại mật khẩu thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bây giờ."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu thông tin / token hết hạn / mật khẩu quá ngắn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy người dùng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Danh sách trận đấu",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Lọc theo trạng thái",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "VOTING",
+                "CONFIRMED",
+                "BOOKED",
+                "COMPLETED",
+                "CANCELLED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách trận đấu (mới nhất trước)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SessionDetail"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Tạo trận đấu mới (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã tạo trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Session created"
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Chi tiết trận đấu",
+        "description": "Trả về chi tiết trận kèm `unpaidPreviousPayment` nếu user hiện tại còn nợ tiền sân trận trước.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/SessionDetail"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unpaidPreviousPayment": {
+                              "type": "object",
+                              "nullable": true,
+                              "description": "Khoản tiền sân trận trước chưa thanh toán"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Cập nhật trận đấu (Admin)",
+        "description": "Cập nhật thông tin, trạng thái, người ứng tiền, tổng chi phí, khung giờ... Khi chuyển sang `BOOKED` kèm `totalCost`, hệ thống chốt khung giờ và tạo các khoản thanh toán cho người tham gia.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Session updated"
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Huỷ trận đấu (Admin)",
+        "description": "Chuyển trạng thái trận sang `CANCELLED` kèm lý do huỷ (soft delete).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cancellationNote"
+                ],
+                "properties": {
+                  "cancellationNote": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Trời mưa lớn, sân ngập"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã huỷ trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Session cancelled"
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu lý do huỷ hoặc lý do quá dài",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/force": {
+      "delete": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Xoá vĩnh viễn trận đấu (Admin)",
+        "description": "Xoá hẳn trận đấu cùng toàn bộ dữ liệu liên quan (vote, thanh toán, khách mời...). Không thể hoàn tác.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xoá vĩnh viễn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Session permanently deleted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/time-slots": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Đề xuất thêm khung giờ",
+        "description": "Thành viên đề xuất thêm khung giờ khi trận còn đang mở bình chọn (VOTING/CONFIRMED, chưa khoá, chưa quá hạn). Tối đa 20 khung giờ.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã thêm khung giờ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã thêm khung giờ. Chọn giờ và bấm Tham gia để đăng ký."
+                    },
+                    "timeSlot": {
+                      "$ref": "#/components/schemas/TimeSlot"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Khung giờ không hợp lệ / bình chọn đã đóng / vượt quá 20 khung giờ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Khung giờ đã tồn tại hoặc danh sách vừa thay đổi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/teams/suggestions": {
+      "get": {
+        "tags": [
+          "Team"
+        ],
+        "summary": "Gợi ý số đội có thể chia",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "useAttendedOnly",
+            "in": "query",
+            "required": false,
+            "description": "Chỉ tính người đã điểm danh có mặt",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gợi ý số đội",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalJoin": {
+                      "type": "integer",
+                      "example": 14,
+                      "description": "Tổng người chơi (thành viên + khách)"
+                    },
+                    "memberCount": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "guestCount": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "suggestions": {
+                      "type": "object",
+                      "properties": {
+                        "recommended": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "available": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          },
+                          "example": [
+                            2,
+                            3
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/teams/generate": {
+      "post": {
+        "tags": [
+          "Team"
+        ],
+        "summary": "Chia đội tự động cân bằng theo tier (Admin)",
+        "description": "Cần ít nhất 4 người. Endpoint bị giới hạn tần suất (compute limiter).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teamCount": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "Mặc định dùng số đội được gợi ý"
+                  },
+                  "goalkeeperOverrides": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "boolean"
+                    },
+                    "example": {
+                      "c3b5d2e1-4567-4890-abcd-123456789abc": true
+                    },
+                    "description": "Map userId -> có phải thủ môn hay không"
+                  },
+                  "useAttendedOnly": {
+                    "type": "boolean",
+                    "example": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả chia đội",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/TeamBalanceResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Không đủ người hoặc số đội / cấu hình thủ môn không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt quá giới hạn tần suất chia đội",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/teams": {
+      "put": {
+        "tags": [
+          "Team"
+        ],
+        "summary": "Lưu đội hình chính thức (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "teams"
+                ],
+                "properties": {
+                  "teams": {
+                    "type": "object",
+                    "description": "Đội hình (thường là `result` trả về từ endpoint generate)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã lưu đội hình",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Lưu danh sách đội thành công"
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Team"
+        ],
+        "summary": "Huỷ đội hình đã chia (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã huỷ đội hình",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã hủy danh sách đội"
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/attendance": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Matchday dashboard điểm danh",
+        "description": "Danh sách người JOIN/MAYBE/DECLINE, khách mời, nhật ký báo vắng, cảnh báo báo vắng sát giờ / không có mặt và thống kê tổng hợp.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dữ liệu dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    },
+                    "joined": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VoteItem"
+                      }
+                    },
+                    "maybe": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VoteItem"
+                      }
+                    },
+                    "declined": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VoteItem"
+                      }
+                    },
+                    "guests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GuestPlayer"
+                      }
+                    },
+                    "absenceLogs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AbsenceLog"
+                      }
+                    },
+                    "warnings": {
+                      "type": "object",
+                      "properties": {
+                        "lateCancellations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "noShows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalVoters": {
+                          "type": "integer"
+                        },
+                        "joinedCount": {
+                          "type": "integer"
+                        },
+                        "maybeCount": {
+                          "type": "integer"
+                        },
+                        "declinedCount": {
+                          "type": "integer"
+                        },
+                        "attendedMembersCount": {
+                          "type": "integer"
+                        },
+                        "unattendedMembersCount": {
+                          "type": "integer"
+                        },
+                        "attendedGuestsCount": {
+                          "type": "integer"
+                        },
+                        "totalGuestsCount": {
+                          "type": "integer"
+                        },
+                        "reserveGuestsCount": {
+                          "type": "integer"
+                        },
+                        "playingGuestsCount": {
+                          "type": "integer"
+                        },
+                        "totalAttendedOnPitch": {
+                          "type": "integer"
+                        },
+                        "lateCancellationsCount": {
+                          "type": "integer"
+                        },
+                        "noShowsCount": {
+                          "type": "integer"
+                        },
+                        "totalWarningsCount": {
+                          "type": "integer"
+                        },
+                        "isMatchStarted": {
+                          "type": "boolean"
+                        },
+                        "isVoteLocked": {
+                          "type": "boolean"
+                        },
+                        "voteLockedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "matchStartTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "minutesToMatch": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Điểm danh một thành viên (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "isCheckedIn": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "checkInNote": {
+                    "type": "string",
+                    "example": "Đến muộn 10 phút"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật điểm danh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã điểm danh có mặt"
+                    },
+                    "vote": {
+                      "$ref": "#/components/schemas/VoteItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu userId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/attendance/bulk": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Điểm danh / huỷ điểm danh toàn bộ người JOIN (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isCheckedIn": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật hàng loạt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã điểm danh toàn bộ (12 người)"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "example": 12
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/lock-vote": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Chốt / mở lại bình chọn (Admin)",
+        "description": "Nếu không truyền `isLocked`, hệ thống sẽ đảo trạng thái khoá hiện tại.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isLocked": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật trạng thái khoá",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã chốt danh sách bình chọn!"
+                    },
+                    "isVoteLocked": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "voteLockedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "session": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/guests": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Thêm khách mời (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GuestBody"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã thêm khách mời",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã thêm khách mời vào danh sách dự bị"
+                    },
+                    "guest": {
+                      "$ref": "#/components/schemas/GuestPlayer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tên khách mời không được để trống",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/guests/{guestId}": {
+      "put": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Cập nhật khách mời (Admin)",
+        "description": "Đổi trạng thái dự bị / đá chính, điểm danh, đánh dấu đã trả tiền hoặc sửa thông tin.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "description": "Guest ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật khách mời",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Cập nhật khách mời thành công"
+                    },
+                    "guest": {
+                      "$ref": "#/components/schemas/GuestPlayer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy khách mời",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Xoá khách mời (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "description": "Guest ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xoá khách mời",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã xóa khách mời khỏi trận đấu"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy khách mời",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}/recalculate-payments": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Tính lại tiền sân theo số người có mặt (Admin)",
+        "description": "Chia `totalCost` cho tổng số thành viên + khách đã điểm danh, cập nhật lại các khoản thanh toán.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã tính lại tiền sân",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã tính lại tiền sân: 50.000đ/người (12 người có mặt: 10 thành viên + 2 khách)"
+                    },
+                    "amountPerPerson": {
+                      "type": "number",
+                      "example": 50000
+                    },
+                    "totalAttendees": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "attendedMembersCount": {
+                      "type": "integer",
+                      "example": 10
+                    },
+                    "attendedGuestsCount": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PaymentItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Trận chưa có tổng chi phí hoặc chưa có ai điểm danh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/votes": {
+      "post": {
+        "tags": [
+          "Vote"
+        ],
+        "summary": "Bình chọn tham gia / báo vắng trận đấu",
+        "description": "Tạo hoặc cập nhật lượt vote của chính mình. Bị chặn nếu trận đã khoá bình chọn, quá hạn, hoặc user còn nợ tiền sân trận trước. Khi đủ `minPlayers` người JOIN, trận chuyển sang `CONFIRMED`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastVoteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã ghi nhận bình chọn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã ghi nhận bình chọn của bạn"
+                    },
+                    "vote": {
+                      "$ref": "#/components/schemas/VoteItem"
+                    },
+                    "sessionConfirmed": {
+                      "type": "boolean",
+                      "example": false,
+                      "description": "true nếu lượt vote này giúp trận đấu đủ số người tối thiểu và chuyển sang CONFIRMED"
+                    },
+                    "joinCount": {
+                      "type": "integer",
+                      "example": 11
+                    },
+                    "absenceLog": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/AbsenceLog"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ / bình chọn đã đóng / còn nợ tiền sân",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session không tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/votes/admin/adjust": {
+      "post": {
+        "tags": [
+          "Vote"
+        ],
+        "summary": "Admin điều chỉnh bình chọn của thành viên",
+        "description": "ADMIN đặt trạng thái JOIN / DECLINE / MAYBE hoặc xoá (NONE) lượt bình chọn của bất kỳ thành viên nào trong trận (không áp dụng cho trận đã huỷ).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAdjustVoteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã điều chỉnh bình chọn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã chuyển trạng thái của Nguyễn Văn An sang Tham gia"
+                    },
+                    "vote": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/VoteItem"
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "Chỉ có khi status = NONE"
+                    },
+                    "sessionConfirmed": {
+                      "type": "boolean"
+                    },
+                    "joinCount": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "absenceLog": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/AbsenceLog"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ hoặc trận đã huỷ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu hoặc người dùng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/votes/{id}": {
+      "put": {
+        "tags": [
+          "Vote"
+        ],
+        "summary": "Cập nhật lượt bình chọn của mình",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Vote ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVoteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật bình chọn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã ghi nhận báo vắng."
+                    },
+                    "vote": {
+                      "$ref": "#/components/schemas/VoteItem"
+                    },
+                    "absenceLog": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/AbsenceLog"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ / bình chọn đã đóng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ được cập nhật vote của chính mình",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vote không tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/votes/session/{sessionId}": {
+      "get": {
+        "tags": [
+          "Vote"
+        ],
+        "summary": "Danh sách bình chọn của một trận đấu",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "description": "Session ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách vote và thống kê",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "votes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VoteItem"
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "join": {
+                          "type": "integer",
+                          "example": 12
+                        },
+                        "decline": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "maybe": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 16
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/feedback": {
+      "post": {
+        "tags": [
+          "Feedback"
+        ],
+        "summary": "Gửi phản hồi / góp ý",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedbackBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã gửi phản hồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Cảm ơn bạn! Phản hồi đã được gửi đến đội ngũ phát triển."
+                    },
+                    "feedback": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "NEW"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Loại phản hồi / nội dung / mức đánh giá không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Feedback"
+        ],
+        "summary": "Danh sách phản hồi (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "REVIEWING",
+                "RESOLVED"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BUG",
+                "FEATURE",
+                "UX",
+                "OTHER"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách phản hồi và thống kê theo trạng thái",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "feedbacks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeedbackItem"
+                      }
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "example": 20
+                        },
+                        "NEW": {
+                          "type": "integer",
+                          "example": 5
+                        },
+                        "REVIEWING": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "RESOLVED": {
+                          "type": "integer",
+                          "example": 12
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/feedback/{id}": {
+      "put": {
+        "tags": [
+          "Feedback"
+        ],
+        "summary": "Cập nhật trạng thái phản hồi (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Feedback ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFeedbackBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã cập nhật phản hồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã cập nhật phản hồi"
+                    },
+                    "feedback": {
+                      "$ref": "#/components/schemas/FeedbackItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Trạng thái không hợp lệ hoặc ghi chú quá dài",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy phản hồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/config": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Lấy cấu hình Push & VAPID Public Key",
+        "description": "Endpoint công khai trả về `vapidPublicKey` để iOS PWA gọi `pushManager.subscribe()` và trạng thái cấu hình của các kênh Web Push / FCM / Expo.",
+        "responses": {
+          "200": {
+            "description": "Cấu hình push hiện tại của server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/subscriptions": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Danh sách thiết bị đã đăng ký nhận push của tôi",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách thiết bị đăng ký push",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subscriptions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PushSubscriptionSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Đăng ký hoặc làm mới thiết bị nhận Push Notification",
+        "description": "Dùng chung cho cả Android APK (FCM / Expo token) và iOS PWA (Web Push `PushSubscription`). Tự động cập nhật chủ sở hữu nếu đổi tài khoản trên cùng thiết bị.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPushSubscriptionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đăng ký thiết bị thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã đăng ký thiết bị nhận thông báo"
+                    },
+                    "subscription": {
+                      "$ref": "#/components/schemas/PushSubscriptionSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu hoặc sai định dạng subscription / token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Hủy đăng ký thiết bị theo endpoint hoặc token",
+        "description": "Mobile app / PWA gọi khi người dùng đăng xuất hoặc tắt thông báo (truyền qua JSON body hoặc query params).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB_PUSH",
+                "FCM",
+                "EXPO"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnregisterPushSubscriptionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả hủy đăng ký",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã hủy đăng ký nhận thông báo"
+                    },
+                    "deletedCount": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu subscriptionId, endpoint hoặc token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/subscriptions/{id}": {
+      "delete": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Xóa một thiết bị đăng ký push theo ID",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Subscription ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã hủy đăng ký thiết bị",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã hủy đăng ký nhận thông báo"
+                    },
+                    "deletedCount": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy đăng ký thiết bị",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/test": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Gửi push notification thử nghiệm tới thiết bị của chính mình",
+        "description": "Tạo một thông báo `TEST_PUSH` và gửi trực tiếp tới các thiết bị đang active của chính tài khoản đang đăng nhập, trả về báo cáo chi tiết từng thiết bị.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestPushBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả gửi push thử nghiệm",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã gửi push thử nghiệm tới 1/1 thiết bị."
+                    },
+                    "notificationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "attempted": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "sent": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "skipped": {
+                          "type": "integer",
+                          "example": 0
+                        }
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ hoặc thiết bị đang bị vô hiệu hóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy thiết bị đăng ký",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Gửi test push quá nhanh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/send": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Gửi thông báo tùy chỉnh / nhắc lịch / nhắc đóng tiền (Admin)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAdminNotificationBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã gửi thông báo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã gửi thông báo đến 14 thành viên"
+                    },
+                    "recipientCount": {
+                      "type": "integer",
+                      "example": 14
+                    },
+                    "notificationIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "deliverySummary": {
+                      "type": "object",
+                      "properties": {
+                        "attempted": {
+                          "type": "integer",
+                          "example": 18
+                        },
+                        "sent": {
+                          "type": "integer",
+                          "example": 17
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "skipped": {
+                          "type": "integer",
+                          "example": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu hoặc đối tượng nhận không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Chỉ ADMIN mới có quyền thực hiện thao tác này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy trận đấu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Lấy danh sách thông báo in-app của tôi",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách thông báo và phân trang",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NotificationItem"
+                      }
+                    },
+                    "unreadCount": {
+                      "type": "integer",
+                      "example": 3
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 20
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 42
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Đếm số thông báo chưa đọc",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Số thông báo chưa đọc",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "unreadCount": {
+                      "type": "integer",
+                      "example": 3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all": {
+      "put": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Đánh dấu tất cả thông báo là đã đọc",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã đánh dấu đã đọc tất cả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã đánh dấu tất cả thông báo là đã đọc"
+                    },
+                    "updatedCount": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "put": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Đánh dấu một thông báo là đã đọc",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Notification ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã đánh dấu đã đọc",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã đánh dấu đã đọc"
+                    },
+                    "notification": {
+                      "$ref": "#/components/schemas/NotificationItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy thông báo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}": {
+      "delete": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Xóa một thông báo của tôi",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Notification ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã xóa thông báo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã xóa thông báo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực hoặc access token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy thông báo",
             "content": {
               "application/json": {
                 "schema": {

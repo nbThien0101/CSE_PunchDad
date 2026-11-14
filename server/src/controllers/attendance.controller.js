@@ -2,6 +2,17 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+const safeNotify = (callback) => {
+  try {
+    const notificationService = require('../services/notification.service');
+    Promise.resolve(callback(notificationService)).catch((err) => {
+      console.error('⚠️ Push notification error:', err.message);
+    });
+  } catch {
+    // Skip in isolated VM tests
+  }
+};
+
 /**
  * Tính toán thời điểm bắt đầu trận đấu (Date object)
  */
@@ -59,6 +70,8 @@ const toggleLockVote = async (req, res, next) => {
         voteLockedAt: nextLockState ? new Date() : null,
       },
     });
+
+    safeNotify((svc) => svc.notifyVoteLocked(updated, updated.isVoteLocked, req.user?.id));
 
     res.json({
       message: nextLockState ? 'Đã chốt danh sách bình chọn!' : 'Đã mở lại bình chọn!',
@@ -506,6 +519,8 @@ const recalculatePayments = async (req, res, next) => {
         user: { select: { id: true, displayName: true, avatar: true } },
       },
     });
+
+    safeNotify((svc) => svc.notifyPaymentsRecalculated({ session, payments: updatedPayments }));
 
     res.json({
       message: `Đã tính lại tiền sân: ${amountPerPerson.toLocaleString('vi-VN')}đ/người (${totalAttendees} người có mặt: ${attendedMembers.length} thành viên + ${attendedGuests.length} khách)`,

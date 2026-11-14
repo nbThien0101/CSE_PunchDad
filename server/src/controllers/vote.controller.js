@@ -3,6 +3,17 @@ const { calculateMinutesBeforeMatch, checkIsLateDecline } = require('./attendanc
 
 const prisma = new PrismaClient();
 
+const safeNotify = (callback) => {
+  try {
+    const notificationService = require('../services/notification.service');
+    Promise.resolve(callback(notificationService)).catch((err) => {
+      console.error('⚠️ Push notification error:', err.message);
+    });
+  } catch {
+    // Skip in isolated VM tests
+  }
+};
+
 /**
  * Kiểm tra xem user có khoản thanh toán nào chưa hoàn tất ở các trận đấu trước không.
  * @param {string} userId - ID của user cần kiểm tra
@@ -226,6 +237,8 @@ const castVote = async (req, res, next) => {
           where: { id: sessionId },
           data: { status: 'CONFIRMED' },
         });
+
+        safeNotify((svc) => svc.notifySessionConfirmed(session));
 
         return res.json({
           message: 'Bình chọn thành công! Trận đấu đã đủ người tối thiểu!',
@@ -605,6 +618,7 @@ const adminAdjustVote = async (req, res, next, dbClient = prisma) => {
         data: { status: 'CONFIRMED' },
       });
       sessionConfirmed = true;
+      safeNotify((svc) => svc.notifySessionConfirmed(session, dbClient));
     }
 
     return res.json({

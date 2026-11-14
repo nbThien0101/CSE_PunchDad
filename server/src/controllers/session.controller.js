@@ -5,6 +5,17 @@ const { checkUnpaidPreviousPayment } = require('./vote.controller');
 
 const prisma = new PrismaClient();
 
+const safeNotify = (callback) => {
+  try {
+    const notificationService = require('../services/notification.service');
+    Promise.resolve(callback(notificationService)).catch((err) => {
+      console.error('⚠️ Push notification error:', err.message);
+    });
+  } catch {
+    // Skip in isolated VM tests
+  }
+};
+
 const normalizeTimeSlots = (timeSlots, fallbackStartTime, fallbackEndTime) => {
   const slots = Array.isArray(timeSlots) && timeSlots.length
     ? timeSlots
@@ -372,6 +383,8 @@ const createSession = async (req, res, next) => {
       },
     });
 
+    safeNotify((svc) => svc.notifySessionCreated(session, req.user?.id));
+
     res.status(201).json({ message: 'Session created', session });
   } catch (error) {
     next(error);
@@ -524,6 +537,7 @@ const updateSession = async (req, res, next, dbClient = prisma) => {
     });
 
     // Nếu session chuyển sang BOOKED và có totalCost, tạo payment records
+    let createdPayments = [];
     if (updateData.status === 'BOOKED' && updateData.totalCost) {
       const joinedVotes = await dbClient.vote.findMany({
         where: { sessionId: id, status: 'JOIN' },
@@ -545,7 +559,14 @@ const updateSession = async (req, res, next, dbClient = prisma) => {
           data: paymentData,
           skipDuplicates: true,
         });
+        createdPayments = paymentData;
       }
+    }
+
+    if (updateData.status === 'BOOKED' && existingSession.status !== 'BOOKED') {
+      safeNotify((svc) => svc.notifySessionBooked(session, { paymentsCreated: createdPayments }, dbClient));
+    } else if (updateData.status === 'CANCELLED' && existingSession.status !== 'CANCELLED') {
+      safeNotify((svc) => svc.notifySessionCancelled(session, req.user?.id, dbClient));
     }
 
     res.json({ message: 'Session updated', session });
@@ -572,6 +593,8 @@ const deleteSession = async (req, res, next) => {
       where: { id: req.params.id },
       data: { status: 'CANCELLED', cancellationNote },
     });
+
+    safeNotify((svc) => svc.notifySessionCancelled(session, req.user?.id));
 
     res.json({ message: 'Session cancelled', session });
   } catch (error) {
@@ -745,6 +768,8 @@ const saveTeams = async (req, res, next) => {
         },
       },
     });
+
+    safeNotify((svc) => svc.notifyTeamsPublished(updatedSession, req.user?.id));
 
     res.json({ message: 'Lưu danh sách đội thành công', session: updatedSession });
   } catch (error) {

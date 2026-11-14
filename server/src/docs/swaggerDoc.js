@@ -16,7 +16,7 @@ Tài liệu này bao gồm 2 API Collections trọng tâm:
 1. **User Collection**: Quản lý thành viên CLB, hồ sơ cá nhân, đổi mật khẩu, upload/xóa avatar, mã VietQR cá nhân và quy trình Ban Cán Sự duyệt đơn gia nhập CLB.
 2. **Payment Collection**: Quản lý thu chi tiền sân, đối soát thanh toán PayOS VietQR tự động theo thời gian thực và Webhook xử lý giao dịch.
 
-Ngoài ra còn các collection: **System** (health check, alias webhook), **Auth** (đăng ký/đăng nhập/OTP/quên mật khẩu), **Session** (trận đấu & khung giờ), **Vote** (bình chọn), **Team** (chia đội), **Attendance** (điểm danh, khách mời, tính lại tiền sân) và **Feedback** (góp ý).
+Ngoài ra còn các collection: **System** (health check, alias webhook), **Auth** (đăng ký/đăng nhập/OTP/quên mật khẩu), **Session** (trận đấu & khung giờ), **Vote** (bình chọn), **Team** (chia đội), **Attendance** (điểm danh, khách mời, tính lại tiền sân), **Notification** (push notification cho Android APK & iOS PWA) và **Feedback** (góp ý).
 
 ---
 ### Hướng dẫn Xác thực (Authentication)
@@ -1110,7 +1110,7 @@ Authorization: Bearer <your_access_token>
 module.exports = swaggerDoc;
 
 // ==========================================
-// Gộp thêm các API Collections còn lại (System, Auth, Session/Team/Attendance, Vote, Feedback)
+// Gộp thêm các API Collections còn lại (System, Auth, Session/Team/Attendance, Vote, Feedback, Notification)
 // ==========================================
 const extraCollections = [
   require('./collections/system'),
@@ -1118,6 +1118,7 @@ const extraCollections = [
   require('./collections/session'),
   require('./collections/vote'),
   require('./collections/feedback'),
+  require('./collections/notification'),
 ];
 
 for (const collection of extraCollections) {
@@ -1130,6 +1131,6 @@ for (const collection of extraCollections) {
 }
 
 // Sắp xếp tag theo luồng sử dụng
-const TAG_ORDER = ['System', 'Auth', 'User', 'Session', 'Vote', 'Team', 'Attendance', 'Payment', 'Feedback'];
+const TAG_ORDER = ['System', 'Auth', 'User', 'Session', 'Vote', 'Team', 'Attendance', 'Payment', 'Notification', 'Feedback'];
 swaggerDoc.tags.sort((a, b) => TAG_ORDER.indexOf(a.name) - TAG_ORDER.indexOf(b.name));
 

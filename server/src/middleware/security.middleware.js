@@ -81,10 +81,24 @@ const computeLimiter = rateLimit({
   handler: createLimitHandler('Thao tác tính toán chia đội hình đang được gọi quá nhanh. Vui lòng đợi 1 phút.', 1),
 });
 
+/**
+ * 6. Push Test Limiter
+ * Ngăn spam gửi test push notification liên tục
+ * Tối đa 20 lần / 15 phút trên mỗi IP
+ */
+const pushTestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: createLimitHandler('Bạn đã gửi quá nhiều thông báo thử nghiệm. Vui lòng thử lại sau 15 phút.', 15),
+});
+
 module.exports = {
   globalLimiter,
   speedLimiter,
   authLimiter,
   otpLimiter,
   computeLimiter,
+  pushTestLimiter,
 };

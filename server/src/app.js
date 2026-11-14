@@ -11,6 +11,7 @@ const voteRoutes = require('./routes/vote.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const userRoutes = require('./routes/user.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
+const notificationRoutes = require('./routes/notification.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const { globalLimiter, speedLimiter } = require('./middleware/security.middleware');
 
@@ -49,13 +50,26 @@ app.use(hpp());
 // ==========================================
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
-      .split(',')
-      .map(s => s.trim());
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    const allowedOrigins = [
+      ...(process.env.CLIENT_URL || 'http://localhost:5173').split(','),
+      ...(process.env.MOBILE_CLIENT_URL || '').split(','),
+    ]
+      .map(s => s.trim())
+      .filter(Boolean);
+    const mobileAppOrigins = new Set([
+      'capacitor://localhost',
+      'ionic://localhost',
+      'http://localhost',
+      'https://localhost',
+    ]);
+    // Allow requests with no origin (native mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    // In dev mode, allow any localhost origin (Vite may pick different ports)
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) {
+    // Allow hybrid mobile APK WebViews (Capacitor/Ionic)
+    if (mobileAppOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    // In dev mode, allow any localhost/127.0.0.1 origin (Vite/Expo/PWA dev servers may pick different ports)
+    if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
     if (allowedOrigins.includes(origin)) {
@@ -123,6 +137,7 @@ app.use('/api/votes', voteRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ==========================================
 // Error Handling

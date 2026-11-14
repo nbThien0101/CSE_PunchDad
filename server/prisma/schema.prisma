@@ -45,6 +45,19 @@ enum PaymentStatus {
   CONFIRMED
 }
 
+enum PushChannel {
+  WEB_PUSH
+  FCM
+  EXPO
+}
+
+enum PushPlatform {
+  IOS_PWA
+  ANDROID_APK
+  WEB
+  OTHER
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -69,12 +82,14 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  createdSessions Session[]    @relation("SessionCreator")
-  paidSessions    Session[]    @relation("SessionPayer")
-  votes           Vote[]
-  payments        Payment[]
-  absenceLogs     AbsenceLog[]
-  feedbacks       Feedback[]
+  createdSessions   Session[]          @relation("SessionCreator")
+  paidSessions      Session[]          @relation("SessionPayer")
+  votes             Vote[]
+  payments          Payment[]
+  absenceLogs       AbsenceLog[]
+  feedbacks         Feedback[]
+  pushSubscriptions PushSubscription[]
+  notifications     Notification[]
 
   @@index([membershipStatus, createdAt])
   @@map("users")
@@ -262,4 +277,53 @@ model Payment {
 
   @@unique([sessionId, userId])
   @@map("payments")
+}
+
+model PushSubscription {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id")
+  channel         PushChannel
+  platform        PushPlatform @default(OTHER)
+  subscriptionKey String       @unique @map("subscription_key")
+  endpoint        String?      @db.Text
+  p256dh          String?      @db.Text
+  auth            String?      @db.Text
+  deviceToken     String?      @map("device_token") @db.Text
+  deviceName      String?      @map("device_name")
+  appVersion      String?      @map("app_version")
+  userAgent       String?      @map("user_agent") @db.Text
+  isActive        Boolean      @default(true) @map("is_active")
+  failureCount    Int          @default(0) @map("failure_count")
+  lastError       String?      @map("last_error") @db.Text
+  lastSuccessAt   DateTime?    @map("last_success_at")
+  lastUsedAt      DateTime     @default(now()) @map("last_used_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@index([channel, isActive])
+  @@map("push_subscriptions")
+}
+
+model Notification {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  type            String    @default("GENERAL")
+  title           String
+  body            String    @db.Text
+  data            Json?
+  isRead          Boolean   @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+  pushStatus      String    @default("PENDING") @map("push_status")
+  pushSentCount   Int       @default(0) @map("push_sent_count")
+  pushFailedCount Int       @default(0) @map("push_failed_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

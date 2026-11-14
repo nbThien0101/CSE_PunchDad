@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const swaggerDoc = require('../src/docs/swaggerDoc');
 
 test('Swagger Specification: validate OpenAPI 3.0.3 root properties', () => {
@@ -12,6 +14,7 @@ test('Swagger Specification: validate OpenAPI 3.0.3 root properties', () => {
   const tagNames = swaggerDoc.tags.map(t => t.name);
   assert.ok(tagNames.includes('User'), 'Tags must contain User collection');
   assert.ok(tagNames.includes('Payment'), 'Tags must contain Payment collection');
+  assert.ok(tagNames.includes('Notification'), 'Tags must contain Notification collection');
 });
 
 test('Swagger Collection: User endpoints are completely documented', () => {
@@ -98,6 +101,7 @@ test('Swagger Coverage: every Express route is documented and every $ref resolve
     '/api/payments': require('../src/routes/payment.routes'),
     '/api/users': require('../src/routes/user.routes'),
     '/api/feedback': require('../src/routes/feedback.routes'),
+    '/api/notifications': require('../src/routes/notification.routes'),
   };
   // Các route khai báo trực tiếp trong app.js
   const routes = [
@@ -125,4 +129,54 @@ test('Swagger Coverage: every Express route is documented and every $ref resolve
   for (const ref of refs) {
     assert.ok(swaggerDoc.components.schemas[ref.split('/').pop()], `Broken $ref ${ref}`);
   }
+});
+
+test('Swagger Collection: Notification endpoints and schemas are completely documented', () => {
+  const notificationEndpoints = [
+    { path: '/api/notifications/config', method: 'get' },
+    { path: '/api/notifications/subscriptions', method: 'get' },
+    { path: '/api/notifications/subscriptions', method: 'post' },
+    { path: '/api/notifications/subscriptions', method: 'delete' },
+    { path: '/api/notifications/subscriptions/{id}', method: 'delete' },
+    { path: '/api/notifications/test', method: 'post' },
+    { path: '/api/notifications/send', method: 'post' },
+    { path: '/api/notifications', method: 'get' },
+    { path: '/api/notifications/unread-count', method: 'get' },
+    { path: '/api/notifications/read-all', method: 'put' },
+    { path: '/api/notifications/{id}/read', method: 'put' },
+    { path: '/api/notifications/{id}', method: 'delete' },
+  ];
+
+  for (const { path: routePath, method } of notificationEndpoints) {
+    const op = swaggerDoc.paths[routePath]?.[method];
+    assert.ok(op, `Path ${method.toUpperCase()} ${routePath} must exist in Swagger spec`);
+    assert.ok(op.tags.includes('Notification'), `Path ${routePath} must be tagged with 'Notification'`);
+    assert.ok(op.summary, `Path ${routePath} must have summary`);
+    assert.ok(op.responses, `Path ${routePath} must have responses`);
+  }
+
+  const notificationSchemas = [
+    'PushConfigResponse',
+    'PushSubscriptionSummary',
+    'RegisterPushSubscriptionBody',
+    'UnregisterPushSubscriptionBody',
+    'NotificationItem',
+    'TestPushBody',
+    'SendAdminNotificationBody',
+  ];
+  for (const schemaName of notificationSchemas) {
+    assert.ok(swaggerDoc.components.schemas[schemaName], `Schema ${schemaName} must exist`);
+  }
+});
+
+test('Swagger Sync: server swagger.json and docs/swagger-web/openapi.json match swaggerDoc', () => {
+  const normalizedDoc = JSON.parse(JSON.stringify(swaggerDoc));
+  const serverJsonPath = path.join(__dirname, '../src/docs/swagger.json');
+  const webOpenApiPath = path.join(__dirname, '../../docs/swagger-web/openapi.json');
+
+  const serverSpec = JSON.parse(fs.readFileSync(serverJsonPath, 'utf8'));
+  const webSpec = JSON.parse(fs.readFileSync(webOpenApiPath, 'utf8'));
+
+  assert.deepEqual(serverSpec, normalizedDoc, 'server/src/docs/swagger.json must match swaggerDoc');
+  assert.deepEqual(webSpec, normalizedDoc, 'docs/swagger-web/openapi.json must match swaggerDoc');
 });
